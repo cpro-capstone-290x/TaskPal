@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import userRoutes from './routes/userRoutes.js';
 
 dotenv.config();
 const app = express();
@@ -13,10 +14,7 @@ app.use(cors()); // Enable CORS
 app.use(helmet()); // Security middleware
 app.use(morgan('dev')); // Logging middleware
 
-app.get('/test', (req, res) => {
-  console.log(res.getHeaders());
-  res.send('Hello World! John Carlo');
-});
+app.use("/api/users", userRoutes);
 
 app.listen(PORT, () => {
   console.log('Server is running on port ' + PORT);

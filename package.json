@@ -2,7 +2,7 @@
   "name": "taskpal",
   "version": "1.0.0",
   "description": "",
-  "main": "backend/server.js.js",
+  "main": "backend/server.js",
   "dependencies": {
     "@arcjet/node": "^1.0.0-beta.12",
     "@neondatabase/serverless": "^1.0.1",
@@ -94,7 +94,8 @@
     "xtend": "^4.0.2"
   },
   "scripts": {
-    "dev": "nodemon backend/server.js"
+    "dev": "nodemon backend/server.js",
+    "start": "node backend/server.js"
   },
   "repository": {
     "type": "git",

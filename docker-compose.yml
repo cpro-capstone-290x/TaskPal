@@ -1,0 +1,19 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app        # sync source code for hot reload
+      - /app/node_modules      # avoid overwriting node_modules
+    env_file:
+      - ./frontend/.env
+    depends_on:
+      - backend

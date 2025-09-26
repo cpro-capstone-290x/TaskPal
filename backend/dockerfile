@@ -11,7 +11,7 @@ USER appuser
 COPY --chown=appuser:appuser package*.json ./
 
 # install deps as appuser
-RUN npm ci
+RUN npm install
 
 # copy the rest of the source
 COPY --chown=appuser:appuser . .

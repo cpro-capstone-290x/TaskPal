@@ -4,6 +4,7 @@ import morgan from 'morgan';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import userRoutes from './routes/userRoutes.js';
+import providerRoutes from './routes/providerRoutes.js';
 import { sql } from './config/db.js';
 
 dotenv.config();
@@ -16,6 +17,8 @@ app.use(helmet()); // Security middleware
 app.use(morgan('dev')); // Logging middleware
 
 app.use("/api/users", userRoutes);
+app.use("/api/providers", providerRoutes);
+
 
 async function initDB() {
     try {
@@ -36,6 +39,21 @@ async function initDB() {
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         `;
+        await sql`
+        CREATE TABLE IF NOT EXISTS providers (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            provider_type VARCHAR(50) NOT NULL,   
+            service_type VARCHAR(50) NOT NULL,    
+            license_id VARCHAR(100),
+            email VARCHAR(100) UNIQUE NOT NULL,
+            phone VARCHAR(20),
+            document TEXT,                        
+            status VARCHAR(20) DEFAULT 'Pending', 
+            password VARCHAR(255) NOT NULL,       
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`;
 
         console.log('Database initialized');}
         catch (error) {

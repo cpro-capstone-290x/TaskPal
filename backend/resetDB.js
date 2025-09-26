@@ -22,7 +22,25 @@ async function resetDB() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `;
+    await sql`DROP TABLE IF EXISTS providers CASCADE`;
 
+    await sql`
+      CREATE TABLE providers (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        provider_type VARCHAR(50) NOT NULL,   
+        service_type VARCHAR(50) NOT NULL,    
+        license_id VARCHAR(100),
+        email VARCHAR(100) UNIQUE NOT NULL,
+        phone VARCHAR(20),
+        document TEXT,
+        status VARCHAR(20) DEFAULT 'Pending',
+        password VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    
     console.log("✅ Users table reset successfully (Neon)");
     process.exit(0);
   } catch (error) {

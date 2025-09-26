@@ -22,9 +22,18 @@ async function initDB() {
         await sql`
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
-            name VARCHAR(100),
-            email VARCHAR(100) UNIQUE,
-            "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            first_name VARCHAR(50) NOT NULL,
+            last_name VARCHAR(50) NOT NULL,
+            type_of_user VARCHAR(50) NOT NULL,
+            email VARCHAR(100) UNIQUE NOT NULL,
+            password VARCHAR(255) NOT NULL,
+            unit_no VARCHAR(20),
+            street VARCHAR(100),
+            city VARCHAR(50),
+            province VARCHAR(50),
+            postal_code VARCHAR(20),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         `;
 

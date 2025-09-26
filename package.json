@@ -95,7 +95,8 @@
   },
   "scripts": {
     "dev": "nodemon backend/server.js",
-    "start": "node backend/server.js"
+    "start": "node backend/server.js",
+    "reset-db": "node resetDB.js"
   },
   "repository": {
     "type": "git",

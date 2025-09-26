@@ -11,7 +11,7 @@ jobs:
 
     permissions:
       contents: read
-      packages: write
+      packages: write   # required to push to GHCR
 
     steps:
       - name: Checkout repository
@@ -24,8 +24,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set lowercase image name
-        run: echo "IMAGE_ID=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+      - name: Set image name for org
+        run: echo "IMAGE_ID=ghcr.io/cpro-capstone-290x/taskpal" >> $GITHUB_ENV
 
       - name: Build and push
         uses: docker/build-push-action@v6

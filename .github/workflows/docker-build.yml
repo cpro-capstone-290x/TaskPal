@@ -2,8 +2,8 @@ name: Build and Push Docker image
 
 on:
   push:
-    branches: [ "main" ]   # Run workflow when pushing to main branch
-  workflow_dispatch:        # Allow manual trigger
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -11,14 +11,12 @@ jobs:
 
     permissions:
       contents: read
-      packages: write   # needed to push to GHCR
+      packages: write
 
     steps:
-      # Checkout your repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Log in to GitHub Container Registry
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
@@ -26,12 +24,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Build and push Docker image
+      - name: Set lowercase image name
+        run: echo "IMAGE_ID=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/taskpal:latest
-            ghcr.io/${{ github.repository_owner }}/taskpal:${{ github.sha }}
+            ${{ env.IMAGE_ID }}:latest
+            ${{ env.IMAGE_ID }}:${{ github.sha }}

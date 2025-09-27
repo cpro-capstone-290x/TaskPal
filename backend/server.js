@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import userRoutes from './routes/userRoutes.js';
 import providerRoutes from './routes/providerRoutes.js';
 import authorizeRoutes from './routes/authorizeRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 import { sql } from './config/db.js';
 
 dotenv.config();
@@ -20,6 +21,7 @@ app.use(morgan('dev')); // Logging middleware
 app.use("/api/users", userRoutes);
 app.use("/api/providers", providerRoutes);
 app.use("/api/authorize", authorizeRoutes);
+app.use("/api/admin", adminRoutes);
 
 
 async function initDB() {
@@ -67,6 +69,16 @@ async function initDB() {
             relationship VARCHAR(50) NOT NULL,  -- e.g., spouse, child, caregiver
             is_active BOOLEAN DEFAULT true,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`;
+        await sql`
+        CREATE TABLE IF NOT EXISTS admins (
+            id SERIAL PRIMARY KEY,
+            first_name VARCHAR(50) UNIQUE NOT NULL,
+            email VARCHAR(100) UNIQUE NOT NULL,
+            password VARCHAR(255) NOT NULL,
+            role VARCHAR(50) NOT NULL, 
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`;
 
         console.log('Database initialized');}

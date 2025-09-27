@@ -2,12 +2,12 @@ import { sql } from "../config/db.js";
 
 export const getProviders = async (req, res) => {
     try {
-        const users = await sql`
+        const provider = await sql`
         SELECT * FROM providers
         ORDER BY created_at DESC
         `;
-        console.log("fetched providers", users);
-        res.status(200).json({success:true, data: users});
+        console.log("fetched providers", provider);
+        res.status(200).json({success:true, data: provider});
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch providers' });
     }
@@ -101,5 +101,5 @@ export const deleteProvider = async (req, res) => {
     } catch (error) {
         console.error("❌ Failed to delete provider:", error);
         res.status(500).json({ error: 'Failed to delete provider' });
-    }
+    }       
 }

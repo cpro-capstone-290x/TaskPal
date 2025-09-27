@@ -5,6 +5,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import userRoutes from './routes/userRoutes.js';
 import providerRoutes from './routes/providerRoutes.js';
+import authorizeRoutes from './routes/authorizeRoutes.js';
 import { sql } from './config/db.js';
 
 dotenv.config();
@@ -18,6 +19,7 @@ app.use(morgan('dev')); // Logging middleware
 
 app.use("/api/users", userRoutes);
 app.use("/api/providers", providerRoutes);
+app.use("/api/authorize", authorizeRoutes);
 
 
 async function initDB() {
@@ -53,6 +55,18 @@ async function initDB() {
             password VARCHAR(255) NOT NULL,       
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`;
+        await sql`
+        CREATE TABLE IF NOT EXISTS authorized_users (
+            id SERIAL PRIMARY KEY,
+            client_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE, -- link to main user
+            first_name VARCHAR(50) NOT NULL,
+            last_name VARCHAR(50) NOT NULL,
+            email VARCHAR(100) UNIQUE NOT NULL,
+            phone VARCHAR(20),
+            relationship VARCHAR(50) NOT NULL,  -- e.g., spouse, child, caregiver
+            is_active BOOLEAN DEFAULT true,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`;
 
         console.log('Database initialized');}

@@ -26,6 +26,11 @@ const Register = () => {
         email: '',
         password: '',
         confirm_password: '',
+        unit_no: '',
+        street: '',
+        city: '',
+        province: 'Alberta', // default value
+        postal_code: '',
     });
 
     // State for handling API status
@@ -75,14 +80,14 @@ const Register = () => {
         const { confirm_password, ...restFormData } = formData;
         
         // Empty fields for now because backend expects them, since we have not made the address page yet
-        const submissionData = {
-            ...restFormData,
-            unit_no: '',
-            street: '',
-            city: '',
-            province: '',
-            postal_code: '',
-        };
+        // const submissionData = {
+        //     ...restFormData,
+        //     unit_no: '',
+        //     street: '',
+        //     city: '',
+        //     province: '',
+        //     postal_code: '',
+        // };
 
         const API_ENDPOINT = 'http://localhost:5000/api/users';
 
@@ -92,7 +97,7 @@ const Register = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(submissionData),
+                body: JSON.stringify(formData),
             });
 
             const result = await response.json();
@@ -111,6 +116,7 @@ const Register = () => {
             // Clear form (keeping default user type)
             setFormData({
                 first_name: '', last_name: '', type_of_user: 'senior_citizen', email: '', password: '', confirm_password: '',
+                unit_no: '', street: '', city: '', province: 'Alberta', postal_code: '',
             });
 
         } catch (error) {
@@ -138,7 +144,7 @@ const Register = () => {
                 {/* Status Messages */}
                 {status.success && (
                     <div className="mb-6 p-4 bg-green-50 border border-green-300 text-green-700 rounded-xl text-center font-semibold animate-pulse-once">
-                        ✅ Registration Successful! Please proceed to add your address details.
+                        ✅ Registration Successful!
                     </div>
                 )}
                 {status.error && (
@@ -147,7 +153,7 @@ const Register = () => {
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-3">
                     
                     {/* 1. Personal Information */}
                     <div className="grid md:grid-cols-2 gap-6">
@@ -220,7 +226,77 @@ const Register = () => {
                             />
                         </div>
                     </div>
-                    
+
+                    <hr className="my-6 border-t border-gray-200" />
+                    <p className="text-sm text-gray-600 text-center">Please fill in your address details below:</p>
+
+                    {/* 4. Address Information */}
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <InputField
+                            label="Unit No."
+                            id="unit_no"
+                            type="text"
+                            value={formData.unit_no}
+                            onChange={handleChange}
+                            required
+                            placeholder="Apt, Suite, etc."
+                        />
+                        <InputField
+                            label="Street"
+                            id="street"
+                            type="text"
+                            value={formData.street}
+                            onChange={handleChange}
+                            required
+                            placeholder="123 Main St"
+                        />
+                        <InputField
+                            label="City"
+                            id="city"
+                            type="text"
+                            value={formData.city}
+                            onChange={handleChange}
+                            required
+                            placeholder="Anytown"
+                        />
+                        <InputField
+                            label="Postal Code"
+                            id="postal_code"
+                            type="text"
+                            value={formData.postal_code}
+                            onChange={handleChange}
+                            required
+                            placeholder="A1B 2C3"
+                        />
+                    </div>
+                    <div className="flex flex-col">
+                        <label htmlFor="type_of_user" className="text-sm font-semibold text-gray-600 mb-1 tracking-wide">
+                            Province <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                            id="province"
+                            name="province"
+                            value={formData.province}
+                            onChange={handleChange}
+                            required
+                            className="w-full p-3 border border-gray-300 rounded-xl bg-white focus:ring-4 focus:ring-sky-200 focus:border-sky-500 shadow-inner transition duration-200 ease-in-out text-gray-800"
+                        >
+                            <option value="AB">Alberta</option>
+                            <option value="BC">British Columbia</option>
+                            <option value="MB">Manitoba</option>
+                            <option value="NB">New Brunswick</option>
+                            <option value="NL">Newfoundland and Labrador</option>
+                            <option value="NT">Northwest Territories</option>
+                            <option value="NS">Nova Scotia</option>
+                            <option value="NU">Nunavut</option>
+                            <option value="ON">Ontario</option>
+                            <option value="PE">Prince Edward Island</option>
+                            <option value="QC">Quebec</option>
+                            <option value="SK">Saskatchewan</option>
+                            <option value="YT">Yukon</option>
+                        </select>
+                    </div>
+
                     {/* Submit Button */}
                     <button
                         type="submit"

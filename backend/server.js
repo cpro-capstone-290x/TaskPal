@@ -7,6 +7,7 @@ import userRoutes from './routes/userRoutes.js';
 import providerRoutes from './routes/providerRoutes.js';
 import authorizeRoutes from './routes/authorizeRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 import { sql } from './config/db.js';
 
 dotenv.config();
@@ -17,11 +18,13 @@ app.use(express.json()); // Body parser middleware
 app.use(cors()); // Enable CORS
 app.use(helmet()); // Security middleware
 app.use(morgan('dev')); // Logging middleware
+app.use(express.urlencoded({ extended: true })); // To handle URL-encoded data
 
 app.use("/api/users", userRoutes);
 app.use("/api/providers", providerRoutes);
 app.use("/api/authorize", authorizeRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/auth", authRoutes);
 
 
 async function initDB() {
@@ -65,6 +68,7 @@ async function initDB() {
             first_name VARCHAR(50) NOT NULL,
             last_name VARCHAR(50) NOT NULL,
             email VARCHAR(100) UNIQUE NOT NULL,
+            password VARCHAR(255) NOT NULL,
             phone VARCHAR(20),
             relationship VARCHAR(50) NOT NULL,  -- e.g., spouse, child, caregiver
             is_active BOOLEAN DEFAULT true,
@@ -80,10 +84,21 @@ async function initDB() {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`;
+        await sql`
+        CREATE TABLE IF NOT EXISTS pending_registrations (
+            id SERIAL PRIMARY KEY,
+            role VARCHAR(50) NOT NULL, 
+            email VARCHAR(100) NOT NULL,
+            payload JSONB NOT NULL,
+            twofa_code VARCHAR(255) NOT NULL,
+            twofa_expires TIMESTAMP NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE (role, email) -- This constraint will now be valid
+        )`;
 
-        console.log('Database initialized');}
-        catch (error) {
-        console.error('Error initializing database:', error);           
+        console.log('Database initialized');
+    } catch (error) {
+        console.error('Error initializing database:', error);
     }
 };
 

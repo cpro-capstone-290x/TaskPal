@@ -1,4 +1,12 @@
 import { sql } from "../config/db.js";
+import bcrypt from "bcrypt";
+import { sendOTP } from "../config/mailer.js"; // we'll make this helper
+import jwt from "jsonwebtoken";
+
+// Generate 6-digit OTP
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
 export const getProviders = async (req, res) => {
     try {
@@ -29,32 +37,6 @@ export const getProvider = async (req, res) => {
     console.error("❌ Failed to fetch user:", error);
     res.status(500).json({ error: "Failed to fetch user" });
   }
-}
-export const createProvider = async (req, res) => {
-    const { name, provider_type, service_type, license_id, email, phone, document, password } = req.body;
-    if (!name || !provider_type || !service_type || !email || !password) {
-        return res.status(400).json({ error: 'Name, provider_type, service_type, email, and password are required' });
-    }
-    try {
-        const newProvider = await sql`
-        INSERT INTO providers (
-            name, provider_type, service_type, license_id, email, phone, document, password
-        )
-        VALUES (
-            ${name}, ${provider_type}, ${service_type}, ${license_id}, ${email}, ${phone}, ${document}, ${password}
-        )
-        RETURNING *
-        `;
-        console.log("✅ Created provider:", newProvider[0]);
-        res.status(201).json({ success: true, data: newProvider[0] });
-    } catch (error) {
-        if (error.code === '23505') { // Unique violation
-            return res.status(400).json({ error: 'Email already exists' });
-        }
-        console.error("❌ Failed to create provider:", error);
-        res.status(500).json({ error: 'Failed to create provider' });
-    }
-
 }
 export const updateProvider = async (req, res) => {
     const { id } = req.params;

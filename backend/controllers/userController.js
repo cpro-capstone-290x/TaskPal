@@ -1,6 +1,11 @@
 // backend/controllers/userController.js
 
 import { sql } from "../config/db.js";
+import bcrypt from "bcrypt";
+import { sendOTP } from "../config/mailer.js"; // we'll make this helper
+import jwt from "jsonwebtoken";
+
+
 export const getUsers = async (req, res) => {
     try {
         const users = await sql`
@@ -32,37 +37,6 @@ export const getUser = async (req, res) => {
   }
 };
 
-export const createUser = async (req, res) => {
-    const {    first_name,last_name,type_of_user,email,password,unit_no,street,city,province,postal_code} = req.body;
-if (!first_name || !last_name || !email || !password || !type_of_user) {
-    return res.status(400).json({
-      error: "First name, last name, email, password, and type_of_user are required"
-    });
-  }
-
-    try {
-        const newUser = await sql`
-        INSERT INTO users (
-            first_name, last_name, type_of_user, email, password, unit_no, street, city, province, postal_code
-        )
-        VALUES (
-            ${first_name}, ${last_name}, ${type_of_user}, ${email}, ${password},
-            ${unit_no}, ${street}, ${city}, ${province}, ${postal_code}
-        )
-        RETURNING *
-        `;
-
-        console.log("✅ Created user:", newUser[0]);
-        res.status(201).json({ success: true, data: newUser[0] });
-    } catch (error) {
-    if (error.code === "23505") {
-      // unique violation (email already exists)
-      return res.status(400).json({ error: "Email already exists" });
-    }
-    console.error("❌ Failed to create user:", error);
-    res.status(500).json({ error: "Failed to create user" });
-  }  
-}
 export const updateUsers = async (req, res) => {
   const { id } = req.params;
   const {

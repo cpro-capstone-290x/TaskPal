@@ -18,7 +18,7 @@ const InputField = ({ label, id, type = 'text', value, onChange, required = fals
     </div>
 );
 
-const Register = () => {
+const Register = ({ onSuccess }) => {
     const [formData, setFormData] = useState({
         first_name: '',
         last_name: '',
@@ -37,7 +37,6 @@ const Register = () => {
     const [status, setStatus] = useState({
         loading: false,
         error: null,
-        success: false,
     });
 
     // Function to handle changes in input fields
@@ -89,7 +88,7 @@ const Register = () => {
         //     postal_code: '',
         // };
 
-        const API_ENDPOINT = 'http://localhost:5000/api/users';
+        const API_ENDPOINT = 'http://localhost:5000/api/auth/registerUser';
 
         try {
             const response = await fetch(API_ENDPOINT, {
@@ -118,6 +117,11 @@ const Register = () => {
                 first_name: '', last_name: '', type_of_user: 'senior_citizen', email: '', password: '', confirm_password: '',
                 unit_no: '', street: '', city: '', province: 'Alberta', postal_code: '',
             });
+
+            onSuccess({ 
+                userId: result.data?.id, // Use the ID returned by the API if available
+                email: formData.email, 
+            }); 
 
         } catch (error) {
             console.error('Network or unexpected error:', error);

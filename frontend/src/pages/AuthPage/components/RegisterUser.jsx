@@ -18,7 +18,7 @@ const InputField = ({ label, id, type = 'text', value, onChange, required = fals
     </div>
 );
 
-const Register = ({ onSuccess }) => {
+const RegisterUser = ({ onSuccess }) => {
     const [formData, setFormData] = useState({
         first_name: '',
         last_name: '',
@@ -54,7 +54,7 @@ const Register = ({ onSuccess }) => {
         setStatus({ loading: true, error: null, success: false });
 
         // Basic client-side validation for mandatory fields
-        const requiredFields = ['first_name', 'last_name', 'email', 'password', 'confirm_password', 'type_of_user'];
+        const requiredFields = ['first_name', 'last_name', 'email', 'password', 'confirm_password', 'type_of_user', 'unit_no', 'street', 'city', 'province', 'postal_code'];
         const missingFields = requiredFields.filter(field => !formData[field]);
 
         if (missingFields.length > 0) {
@@ -78,16 +78,6 @@ const Register = ({ onSuccess }) => {
 
         const { confirm_password, ...restFormData } = formData;
         
-        // Empty fields for now because backend expects them, since we have not made the address page yet
-        // const submissionData = {
-        //     ...restFormData,
-        //     unit_no: '',
-        //     street: '',
-        //     city: '',
-        //     province: '',
-        //     postal_code: '',
-        // };
-
         const API_ENDPOINT = 'http://localhost:5000/api/auth/registerUser';
 
         try {
@@ -119,7 +109,6 @@ const Register = ({ onSuccess }) => {
             });
 
             onSuccess({ 
-                userId: result.data?.id, // Use the ID returned by the API if available
                 email: formData.email, 
             }); 
 
@@ -280,24 +269,13 @@ const Register = ({ onSuccess }) => {
                         <select
                             id="province"
                             name="province"
-                            value={formData.province}
+                            value="AB"
                             onChange={handleChange}
                             required
+                            disabled
                             className="w-full p-3 border border-gray-300 rounded-xl bg-white focus:ring-4 focus:ring-sky-200 focus:border-sky-500 shadow-inner transition duration-200 ease-in-out text-gray-800"
                         >
                             <option value="AB">Alberta</option>
-                            <option value="BC">British Columbia</option>
-                            <option value="MB">Manitoba</option>
-                            <option value="NB">New Brunswick</option>
-                            <option value="NL">Newfoundland and Labrador</option>
-                            <option value="NT">Northwest Territories</option>
-                            <option value="NS">Nova Scotia</option>
-                            <option value="NU">Nunavut</option>
-                            <option value="ON">Ontario</option>
-                            <option value="PE">Prince Edward Island</option>
-                            <option value="QC">Quebec</option>
-                            <option value="SK">Saskatchewan</option>
-                            <option value="YT">Yukon</option>
                         </select>
                     </div>
 
@@ -325,4 +303,4 @@ const Register = ({ onSuccess }) => {
     );
 };
 
-export default Register;
+export default RegisterUser;

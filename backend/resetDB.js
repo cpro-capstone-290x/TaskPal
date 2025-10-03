@@ -93,7 +93,48 @@ async function resetDB() {
         UNIQUE (role, email) -- This constraint will now be valid
       )
     `;
-    
+    await sql`DROP TABLE IF EXISTS bookings CASCADE`;
+    await sql`
+      CREATE TABLE bookings (
+        id SERIAL PRIMARY KEY,
+        task_id int NOT NULL,
+        client_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        provider_id INT NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
+        status VARCHAR(50) NOT NULL,
+        notes TEXT,
+        scheduled_date TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    await sql`DROP TABLE IF EXISTS negotiations CASCADE`;
+    await sql`
+      CREATE TABLE negotiations (
+        id SERIAL PRIMARY KEY,
+        booking_id INT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+        provider_id INT NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
+        proposed_price DECIMAL(10, 2) NOT NULL,
+        final_price DECIMAL(10, 2),
+        message TEXT,
+        status VARCHAR(50) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    await sql`DROP TABLE IF EXISTS tasks CASCADE`;
+    await sql`
+      CREATE TABLE tasks (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(100) NOT NULL,
+        description TEXT NOT NULL,
+        status VARCHAR(50) NOT NULL,
+        priority VARCHAR(50) NOT NULL,
+        due_date TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
     console.log("✅ All tables reset successfully (with 2FA columns)");
     process.exit(0);
   } catch (error) {

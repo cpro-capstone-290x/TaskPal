@@ -11,6 +11,15 @@ const client = StreamChat.getInstance(
 
 console.log("api key:", process.env.STREAM_API_KEY);
 
+export const setupChatRoutes = (app) => {
+  app.post("/api/chat/token", (req, res) => {
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ error: "userId required" });
+    const token = client.createToken(userId);
+    res.json({ token });
+  });
+};
+
 /**
  * 1. Book a Task
  * Creates a booking in DB + a Stream Chat channel between client & provider

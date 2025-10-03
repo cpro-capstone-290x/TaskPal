@@ -9,7 +9,10 @@ import authorizeRoutes from './routes/authorizeRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import taskChatRoutes from './routes/taskChatRoutes.js';
+import chatRoutes from './routes/chatRoutes.js'; 
+import { setupChatRoutes } from './controllers/taskChatController.js';
 import { sql } from './config/db.js';
+
 
 dotenv.config();
 const app = express();
@@ -21,12 +24,15 @@ app.use(helmet()); // Security middleware
 app.use(morgan('dev')); // Logging middleware
 app.use(express.urlencoded({ extended: true })); // To handle URL-encoded data
 
+setupChatRoutes(app); // Setup chat routes
+
 app.use("/api/users", userRoutes);
 app.use("/api/providers", providerRoutes);
 app.use("/api/authorize", authorizeRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks/chat", taskChatRoutes);
+app.use("/api/chat", chatRoutes); // New chat routes
 
 
 async function initDB() {

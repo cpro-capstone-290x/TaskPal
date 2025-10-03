@@ -1,21 +1,42 @@
 import React, { useState } from 'react';
-import Register from './components/Register';
-import OTPVerification from './components/OTPVerification';
+import { useSearchParams, Link } from 'react-router-dom';
+import RegisterUser from './components/RegisterUser';
+import RegisterProvider from './components/RegisterProvider';
+import OTPUser from './components/OTPUser';
+import OTPProvider from './components/OTPProvider';
 
 const AuthPage = () => {
+    const [searchParams] = useSearchParams();
+    const urlType = searchParams.get('type'); // Get the 'type' value from the URL (?type=...)
+
     // State to manage the step: 'register', 'otp', or 'success'
-    const [currentStep, setCurrentStep] = useState('register');
+    // Default to 'register' since the user should only land here after selecting a type
+    const [currentStep, setCurrentStep] = useState('register'); 
     
+    // State to distinguish between user and provider registration
+    // Initialize based on the URL parameter, default to 'user' if not specified
+    const [registrationType, setRegistrationType] = useState(urlType === 'provider' ? 'provider' : 'user'); 
+
     // State to hold user data (like email/userId) needed for the OTP step
     const [registrationData, setRegistrationData] = useState(null);
 
+    // If a user navigates directly to /auth without a parameter, 
+    // you might want to redirect them to the home page to choose.
+    // For now, we'll default them to the 'user' registration form.
+    
+    // Handlers remain the same:
+    
     // 1. Handler called by Register component upon successful submission
     const handleRegistrationSuccess = (data) => {
         setRegistrationData(data); // Save the email/ID
-        setCurrentStep('otp');     // Switch view to OTP
+        if (registrationType === 'provider') {
+            setCurrentStep('provider-otp'); // Switch view to OTPProvider
+        } else {
+            setCurrentStep('user-otp');       // Switch view to OTPUser
+        }     // Switch view to OTP
     };
 
-    // 2. Handler called by OTPVerification component upon successful verification
+    // 2. Handler called by OTPUser component upon successful verification
     const handleOTPVerificationSuccess = () => {
         setCurrentStep('success'); // Switch view to final success screen
     };
@@ -29,17 +50,40 @@ const AuthPage = () => {
     const renderContent = () => {
         switch (currentStep) {
             case 'register':
-                // Pass the handler down to Register
-                return <Register onSuccess={handleRegistrationSuccess} />;
-            case 'otp':
-                // Render OTP component, passing user data and handlers
+                // Decide which form to show based on the registrationType state
+                const RegistrationComponent = registrationType === 'provider' ? RegisterProvider : RegisterUser;
+                
+                // Optional: A link back to the home page for re-selection
                 return (
-                    <OTPVerification
+                    <div>
+                        <Link 
+                            to="/" 
+                            className="text-sm text-sky-500 hover:text-sky-600 mb-4 inline-block"
+                        >
+                            ← Back to Selection
+                        </Link>
+                        <RegistrationComponent onSuccess={handleRegistrationSuccess} />
+                    </div>
+                );
+
+            case 'provider-otp':
+                return (
+                    <OTPProvider
                         userData={registrationData}
                         onSuccess={handleOTPVerificationSuccess}
                         onBack={handleBackToRegister}
                     />
                 );
+
+            case 'user-otp':
+                return (
+                    <OTPUser
+                        userData={registrationData}
+                        onSuccess={handleOTPVerificationSuccess}
+                        onBack={handleBackToRegister}
+                    />
+                );
+
             case 'success':
                 return (
                     <div className="w-full max-w-xl bg-white shadow-2xl rounded-3xl p-10 text-center">
@@ -50,8 +94,10 @@ const AuthPage = () => {
                         </button>
                     </div>
                 );
+
             default:
-                return <Register onSuccess={handleRegistrationSuccess} />;
+                // This case should be rare, but we default to user registration
+                return <RegisterUser onSuccess={handleRegistrationSuccess} />;
         }
     };
 

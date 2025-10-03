@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const OTPVerification = ({ userData, onSuccess, onBack }) => {
+const OTPUser = ({ userData, onSuccess, onBack }) => {
     // Use the email passed from the registration step
     const email = userData?.email; 
     
@@ -200,4 +200,4 @@ const OTPVerification = ({ userData, onSuccess, onBack }) => {
     );
 };
 
-export default OTPVerification;
+export default OTPUser;

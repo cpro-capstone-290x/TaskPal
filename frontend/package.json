@@ -16,6 +16,7 @@
     "react-dom": "^19.1.1",
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.9.2",
+    "socket.io-client": "^4.8.1",
     "stream-chat": "^9.20.3",
     "stream-chat-react": "^13.7.0",
     "zustand": "^5.0.8"

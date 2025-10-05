@@ -3,9 +3,7 @@ import { Routes, Route } from "react-router-dom";
 // Pages
 import Home from "./pages/home";
 import AuthPage from "./pages/AuthPage/AuthPage";
-import ClientChatRoom from "./pages/Chat/ClientChatRoom.jsx";
-import ProviderChatRoom from "./pages/Chat/ProviderChatRoom.jsx";
-import BookTask from "./pages/Chat/BookTask.jsx";
+import ChatRoom from "./pages/components/ChatRoom";
 
 function App() {
   return (
@@ -14,14 +12,7 @@ function App() {
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/auth" element={<AuthPage />} />
-
-        {/* Chat Routes */}
-        <Route path="/chat/client/:bookingId" element={<ClientChatRoom />} />
-        <Route path="/chat/provider/:bookingId" element={<ProviderChatRoom />} />
-
-        {/* Booking Routes */}
-        <Route path="/book" element={<BookTask />} />
-        <Route path="/book/:taskId" element={<BookTask />} />
+        <Route path="/chat/:bookingId/:role" element={<ChatRoom />} />
       </Routes>
     </div>
   );

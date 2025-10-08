@@ -475,3 +475,67 @@ export const verifyAuthorizedOTP = async (req, res) => {
         return res.status(500).json({ error: "OTP verification failed" });
     }
 };
+
+export const loginUser = async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+    }
+    try {
+        const users = await sql`SELECT * FROM users WHERE email = ${email}`;
+        const user = users[0];
+        if (!user) {
+            return res.status(401).json({ error: "Invalid credentials" });
+        }
+        const validPassword = await bcrypt.compare(password, user.password);
+        if (!validPassword) {
+            return res.status(401).json({ error: "Invalid credentials" });
+        }
+        const token = jwt.sign(
+            { id: user.id, email: user.email, role: 'user' },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+        res.status(200).json({
+            success: true,
+            message: "Login successful",
+            data: { token, user: { id: user.id, email: user.email, first_name: user.first_name, last_name: user.last_name } }
+        });
+    } catch (err) {
+        console.error("❌ Login failed:", err);
+        res.status(500).json({ error: "Login failed" });
+    }
+}
+
+export const loginProvider = async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+    }
+    try {
+        const providers = await sql`SELECT * FROM providers WHERE email = ${email}`;
+        const provider = providers[0];
+        if (!provider) {
+            return res.status(401).json({ error: "Invalid credentials" });
+        }
+        const validPassword = await bcrypt.compare(password, provider.password);
+        if (!validPassword) {
+            return res.status(401).json({ error: "Invalid credentials" });
+        }
+        const token = jwt.sign(
+            { id: provider.id, email: provider.email, role: 'provider' },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+        res.status(200).json({
+            success: true,
+            message: "Login successful",
+            data: { token, provider: { id: provider.id, email: provider.email, name: provider.name } }
+        });
+    } catch (err) {
+        console.error("❌ Login failed:", err);
+        res.status(500).json({ error: "Login failed" });
+    }
+}

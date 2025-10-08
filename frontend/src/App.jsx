@@ -2,7 +2,8 @@ import { Routes, Route } from "react-router-dom";
 
 // Pages
 import Home from "./pages/home";
-import AuthPage from "./pages/AuthPage/AuthPage";
+import RegisterPage from "./pages/RegisterPage/RegisterPage";
+import LoginPage from "./pages/LoginPage/LoginPage";
 import ChatRoom from "./pages/components/ChatRoom";
 
 function App() {
@@ -11,7 +12,8 @@ function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
-        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/chat/:bookingId/:role" element={<ChatRoom />} />
       </Routes>
     </div>

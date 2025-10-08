@@ -10,10 +10,10 @@ const IntroContent = () => {
             <div className="space-y-4">
                 {/* Link to AuthPage with type=user query parameter */}
                 <Link
-                    to="/auth?type=user" // <-- Key change: Add the query string
+                    to="/register?type=user" // <-- Key change: Add the query string
                     className="block w-full py-4 bg-sky-500 text-white font-bold text-lg rounded-xl hover:bg-sky-600 transition shadow-lg"
                 >
-                    Sign up as a **User**
+                    Sign up as a User
                 </Link>
 
                 <div className="relative flex items-center justify-center">
@@ -27,16 +27,12 @@ const IntroContent = () => {
 
                 {/* Link to AuthPage with type=provider query parameter */}
                 <Link
-                    to="/auth?type=provider" // <-- Key change: Add the query string
+                    to="/register?type=provider" // <-- Key change: Add the query string
                     className="block w-full py-4 bg-lime-500 text-white font-bold text-lg rounded-xl hover:bg-lime-600 transition shadow-lg"
                 >
-                    Sign up as a **Provider**
+                    Sign up as a Provider
                 </Link>
             </div>
-
-            <p className="mt-8 text-sm text-gray-500">
-                Already have an account? <a href="/login" className="text-sky-500 hover:underline font-medium">Log In</a>
-            </p>
         </div>
     );
 }

@@ -16,10 +16,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0     # 👈 makes sure full repo is fetched
+          fetch-depth: 0        # 👈 correct indentation!
 
       - name: Debug file structure
-        run: ls -R           # 👈 confirm Dockerfiles are visible
+        run: ls -R
 
       - name: Log in to GHCR
         uses: docker/login-action@v3

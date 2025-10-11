@@ -20,7 +20,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./backend
-          file: ./backend/dockerfile
+          file: ./backend/Dockerfile
           push: true
           tags: |
             ghcr.io/cpro-capstone-290x/taskpal-backend:latest
@@ -30,7 +30,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./frontend
-          file: ./frontend/dockerfile
+          file: ./frontend/Dockerfile
           push: true
           tags: |
             ghcr.io/cpro-capstone-290x/taskpal-frontend:latest

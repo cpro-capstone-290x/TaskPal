@@ -12,6 +12,7 @@ import authorizeRoutes from "./routes/authorizeRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
+import paymentRoutes from "./routes/paymentRoute.js";
 import { sql } from "./config/db.js";
 
 dotenv.config();
@@ -48,6 +49,7 @@ app.use("/api/authorize", authorizeRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api/payments", paymentRoutes);
 
 // ✅ SOCKET.IO LOGIC
 io.on("connection", (socket) => {

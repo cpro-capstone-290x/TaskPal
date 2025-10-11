@@ -109,9 +109,19 @@ async function resetDB() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `;
-    await sql`DROP TABLE IF EXISTS negotiations CASCADE`;
-
-    await sql`DROP TABLE IF EXISTS tasks CASCADE`;
+    await sql`DROP TABLE IF EXISTS payments CASCADE`;
+    await sql`
+      CREATE TABLE IF NOT EXISTS payments (
+        id SERIAL PRIMARY KEY,
+        booking_id INT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+        client_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        provider_id INT NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
+        amount DECIMAL(10, 2) NOT NULL,
+        stripe_payment_id VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
 
 
     console.log("✅ All tables reset successfully (with 2FA columns)");

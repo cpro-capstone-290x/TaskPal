@@ -122,6 +122,19 @@ async function resetDB() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `;
+    await sql`DROP TABLE IF EXISTS execution CASCADE`;
+    await sql`
+      CREATE TABLE IF NOT EXISTS execution (
+        id SERIAL PRIMARY KEY,
+        booking_id INT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+        client_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        provider_id INT NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
+        payment_id INT NOT NULL REFERENCES payments(id) ON DELETE CASCADE,
+        validatedCredential VARCHAR(50) Default 'pending',
+        completedProvider VARCHAR(50) Default 'pending',
+        completedClient VARCHAR(50) Default 'pending'
+      )
+    `;
 
 
     console.log("✅ All tables reset successfully (with 2FA columns)");

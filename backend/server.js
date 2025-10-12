@@ -14,6 +14,7 @@ import authRoutes from "./routes/authRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 import paymentRoutes from "./routes/paymentRoute.js";
 import executionRoutes from "./routes/executionRoutes.js";
+import reviewRoutes from "./routes/reviewRoutes.js";
 import { sql } from "./config/db.js";
 
 dotenv.config();
@@ -52,6 +53,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/execution", executionRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 // ✅ SOCKET.IO LOGIC
 io.on("connection", (socket) => {
@@ -164,7 +166,16 @@ async function initDB() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`;
-
+    await sql`
+    CREATE TABLE IF NOT EXISTS reviews (
+        id SERIAL PRIMARY KEY,
+        booking_id INT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+        client_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        provider_id INT NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
+        rating INT CHECK (rating >= 1 AND rating <= 5),
+        comment TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`;
 
     console.log("✅ Database initialized");
   } catch (error) {

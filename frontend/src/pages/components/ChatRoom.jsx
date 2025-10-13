@@ -313,23 +313,57 @@ const ChatRoom = () => {
                     }`}
                   >
                     {((role === "user" && bookingDetails.agreement_signed_by_client) ||
-                      (role === "provider" && bookingDetails.agreement_signed_by_provider))
+                    (role === "provider" && bookingDetails.agreement_signed_by_provider))
                       ? "Agreed ✅"
                       : "Agree to Price"}
                   </button>
                 </div>
               )}
 
-              {bookingDetails.status === "Confirmed" && (
-                <div className="mt-4">
+              {/* ✅ Payment button for confirmed bookings */}
+              {bookingDetails.status === "Confirmed" && role === "user" && (
+                <div className="mt-4 space-y-2">
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await axios.post(
+                          `http://localhost:5000/api/payments/create-intent`,
+                          {
+                            booking_id: bookingDetails.id,
+                            client_id: bookingDetails.client_id,
+                            provider_id: bookingDetails.provider_id,
+                            amount: bookingDetails.price,
+                          }
+                        );
+
+                        if (res.data.url) {
+                          window.location.href = res.data.url; // ✅ Redirect to Stripe checkout page
+                        } else {
+                          alert("Unable to load payment page. Please try again.");
+                        }
+                      } catch (err) {
+                        console.error("❌ Payment error:", err);
+                        alert("Error initiating payment. Please try again later.");
+                      }
+                    }}
+                    className="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 rounded-lg transition"
+                  >
+                    Proceed to Payment 💳
+                  </button>
+
+                  <p className="text-xs text-gray-500 text-center">
+                    Secure payment powered by Stripe.
+                  </p>
+
+                  {/* Optional: Show agreement download button below payment */}
                   <button
                     onClick={() =>
                       window.open(
-                        `http://localhost:5000/api/bookings/${bookingId}/agreement`,
+                        `http://localhost:5000/api/bookings/${bookingDetails.id}/agreement`,
                         "_blank"
                       )
                     }
-                    className="btn btn-outline w-full border-sky-500 text-sky-600 hover:bg-sky-50"
+                    className="w-full border border-sky-500 text-sky-600 rounded-lg py-2 hover:bg-sky-50 transition"
                   >
                     Download Agreement 📄
                   </button>
@@ -345,6 +379,7 @@ const ChatRoom = () => {
           Both users can negotiate details before confirmation.
         </div>
       </div>
+
     </div>
   );
 };

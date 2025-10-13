@@ -8,6 +8,7 @@ import ChatRoom from "./pages/components/ChatRoom";
 import Profile from "./pages/profile/profile";
 import ProfileProvider from "./pages/profile/profileProvider";
 import BookingPage from "./pages/bookingpage/booking";
+import BookingInitializePage from "./pages/bookingpage/initiateBook";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <Route path="/profile/:id" element={<Profile />} />
         <Route path="/profileProvider/:id" element={<ProfileProvider />} />
         <Route path="/booking" element={<BookingPage />} /> {/* ✅ ADD THIS */}
+        <Route path="/booking/initiate/:providerId" element={<BookingInitializePage  />} /> {/* ✅ ADD THIS */}
       </Routes>
     </div>
   );

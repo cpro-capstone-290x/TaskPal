@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const SearchBooking = () => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const selectedCategory = queryParams.get("category"); // ✅ "Cleaning", "Moving", etc.
+  const navigate = useNavigate();
 
   const [providers, setProviders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,6 +54,11 @@ const SearchBooking = () => {
       priceRange: [10, value],
     }));
   };
+
+  const handleSelectProvider = (providerId) => {
+    // Navigate to the chat room for the selected provider
+    navigate(`/booking/initiate/${providerId}`);
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 md:p-10 flex flex-col md:flex-row gap-6">
@@ -164,7 +170,8 @@ const SearchBooking = () => {
 
               {/* CTA */}
               <div className="flex flex-col items-center justify-center md:w-1/5 w-full mt-4 md:mt-0">
-                <button className="px-6 py-2 rounded-full bg-sky-600 text-white font-semibold hover:bg-sky-700 transition">
+                <button onClick={() => handleSelectProvider(p.id)} className="px-6 py-2 rounded-full bg-sky-600 text-white font-semibold hover:bg-sky-700 transition">
+                  
                   Select & Continue
                 </button>
                 <p className="text-xs text-gray-500 text-center mt-2">

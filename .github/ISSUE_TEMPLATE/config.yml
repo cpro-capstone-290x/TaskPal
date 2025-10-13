@@ -1,0 +1,17 @@
+blank_issues_enabled: false
+
+contact_links:
+  - name: 💬 General Question / Discussion
+    url: https://github.com/cpro-capstone-290x/TaskPal.git/discussions
+    about: Ask questions or start a discussion about the project
+
+issue_template:
+  - name: 🐞 Bug Report
+    description: Report an error or unexpected behavior
+    file: bug_report.md
+  - name: 💡 Feature Request
+    description: Suggest a new idea or feature enhancement
+    file: feature_request.md
+  - name: ⚙️ Development Task
+    description: Track internal technical or refactoring tasks
+    file: task_template.md

@@ -10,6 +10,7 @@ import ProfileProvider from "./pages/profile/profileProvider";
 import BookingPage from "./pages/bookingpage/booking";
 import BookingInitializePage from "./pages/bookingpage/initiateBook";
 import PaymentSuccess from "./pages/payment/paymentSuccess";
+import Execution from "./pages/execution/execution";
 
 function App() {
   return (
@@ -25,6 +26,8 @@ function App() {
         <Route path="/booking" element={<BookingPage />} /> {/* ✅ ADD THIS */}
         <Route path="/booking/initiate/:providerId" element={<BookingInitializePage  />} /> {/* ✅ ADD THIS */}
         <Route path="/payment-success" element={<PaymentSuccess />} />
+        <Route path="/execution/:bookingId" element={<Execution />} />
+        <Route path="/provider/execution/:bookingId" element={<Execution />} />
       </Routes>
     </div>
   );

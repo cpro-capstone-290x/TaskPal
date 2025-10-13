@@ -11,6 +11,57 @@ import {
 
 const router = express.Router();
 
+// ✅ GET /api/bookings?client_id=1  or  /api/bookings?provider_id=2
+router.get("/", async (req, res) => {
+  try {
+    const { client_id, provider_id, status } = req.query;
+    let result;
+
+    if (client_id) {
+      result = await sql`
+        SELECT 
+          b.*, 
+          p.name AS provider_name,
+          p.service_type AS provider_service,
+          p.provider_type AS provider_type
+        FROM bookings b
+        LEFT JOIN providers p ON b.provider_id = p.id
+        WHERE b.client_id = ${client_id}
+        ${status ? sql`AND b.status = ${status}` : sql``}
+        ORDER BY b.created_at DESC;
+      `;
+    } else if (provider_id) {
+      result = await sql`
+        SELECT 
+          b.*, 
+          u.first_name AS client_first_name,
+          u.last_name AS client_last_name
+        FROM bookings b
+        LEFT JOIN users u ON b.client_id = u.id
+        WHERE b.provider_id = ${provider_id}
+        ${status ? sql`AND b.status = ${status}` : sql``}
+        ORDER BY b.created_at DESC;
+      `;
+    } else {
+      result = await sql`
+        SELECT 
+          b.*, 
+          p.name AS provider_name
+        FROM bookings b
+        LEFT JOIN providers p ON b.provider_id = p.id
+        ${status ? sql`WHERE b.status = ${status}` : sql``}
+        ORDER BY b.created_at DESC;
+      `;
+    }
+
+    res.json({ success: true, data: result });
+  } catch (err) {
+    console.error("❌ Error fetching bookings:", err);
+    res.status(500).json({ error: "Failed to fetch bookings" });
+  }
+});
+
+
 // ✅ Existing routes
 router.get("/:id", getBookingById);
 router.post("/", bookTask);

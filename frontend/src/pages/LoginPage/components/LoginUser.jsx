@@ -46,7 +46,7 @@ const LoginUser = ({ onSuccess }) => {
     e.preventDefault();
     setStatus({ loading: true, error: null, success: false });
 
-    const API_ENDPOINT = 'http://localhost:5000/api/auth/loginUser'; // Adjust to match your backend
+    const API_ENDPOINT = 'http://localhost:5000/api/auth/loginUser';
 
     try {
       const response = await fetch(API_ENDPOINT, {
@@ -64,41 +64,57 @@ const LoginUser = ({ onSuccess }) => {
         return;
       }
 
-      // ✅ Extract user ID from backend response (adjust field if needed)
+      // ✅ Extract user info
       const userId = result.data?.user?.id;
+      const token = result.data?.token;
 
-      if (!userId) {
-        console.error("No user ID found in API response:", result);
-        setStatus({ loading: false, error: "Unexpected server response. No user ID found.", success: false });
+      if (!userId || !token) {
+        console.error("No user ID or token found in API response:", result);
+        setStatus({
+          loading: false,
+          error: "Unexpected server response. Missing user data.",
+          success: false,
+        });
         return;
       }
 
-      // ✅ Store token for session persistence
-      if (result.token) {
-        localStorage.setItem('authToken', result.token);
+      // ✅ Store session info
+      localStorage.setItem("authToken", token);
+      localStorage.setItem("userId", userId);
+      localStorage.setItem("userRole", "user");
+
+      // ✅ Check if there’s a redirect URL saved before login
+      const pendingRedirect = localStorage.getItem("pendingRedirect");
+
+      // ✅ Clear it immediately after using it
+      if (pendingRedirect) {
+        localStorage.removeItem("pendingRedirect");
       }
 
       // ✅ Success state
       setStatus({ loading: false, error: null, success: true });
-      console.log('✅ User logged in successfully:', result.data);
+      console.log("✅ User logged in successfully:", result.data);
 
-      // ✅ Call parent handler if needed
-      if (onSuccess) onSuccess({ email: formData.email, token: result.token, userId });
-
-      // ✅ Redirect to profile (e.g. /profile/23)
+      // ✅ Redirect logic
       setTimeout(() => {
-        navigate(`/profile/${userId}`);
-      }, 1200);
-
+        if (pendingRedirect) {
+          // Redirect back to booking flow
+          navigate(pendingRedirect);
+        } else {
+          // Default redirect
+          navigate(`/profile/${userId}`);
+        }
+      }, 1000);
     } catch (error) {
-      console.error('Network or unexpected error:', error);
+      console.error("Network or unexpected error:", error);
       setStatus({
         loading: false,
-        error: 'Could not connect to the server. Please check your connection.',
+        error: "Could not connect to the server. Please check your connection.",
         success: false,
       });
     }
   };
+
 
   return (
     <div className="space-y-6">

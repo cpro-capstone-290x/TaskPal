@@ -1,5 +1,6 @@
 import React from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import Header from '../components/Header';
 import LoginUser from './components/LoginUser';
 import LoginProvider from './components/LoginProvider';
 
@@ -22,7 +23,9 @@ const LoginPage = () => {
         // and redirect the user to the main application dashboard.
         console.log(`Login Successful for ${loginType}:`, data);
         alert(`Login Successful! Redirecting to dashboard (User: ${data.email})`);
+        
         // For production: navigate('/dashboard');
+        
     };
 
     const renderContent = () => {
@@ -74,11 +77,14 @@ const LoginPage = () => {
     };
 
     return (
-        <main className="min-h-screen bg-slate-100 flex items-center justify-center p-4 font-sans">
-            <section className="w-full max-w-2xl">
-                {renderContent()}
-            </section>
-        </main>
+        <div className="min-h-screen bg-slate-100 font-sans">
+            <Header />
+            <main className="min-h-screen bg-slate-100 flex items-center justify-center p-4 font-sans">
+                <section className="w-full max-w-2xl">
+                    {renderContent()}
+                </section>
+            </main>
+        </div>
     );
 };
 

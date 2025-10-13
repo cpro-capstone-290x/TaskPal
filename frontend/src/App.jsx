@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import {BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 // Pages
 import Home from "./pages/home";
@@ -9,6 +9,7 @@ import Profile from "./pages/profile/profile";
 import ProfileProvider from "./pages/profile/profileProvider";
 import BookingPage from "./pages/bookingpage/booking";
 import BookingInitializePage from "./pages/bookingpage/initiateBook";
+import PaymentSuccess from "./pages/payment/paymentSuccess";
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
         <Route path="/profileProvider/:id" element={<ProfileProvider />} />
         <Route path="/booking" element={<BookingPage />} /> {/* ✅ ADD THIS */}
         <Route path="/booking/initiate/:providerId" element={<BookingInitializePage  />} /> {/* ✅ ADD THIS */}
+        <Route path="/payment-success" element={<PaymentSuccess />} />
       </Routes>
     </div>
   );

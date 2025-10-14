@@ -57,6 +57,11 @@ const ExecutionPage = () => {
         { field: "completedclient" }
       );
       setExecution(res.data.data || res.data);
+
+      // ✅ Refresh the page after a short delay
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     } catch (err) {
       console.error("Error updating execution:", err);
       alert("Failed to confirm completion.");
@@ -64,6 +69,7 @@ const ExecutionPage = () => {
       setUpdating(false);
     }
   };
+
 
   // ✅ Submit review
   const handleSubmitReview = async () => {

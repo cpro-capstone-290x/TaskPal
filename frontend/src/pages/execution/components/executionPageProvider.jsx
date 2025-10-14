@@ -28,31 +28,22 @@ const ExecutionPageProvider = () => {
   }, [bookingId]);
 
   // ✅ Update provider-side steps (Persistent DB update)
-  const handleStatusUpdate = async (field) => {
-    if (!execution) return;
+    const handleStatusUpdate = async (field) => {
     setUpdating(true);
     try {
-      // 1️⃣ Send update request to backend
-      const res = await axios.put(
-        `http://localhost:5000/api/execution/${bookingId}/update`,
-        { field }
-      );
+        await axios.put(`http://localhost:5000/api/execution/${bookingId}/update`, { field });
 
-      // 2️⃣ Check if DB confirms update success
-      if (res.status === 200 && res.data.success) {
-        // 3️⃣ Re-fetch from backend to ensure latest data (DB source of truth)
-        await fetchExecution();
-        alert(`${field} successfully updated in database ✅`);
-      } else {
-        alert("Server did not confirm update. Please try again.");
-      }
+        // ✅ Optional: short delay for UX, then reload the page
+        setTimeout(() => {
+        window.location.reload();
+        }, 800);
     } catch (err) {
-      console.error("Error updating execution:", err);
-      alert("Failed to update execution status in the database.");
-    } finally {
-      setUpdating(false);
+        // console.error("Error updating execution:", err);
+        alert("Refresh the Page");
+        setUpdating(false);
     }
-  };
+    };
+
 
   if (loading)
     return (
@@ -144,20 +135,49 @@ const ExecutionPageProvider = () => {
                     : "Waiting for Provider Action"}
                 </span>
                 <button
-                  onClick={() => handleStatusUpdate("validatedcredential")}
-                  disabled={updating || validatedcredential === "completed"}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+                onClick={() => handleStatusUpdate("validatedcredential", setTimeout(() => {
+                        window.location.reload();
+                        }, 800))}
+                disabled={updating || validatedcredential === "completed"}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition ${
                     validatedcredential === "completed"
-                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                      : "bg-green-600 hover:bg-green-700 text-white"
-                  }`}
+                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                    : updating
+                    ? "bg-gray-300 text-gray-600 cursor-wait"
+                    : "bg-green-600 hover:bg-green-700 text-white"
+                }`}
                 >
-                  {validatedcredential === "completed"
+                {validatedcredential === "completed"
                     ? "Completed"
                     : updating
-                    ? "Updating..."
+                    ? (
+                        <span className="flex items-center justify-center gap-2">
+                        <svg
+                            className="animate-spin h-4 w-4 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            ></circle>
+                            <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v8H4z"
+                            ></path>
+                        </svg>
+                        Updating...
+                        </span>
+                    )
                     : "Validate Credential"}
                 </button>
+
               </div>
 
               {/* Service Completion */}
@@ -177,7 +197,9 @@ const ExecutionPageProvider = () => {
                     : "Pending Provider Action"}
                 </span>
                 <button
-                  onClick={() => handleStatusUpdate("completedprovider")}
+                  onClick={() => handleStatusUpdate("completedprovider", setTimeout(() => {
+                        window.location.reload();
+                        }, 800))}
                   disabled={
                     updating ||
                     completedprovider === "completed" ||

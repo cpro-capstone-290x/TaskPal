@@ -53,45 +53,41 @@ router.get("/:bookingId", async (req, res) => {
   }
 });
 
+// In backend/routes/executionRoutes.js
+
 router.put("/:bookingId/update", async (req, res) => {
   const { bookingId } = req.params;
   const { field } = req.body;
-
-  const allowedFields = ["validatedcredential", "completedprovider", "completedclient"];
-  if (!allowedFields.includes(field)) {
-    return res.status(400).json({ success: false, message: "Invalid field update." });
-  }
+  const allowed = ["validatedcredential", "completedprovider", "completedclient"];
+  if (!allowed.includes(field)) return res.status(400).json({ success: false });
 
   try {
-    // ✅ Use sql.unsafe for dynamic column updates
-    const query = `
-      UPDATE execution
-      SET ${field} = 'completed',
-          updated_at = NOW()
-      WHERE booking_id = $1
-      RETURNING *;
-    `;
-
-    const result = await sql.unsafe(query, [bookingId]);
-
-    if (!result || result.length === 0) {
-      return res.status(404).json({ success: false, message: "Execution not found." });
+    // ✅ Ensure record exists (create if missing)
+    let [execution] = await sql`SELECT * FROM execution WHERE booking_id = ${bookingId}`;
+    if (!execution) {
+      const [booking] = await sql`SELECT client_id, provider_id FROM bookings WHERE id = ${bookingId}`;
+      const clientId = booking?.client_id || null;
+      const providerId = booking?.provider_id || null;
+      [execution] = await sql`
+        INSERT INTO execution (booking_id, client_id, provider_id)
+        VALUES (${bookingId}, ${clientId}, ${providerId})
+        RETURNING *;
+      `;
     }
 
-    return res.status(200).json({
-      success: true,
-      message: `${field} updated successfully.`,
-      data: result[0],
-    });
-  } catch (error) {
-    console.error("❌ Error updating execution:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Server error.",
-      details: error.message,
-    });
+    // ✅ Now safely update
+    const updated = await sql.query(
+      `UPDATE execution SET ${field} = 'completed' WHERE booking_id = $1 RETURNING *;`,
+      [bookingId]
+    );
+
+    res.status(200).json({ success: true, data: updated.rows[0] });
+  } catch (err) {
+    console.error("❌ Error updating execution:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
 });
+
 
 
 

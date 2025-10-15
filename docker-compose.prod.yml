@@ -1,0 +1,22 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env.production
+    environment:
+      - NODE_ENV=production
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "80:80" # typically run frontend on port 80 in production
+    env_file:
+      - ./frontend/.env.production
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - backend

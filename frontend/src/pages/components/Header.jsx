@@ -22,6 +22,8 @@ const Header = () => {
     navigate("/");
   };
 
+  const userId = localStorage.getItem("userId");
+
   const navLinks = [
     { name: "Home", path: "/" },
     { name: "About", path: "/about" },
@@ -43,6 +45,7 @@ const Header = () => {
         {/* Navigation */}
         <nav>
           <ul className="flex space-x-6 items-center">
+            {/* Static links */}
             {navLinks.map((link) => (
               <li key={link.name}>
                 <Link
@@ -54,15 +57,26 @@ const Header = () => {
               </li>
             ))}
 
-            {/* ✅ Login / Logout Button */}
-            <li>
+            {/* Auth-based actions */}
+            <li className="flex items-center space-x-4">
               {isLoggedIn ? (
-                <button
-                  onClick={handleLogout}
-                  className="px-4 py-2 rounded-full bg-red-500 text-white font-semibold hover:bg-red-600 transition"
-                >
-                  Logout
-                </button>
+                <>
+                  {/* Profile Link */}
+                  <Link
+                    to={`/profile/${userId}`}
+                    className="text-gray-600 hover:text-sky-600 font-medium transition"
+                  >
+                    Profile
+                  </Link>
+
+                  {/* Logout Button */}
+                  <button
+                    onClick={handleLogout}
+                    className="px-4 py-2 rounded-full bg-red-500 text-white font-semibold hover:bg-red-600 transition"
+                  >
+                    Logout
+                  </button>
+                </>
               ) : (
                 <Link
                   to="/login"

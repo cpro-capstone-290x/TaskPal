@@ -72,8 +72,13 @@ const User = () => {
     { key: "ongoing", label: "Ongoing" }, // 👈 NEW TAB
   ];
 
-  // ✅ Filter ongoing bookings (Paid only)
-  const ongoingBookings = bookings.filter((b) => b.status === "Paid");
+  // ✅ Show only "Paid" bookings where completedClient is not "completed"
+    const ongoingBookings = bookings.filter(
+      (b) =>
+        b.status === "Paid" &&
+        (!b.completedclient || b.completedclient.toLowerCase() !== "completed")
+    );
+
 
   return (
     <div className="min-h-screen bg-gray-50 flex">

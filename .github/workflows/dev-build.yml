@@ -1,0 +1,62 @@
+name: 🧪 Build & Push Dev Images
+
+on:
+  push:
+    branches: [ "team" ]
+  workflow_dispatch:
+
+jobs:
+  build-dev:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_BACKEND: ghcr.io/cpro-capstone-290x/taskpal-backend
+      IMAGE_FRONTEND: ghcr.io/cpro-capstone-290x/taskpal-frontend
+
+    steps:
+      - name: 🧩 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔐 Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ---------- BACKEND (Dev) ----------
+      - name: 🛠️ Build & Push Backend (Dev)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_BACKEND }}:dev
+            ${{ env.IMAGE_BACKEND }}:${{ github.sha }}
+          build-args: |
+            NODE_ENV=development
+            DATABASE_URL=${{ secrets.DEV_DATABASE_URL }}
+            STRIPE_SECRET_KEY=${{ secrets.DEV_STRIPE_SECRET_KEY }}
+            JWT_SECRET=${{ secrets.DEV_JWT_SECRET }}
+            EMAIL_USER=${{ secrets.DEV_EMAIL_USER }}
+            EMAIL_PASS=${{ secrets.DEV_EMAIL_PASS }}
+
+      # ---------- FRONTEND (Dev) ----------
+      - name: 🌐 Build & Push Frontend (Dev)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile.dev
+          push: true
+          tags: |
+            ${{ env.IMAGE_FRONTEND }}:dev
+            ${{ env.IMAGE_FRONTEND }}:${{ github.sha }}
+          build-args: |
+            NODE_ENV=development
+ 
+ 

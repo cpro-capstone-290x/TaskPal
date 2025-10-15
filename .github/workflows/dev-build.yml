@@ -1,12 +1,12 @@
-name: Build and Push Docker Images
+name: 🧪 Build & Push Dev Images
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "team" ]
   workflow_dispatch:
 
 jobs:
-  build:
+  build-dev:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -28,33 +28,35 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # ---------- BACKEND ----------
-      - name: 🏗️ Build & Push Backend Image
+      # ---------- BACKEND (Dev) ----------
+      - name: 🛠️ Build & Push Backend (Dev)
         uses: docker/build-push-action@v6
         with:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
           tags: |
-            ${{ env.IMAGE_BACKEND }}:latest
+            ${{ env.IMAGE_BACKEND }}:dev
             ${{ env.IMAGE_BACKEND }}:${{ github.sha }}
           build-args: |
-            NODE_ENV=production
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-            STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            EMAIL_USER=${{ secrets.EMAIL_USER }}
-            EMAIL_PASS=${{ secrets.EMAIL_PASS }}
+            NODE_ENV=development
+            DATABASE_URL=${{ secrets.DEV_DATABASE_URL }}
+            STRIPE_SECRET_KEY=${{ secrets.DEV_STRIPE_SECRET_KEY }}
+            JWT_SECRET=${{ secrets.DEV_JWT_SECRET }}
+            EMAIL_USER=${{ secrets.DEV_EMAIL_USER }}
+            EMAIL_PASS=${{ secrets.DEV_EMAIL_PASS }}
 
-      # ---------- FRONTEND ----------
-      - name: 🏗️ Build & Push Frontend Image
+      # ---------- FRONTEND (Dev) ----------
+      - name: 🌐 Build & Push Frontend (Dev)
         uses: docker/build-push-action@v6
         with:
           context: ./frontend
-          file: ./frontend/Dockerfile
+          file: ./frontend/Dockerfile.dev
           push: true
           tags: |
-            ${{ env.IMAGE_FRONTEND }}:latest
+            ${{ env.IMAGE_FRONTEND }}:dev
             ${{ env.IMAGE_FRONTEND }}:${{ github.sha }}
           build-args: |
-            NODE_ENV=production
+            NODE_ENV=development
+ 
+ 

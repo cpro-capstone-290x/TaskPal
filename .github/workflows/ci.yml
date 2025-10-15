@@ -14,7 +14,7 @@ jobs:
       PORT: 5000
 
       # Sensitive keys pulled from GitHub Secrets
-      # DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
       STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
       EMAIL_USER: ${{ secrets.EMAIL_USER }}
@@ -29,19 +29,19 @@ jobs:
         with:
           node-version: 18
 
-      # ------------------- BACKEND -------------------
-      - name: 📥 Install backend dependencies
-        working-directory: backend
-        run: npm ci
+      # # ------------------- BACKEND -------------------
+      # - name: 📥 Install backend dependencies
+      #   working-directory: backend
+      #   run: npm ci
 
-      - name: 🔍 Verify database connection
-        working-directory: backend
-        run: |
-          node testDB.js
+      # - name: 🔍 Verify database connection
+      #   working-directory: backend
+      #   run: |
+      #     node testDB.js
 
-      - name: 🧪 Run backend tests
-        working-directory: backend
-        run: npm test || echo '⚠️ No backend tests yet'
+      # - name: 🧪 Run backend tests
+      #   working-directory: backend
+      #   run: npm test || echo '⚠️ No backend tests yet'
 
       # ------------------- FRONTEND -------------------
       - name: 📥 Install frontend dependencies

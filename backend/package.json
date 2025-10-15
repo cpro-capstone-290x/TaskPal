@@ -6,6 +6,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
     "reset-db": "node resetDB.js",
+    "test-db": "node testDB.js",
     "test-stream": "node testStream.js"
   },
   "keywords": [],

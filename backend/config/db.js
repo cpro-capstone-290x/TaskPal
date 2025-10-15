@@ -1,12 +1,21 @@
+// db.js
 import { neon } from "@neondatabase/serverless";
 import dotenv from "dotenv";
-dotenv.config();
 
+// Load the right .env file automatically
+dotenv.config({
+  path: process.env.NODE_ENV === "production" ? ".env.production" : ".env",
+});
 
-//creates a sql connection using our env variables
-const { PGUSER, PGPASSWORD, PGHOST, PGDATABASE } = process.env;
-export const sql = neon(
-    `postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}/${PGDATABASE}?sslmode=require`
+// Prefer DATABASE_URL if available, otherwise fall back to manual connection vars
+const connectionString =
+  process.env.DATABASE_URL ||
+  `postgresql://${process.env.PGUSER}:${process.env.PGPASSWORD}@${process.env.PGHOST}/${process.env.PGDATABASE}?sslmode=require`;
+
+export const sql = neon(connectionString);
+
+console.log(
+  `✅ Connected to ${
+    process.env.NODE_ENV === "production" ? "Production" : "Development"
+  } Database`
 );
-
-//this sql function we export is used as a tagged template literal, which allows us to write SQL queries in a more readable way

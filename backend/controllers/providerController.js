@@ -85,3 +85,25 @@ export const deleteProvider = async (req, res) => {
         res.status(500).json({ error: 'Failed to delete provider' });
     }       
 }
+
+export const getProvidersByServiceType = async (req, res) => {
+  const { service_type } = req.params; // e.g. /service_type/Cleaning
+
+  try {
+    const providers = await sql`
+      SELECT * FROM providers
+      WHERE service_type = ${service_type}
+      ORDER BY created_at DESC
+    `;
+
+    if (providers.length === 0) {
+      return res.status(404).json({ error: "No providers found for this service type" });
+    }
+
+    res.status(200).json({ success: true, data: providers });
+  } catch (error) {
+    console.error("❌ Failed to fetch providers by service type:", error);
+    res.status(500).json({ error: "Failed to fetch providers by service type" });
+  }
+};
+

@@ -20,11 +20,10 @@ const SearchBooking = () => {
     const fetchProviders = async () => {
       setLoading(true);
       try {
-        let url = "http://localhost:5000/api/providers";
+        let url = "http://localhost:5000/api/providers/service_type";
 
-        // Optional: send category filter to backend
         if (selectedCategory) {
-          url += `?category=${encodeURIComponent(selectedCategory)}`;
+          url += `/${encodeURIComponent(selectedCategory)}`;
         }
 
         const res = await axios.get(url);
@@ -38,6 +37,7 @@ const SearchBooking = () => {
 
     fetchProviders();
   }, [selectedCategory]);
+
 
   // ✅ Apply frontend filters (price, elite, etc.)
   const filteredProviders = providers.filter((p) => {

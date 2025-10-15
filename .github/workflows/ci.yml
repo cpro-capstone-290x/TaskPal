@@ -37,7 +37,7 @@ jobs:
       - name: 🔍 Verify database connection
         working-directory: backend
         run: |
-          node --input-type=module -e "import path from 'path'; import { fileURLToPath } from 'url'; import { sql } from 'file://' + path.resolve('./db.js'); console.log('✅ Connected to DB successfully'); process.exit(0);"
+          node scripts/testDB.js
 
       - name: 🧪 Run backend tests
         working-directory: backend

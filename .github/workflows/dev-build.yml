@@ -8,7 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-dev:
+  build-and-push-dev-images:   # 👈 Use a descriptive ID
+    name: 🧪 Build & Push Dev Images   # 👈 This is what GitHub shows as the status check
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -60,5 +61,3 @@ jobs:
             ${{ env.IMAGE_FRONTEND }}:${{ github.sha }}
           build-args: |
             NODE_ENV=development
- 
- 

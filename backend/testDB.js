@@ -1,5 +1,5 @@
 // backend/scripts/test-db.js
-import { sql } from "../config/db.js";
+import { sql } from "..backend/config/db.js";
 
 try {
   console.log("🔄 Verifying Neon database connection...");

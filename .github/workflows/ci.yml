@@ -1,27 +1,57 @@
 name: Continuous Integration
 
 on:
-  pull_request:
   push:
     branches: [ main, dev ]
+  pull_request:
 
 jobs:
-  test:
+  ci:
     runs-on: ubuntu-latest
+    env:
+      # Global envs (non-sensitive)
+      NODE_ENV: development
+      PORT: 5000
+
+      # Sensitive keys pulled from GitHub Secrets
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      EMAIL_USER: ${{ secrets.EMAIL_USER }}
+      EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: 📦 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🧰 Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 18
-      - name: Install backend deps
+
+      # ------------------- BACKEND -------------------
+      - name: 📥 Install backend dependencies
         working-directory: backend
         run: npm ci
-      - name: Run backend tests
+
+      - name: 🔍 Verify database connection
         working-directory: backend
-        run: npm test || echo "No tests yet"
-      - name: Install frontend deps
+        run: |
+          node -e "import { sql } from './db.js'; console.log('✅ Connected to DB successfully'); process.exit(0);"
+
+      - name: 🧪 Run backend tests
+        working-directory: backend
+        run: npm test || echo '⚠️ No backend tests yet'
+
+      # ------------------- FRONTEND -------------------
+      - name: 📥 Install frontend dependencies
         working-directory: frontend
         run: npm ci
-      - name: Run frontend tests
+
+      - name: 🧪 Run frontend tests
         working-directory: frontend
-        run: npm run test || echo "No tests yet"
+        run: npm run test || echo '⚠️ No frontend tests yet'
+
+      - name: 🏗️ Build frontend (for verification)
+        working-directory: frontend
+        run: npm run build

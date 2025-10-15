@@ -37,7 +37,7 @@ jobs:
       - name: 🔍 Verify database connection
         working-directory: backend
         run: |
-          node scripts/testDB.js
+          node testDB.js
 
       - name: 🧪 Run backend tests
         working-directory: backend

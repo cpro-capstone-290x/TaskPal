@@ -3,6 +3,8 @@ name: 🧪 Build & Push Dev Images
 on:
   push:
     branches: [ "team" ]
+  pull_request:
+    branches: [ "team" ]
   workflow_dispatch:
 
 jobs:

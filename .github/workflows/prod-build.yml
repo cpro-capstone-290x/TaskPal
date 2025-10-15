@@ -1,4 +1,4 @@
-name: Build and Push Docker Images
+name: 🚀 Build & Push Prod Images
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-prod:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -28,8 +28,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # ---------- BACKEND ----------
-      - name: 🏗️ Build & Push Backend Image
+      # ---------- BACKEND (Prod) ----------
+      - name: 🏗️ Build & Push Backend (Prod)
         uses: docker/build-push-action@v6
         with:
           context: ./backend
@@ -46,8 +46,8 @@ jobs:
             EMAIL_USER=${{ secrets.EMAIL_USER }}
             EMAIL_PASS=${{ secrets.EMAIL_PASS }}
 
-      # ---------- FRONTEND ----------
-      - name: 🏗️ Build & Push Frontend Image
+      # ---------- FRONTEND (Prod) ----------
+      - name: 🌐 Build & Push Frontend (Prod)
         uses: docker/build-push-action@v6
         with:
           context: ./frontend

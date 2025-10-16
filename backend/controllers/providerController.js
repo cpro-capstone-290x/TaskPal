@@ -86,6 +86,49 @@ export const deleteProvider = async (req, res) => {
     }       
 }
 
+// Function for Admin to update ONLY the status of a provider
+// This will be used for the final Approve/Reject action.
+export const updateProviderStatus = async (req, res) => {
+    const { id } = req.params;
+    const { status, rejection_reason } = req.body; // status should be 'Approved' or 'Rejected'
+
+    // Admin-level validation
+    if (!['Approved', 'Rejected', 'Suspended'].includes(status)) {
+        return res.status(400).json({ error: 'Invalid status provided for update.' });
+    }
+    if (status === 'Rejected' && !rejection_reason) {
+        // This is important for provider feedback
+        return res.status(400).json({ error: 'Rejection reason is required for Rejected status.' });
+    }
+    
+    try {
+        const updatedProvider = await sql`
+            UPDATE providers
+            SET
+                status = ${status},
+                -- Only update rejection_reason if status is Rejected, otherwise null it out.
+                rejection_reason = ${status === 'Rejected' ? rejection_reason : null},
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ${id}
+            RETURNING id, name, email, status, rejection_reason
+        `;
+        
+        if (updatedProvider.length === 0) {
+            return res.status(404).json({ error: 'Provider not found' });
+        }
+        
+        // --- Add Email/Notification Logic Here ---
+        // if (status === 'Approved') { sendApprovalEmail(updatedProvider[0]); }
+        // else if (status === 'Rejected') { sendRejectionEmail(updatedProvider[0]); }
+        // ----------------------------------------
+
+        res.status(200).json({ success: true, data: updatedProvider[0] });
+    } catch (error) {
+        console.error("❌ Failed to update provider status:", error);
+        res.status(500).json({ error: 'Failed to update provider status' });
+    }
+}
+
 export const getProvidersByServiceType = async (req, res) => {
   const { service_type } = req.params; // e.g. /service_type/Cleaning
 

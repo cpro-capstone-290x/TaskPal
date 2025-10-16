@@ -85,6 +85,49 @@ export const updateAdmin = async (req, res) => {
         res.status(500).json({ error: 'Failed to update admin' });
     }
 }
+
+// A. Get List of Providers Awaiting Review
+export const getPendingProviders = async (req, res) => {
+    try {
+        const pendingProviders = await sql`
+            SELECT 
+                id, 
+                name, 
+                provider_type, 
+                service_type, 
+                email, 
+                phone, 
+                created_at 
+            FROM providers
+            WHERE status = 'Pending' 
+            ORDER BY created_at ASC
+        `;
+        res.status(200).json({ success: true, data: pendingProviders });
+    } catch (error) {
+        console.error("❌ Failed to fetch pending providers:", error);
+        res.status(500).json({ error: 'Failed to fetch pending providers' });
+    }
+}
+
+// B. Get Full Details of a Single Provider for Review
+export const getProviderForAdmin = async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Fetch ALL data, including sensitive documents/license_id for Admin review
+        const provider = await sql`
+            SELECT * FROM providers WHERE id = ${id}
+        `;
+
+        if (provider.length === 0) {
+            return res.status(404).json({ error: "Provider not found" });
+        }
+        res.status(200).json({ success: true, data: provider[0] });
+    } catch (error) {
+        console.error("❌ Failed to fetch provider for admin review:", error);
+        res.status(500).json({ error: "Failed to fetch provider" });
+    }
+}
+
 export const deleteAdmin = async (req, res) => {
     const { id } = req.params;
     try {

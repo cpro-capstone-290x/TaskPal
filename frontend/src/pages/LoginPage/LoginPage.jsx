@@ -66,7 +66,7 @@ const LoginPage = () => {
                 <div className="mt-8 text-center text-gray-600">
                     Don't have an account? 
                     <Link 
-                        to={`/auth?type=${loginType}`} 
+                        to={`/register?type=${loginType}`} 
                         className="text-sky-500 hover:text-sky-600 font-semibold ml-1"
                     >
                         Sign up now

@@ -13,7 +13,8 @@ import PaymentSuccess from "./pages/payment/paymentSuccess";
 import Execution from "./pages/execution/execution";
 import ServicesPage from "./pages/services/ServicesPage";
 import ForgotPasswordUser from "./pages/LoginPage/components/forgotPassword";
-import ProtectedRoute from "./pages/components/ProtectedRoute";
+import AdminLoginPage from "./pages/admin/adminLoginPage";
+import AdminHome from "./pages/admin/adminHome";
 
 function App() {
 
@@ -34,6 +35,8 @@ function App() {
         <Route path="/provider/execution/:bookingId" element={<Execution />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordUser />} />
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route path="/admin/*" element={<AdminHome />} />
       </Routes>
     </div>
   );

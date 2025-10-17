@@ -13,7 +13,9 @@ import {
   verifyAuthorizedOTP,
   sendPasswordResetOTP,
   verifyPasswordResetOTP,
-  updatePasswordAfterOTP
+  updatePasswordAfterOTP,
+  getAuthorizedUsers,
+  deleteAuthorizedUser
 } from "../controllers/authController.js";
 const router = express.Router();
 
@@ -31,6 +33,8 @@ router.post("/verifyAuthorize", verifyAuthorizedOTP); // for OTP verification
 router.post("/send-reset-otp", sendPasswordResetOTP);        // send OTP to email
 router.post("/verify-reset-otp", verifyPasswordResetOTP);    // verify OTP
 router.post("/update-password", updatePasswordAfterOTP);     // update password after OTP verification
+router.get("/authorized-users/:userId", getAuthorizedUsers); // get authorized users for a user
+router.delete("/authorized-user/:authUserId", deleteAuthorizedUser); // delete an authorized user
 
 
 export default router;

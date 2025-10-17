@@ -718,3 +718,26 @@ export const updatePasswordAfterOTP = async (req, res) => {
   }
 };
 
+export const getAuthorizedUsers = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const [user] = await sql`SELECT * FROM authorized_users WHERE client_id = ${userId}`;
+    res.json({ success: true, data: user || null });
+  } catch (err) {
+    console.error("Error fetching authorized user:", err);
+    res.status(500).json({ success: false, error: "Failed to fetch authorized user." });
+  }
+};
+
+
+
+export const deleteAuthorizedUser = async (req, res) => {
+  try {
+    const { authUserId } = req.params; // ✅ Match route param
+    await sql`DELETE FROM authorized_users WHERE id = ${authUserId}`;
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error deleting authorized user:", err);
+    res.status(500).json({ success: false, error: "Failed to remove authorized user." });
+  }
+};

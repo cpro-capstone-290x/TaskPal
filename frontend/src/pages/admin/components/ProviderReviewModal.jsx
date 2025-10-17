@@ -6,6 +6,8 @@ import axios from 'axios';
 const ProviderReviewModal = ({ providerSummary, onClose, onActionSuccess }) => {
     const [fullDetails, setFullDetails] = useState(null);
     const [loading, setLoading] = useState(true);
+    // Setting initial status to 'Approved' is a good practice for the default state
+    const [actionStatus, setActionStatus] = useState('Approved');
     const [rejectionReason, setRejectionReason] = useState('');
     const [submitError, setSubmitError] = useState(null);
     const token = localStorage.getItem('adminToken');
@@ -23,6 +25,7 @@ const ProviderReviewModal = ({ providerSummary, onClose, onActionSuccess }) => {
                 });
                 setFullDetails(response.data.data);
             } catch (err) {
+                console.error('Fetch error:', err);
                 setSubmitError('Could not load full provider details.');
             } finally {
                 setLoading(false);
@@ -31,8 +34,7 @@ const ProviderReviewModal = ({ providerSummary, onClose, onActionSuccess }) => {
 
         fetchDetails();
 
-        // Optional: Show the modal immediately after component mounts
-        // This simulates a programmatic modal open
+        // Show the modal immediately after component mounts
         if (modalRef.current) {
             modalRef.current.showModal();
         }
@@ -42,32 +44,40 @@ const ProviderReviewModal = ({ providerSummary, onClose, onActionSuccess }) => {
     // 2. Handle Approve/Reject/Suspend Action
     const handleAction = async (newStatus) => {
         setSubmitError(null);
-        if ((newStatus === 'Rejected' || newStatus === 'Suspended') && !rejectionReason.trim()) {
-            return setSubmitError(`${newStatus} reason is mandatory.`);
+        const reason = rejectionReason.trim();
+        
+        // Frontend Validation: Enforce reason for Reject/Suspend (as defined in your component logic)
+        if ((newStatus === 'Rejected' || newStatus === 'Suspended') && !reason) {
+            return setSubmitError(`${newStatus} reason is mandatory for this action.`);
         }
         
         try {
-            // Uses your dedicated PATCH /api/providers/:id/status endpoint
-            await axios.patch(`http://localhost:5000/api/providers/${providerSummary.id}/status`, {
+            // Payload only includes the reason if it's available, otherwise null is sent.
+            // This is safe because the backend controls whether to save it based on 'status'.
+            const payload = {
                 status: newStatus,
-                rejection_reason: rejectionReason.trim()
-            }, {
+                rejection_reason: reason || null
+            };
+
+            // Uses your dedicated PATCH /api/providers/:id/status endpoint
+            await axios.patch(`http://localhost:5000/api/providers/${providerSummary.id}/status`, payload, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
             // 3. Success: Close the modal and update the main list
-            onActionSuccess(providerSummary.id); 
-            // Close the DaisyUI modal
+            // Close the DaisyUI modal first
             if (modalRef.current) {
                 modalRef.current.close();
             }
+            onActionSuccess(providerSummary.id); 
+            
         } catch (err) {
+            console.error('Action error:', err);
             setSubmitError(err.response?.data?.error || `Failed to ${newStatus.toLowerCase()} provider.`);
         }
     };
 
     // The component must return the DaisyUI dialog element
-    // The conditional rendering logic is handled by the outer component
     if (!fullDetails && !loading) return null;
 
     return (
@@ -113,42 +123,50 @@ const ProviderReviewModal = ({ providerSummary, onClose, onActionSuccess }) => {
                     </div>
                 )}
 
-                {/* Rejection Field */}
-                <label className="label mt-4">
-                    <span className="label-text text-black font-semibold">Reason for REJECTION or SUSPENSION (Mandatory for rejection)</span>
-                </label>
-                <textarea
-                    placeholder="Enter detailed reason here..."
-                    value={rejectionReason}
-                    onChange={(e) => setRejectionReason(e.target.value)}
-                    className="textarea textarea-bordered w-full h-24 bg-white text-black"
-                />
+                {/* Status Selection and Reason Field */}
+                <div className="mt-6 border-t pt-4">
+                    <label className="label">
+                        <span className="label-text text-black font-semibold text-lg">Select Action:</span>
+                    </label>
+                    <div className="flex gap-3 mb-4">
+                        {['Approved', 'Rejected', 'Suspended'].map(status => (
+                            <button
+                                key={status}
+                                type="button"
+                                onClick={() => setActionStatus(status)}
+                                className={`btn ${actionStatus === status ? 
+                                    (status === 'Approved' ? 'btn-success' : status === 'Rejected' ? 'btn-error' : 'btn-warning') : 
+                                    'btn-ghost'
+                                }`}
+                                disabled={loading}
+                            >
+                                {status}
+                            </button>
+                        ))}
+                    </div>
+
+                    <label className="label mt-4">
+                        <span className={`label-text font-semibold ${actionStatus === 'Rejected' || actionStatus === 'Suspended' ? 'text-red-700' : 'text-gray-700'}`}>
+                            Reason for {actionStatus} ({actionStatus === 'Rejected' || actionStatus === 'Suspended' ? 'Mandatory' : 'Optional'})
+                        </span>
+                    </label>
+                    <textarea
+                        placeholder="Enter detailed reason here..."
+                        value={rejectionReason}
+                        onChange={(e) => setRejectionReason(e.target.value)}
+                        className="textarea textarea-bordered w-full h-24 bg-white text-black"
+                    />
+                </div>
 
                 {/* Action Buttons */}
-                <div className="modal-action flex flex-col sm:flex-row sm:justify-between items-center pt-4">
-                    <div className="flex flex-col sm:flex-row gap-3">
-                        <button 
-                            onClick={() => handleAction('Approved')} 
-                            className="btn btn-success text-white min-w-[120px]"
-                            disabled={loading}
-                        >
-                            ✅ Approve
-                        </button>
-                        <button 
-                            onClick={() => handleAction('Rejected')} 
-                            className="btn btn-error text-white min-w-[120px]"
-                            disabled={loading}
-                        >
-                            ❌ Reject
-                        </button>
-                        <button 
-                            onClick={() => handleAction('Suspended')} 
-                            className="btn btn-warning text-white min-w-[120px]"
-                            disabled={loading}
-                        >
-                            ⏸️ Suspend
-                        </button>
-                    </div>
+                <div className="modal-action flex flex-col sm:flex-row sm:justify-end items-center pt-4">
+                    <button 
+                        onClick={() => handleAction(actionStatus)} 
+                        className={`btn min-w-[150px] ${actionStatus === 'Approved' ? 'btn-success' : actionStatus === 'Rejected' ? 'btn-error' : 'btn-warning'} text-white mr-4`}
+                        disabled={loading || ((actionStatus === 'Rejected' || actionStatus === 'Suspended') && !rejectionReason.trim())}
+                    >
+                        {loading ? 'Submitting...' : `Confirm ${actionStatus}`}
+                    </button>
                     <button 
                         onClick={onClose} 
                         className="btn btn-ghost mt-4 sm:mt-0"

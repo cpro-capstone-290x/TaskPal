@@ -90,15 +90,16 @@ export const deleteProvider = async (req, res) => {
 // This will be used for the final Approve/Reject action.
 export const updateProviderStatus = async (req, res) => {
     const { id } = req.params;
-    const { status, rejection_reason } = req.body; // status should be 'Approved' or 'Rejected'
+    const { status, rejection_reason } = req.body; // status should be 'Approved', 'Rejected', or 'Suspended'
 
     // Admin-level validation
     if (!['Approved', 'Rejected', 'Suspended'].includes(status)) {
         return res.status(400).json({ error: 'Invalid status provided for update.' });
     }
-    if (status === 'Rejected' && !rejection_reason) {
-        // This is important for provider feedback
-        return res.status(400).json({ error: 'Rejection reason is required for Rejected status.' });
+    
+    // FIX 1: Enforce reason for both Rejected AND Suspended
+    if ((status === 'Rejected' || status === 'Suspended') && !rejection_reason) {
+        return res.status(400).json({ error: `${status} reason is required for this action.` });
     }
     
     try {
@@ -106,8 +107,9 @@ export const updateProviderStatus = async (req, res) => {
             UPDATE providers
             SET
                 status = ${status},
-                -- Only update rejection_reason if status is Rejected, otherwise null it out.
-                rejection_reason = ${status === 'Rejected' ? rejection_reason : null},
+                -- FIX 2: Only null out rejection_reason if status is 'Approved'. 
+                -- Otherwise, save the reason provided by the user.
+                rejection_reason = ${status === 'Approved' ? null : rejection_reason},
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ${id}
             RETURNING id, name, email, status, rejection_reason
@@ -124,7 +126,8 @@ export const updateProviderStatus = async (req, res) => {
 
         res.status(200).json({ success: true, data: updatedProvider[0] });
     } catch (error) {
-        console.error("❌ Failed to update provider status:", error);
+        // Log the detailed error on the server side for debugging
+        console.error("❌ Failed to update provider status:", error); 
         res.status(500).json({ error: 'Failed to update provider status' });
     }
 }

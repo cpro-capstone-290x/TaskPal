@@ -117,10 +117,12 @@ async function initDB() {
         phone VARCHAR(20),
         document TEXT,                        
         status VARCHAR(20) DEFAULT 'Pending', 
+        rejection_reason TEXT, 
         password VARCHAR(255) NOT NULL,       
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`;
+
     await sql`
     CREATE TABLE IF NOT EXISTS authorized_users (
         id SERIAL PRIMARY KEY,

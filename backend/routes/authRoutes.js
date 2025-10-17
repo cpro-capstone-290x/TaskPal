@@ -1,10 +1,11 @@
 import express from "express";
-import { loginUser, loginProvider, registerUser, registerProvider, registerAdmin, registerAuthorizedUser, verifyUserOTP, verifyProviderOTP, verifyAdminOTP, verifyAuthorizedOTP} from "../controllers/authController.js";
+import { loginUser, loginProvider, loginAdmin, registerUser, registerProvider, registerAdmin, registerAuthorizedUser, verifyUserOTP, verifyProviderOTP, verifyAdminOTP, verifyAuthorizedOTP} from "../controllers/authController.js";
 
 const router = express.Router();
 
 router.post("/loginUser", loginUser);
 router.post("/loginProvider", loginProvider);
+router.post("/loginAdmin", loginAdmin);
 router.post("/registerUser", registerUser);
 router.post("/verifyUser", verifyUserOTP);    // for OTP verification
 router.post("/registerProvider", registerProvider);

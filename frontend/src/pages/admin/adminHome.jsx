@@ -1,6 +1,6 @@
 // src/pages/Admin/AdminHome.jsx
 import React, { useState } from 'react';
-import AdminLayout from './components/AdminLayout'; // Capitalized for consistency
+import AdminLayout from './components/adminLayout'; // Capitalized for consistency
 import DashboardHome from './components/DashboardHome';
 import ApprovalQueueView from './components/ApprovalQueueView'; 
 // Import other components here

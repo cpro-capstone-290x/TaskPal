@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-const useAutoLogout = (timeout = 0.20 * 60 * 1000) => { 
+const useAutoLogout = (timeout = 10 * 60 * 1000) => { 
   const navigate = useNavigate();
 
   useEffect(() => {

@@ -16,6 +16,7 @@ import ForgotPasswordUser from "./pages/LoginPage/components/forgotPassword";
 import AdminLoginPage from "./pages/admin/adminLoginPage";
 import AdminHome from "./pages/admin/adminHome";
 import ProtectedRoute from "./pages/components/ProtectedRoute";
+import OTPResetPage from "./pages/LoginPage/components/OTPResetPage";
 
 function App() {
 
@@ -38,6 +39,7 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPasswordUser />} />
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/admin/*" element={<AdminHome />} />
+        <Route path="/otp-reset" element={<OTPResetPage />} />
       </Routes>
     </div>
   );

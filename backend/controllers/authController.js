@@ -591,3 +591,130 @@ export const loginAdmin = async (req, res) => {
         res.status(500).json({ error: "Admin login failed" });
     }
 };
+
+export const sendPasswordResetOTP = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email is required" });
+
+  try {
+    // Check which table user exists in
+    const [u, p, a] = await Promise.all([
+      sql`SELECT id, email FROM users WHERE email = ${email}`,
+      sql`SELECT id, email FROM providers WHERE email = ${email}`,
+      sql`SELECT id, email FROM admins WHERE email = ${email}`
+    ]);
+
+    const account = u[0] || p[0] || a[0];
+    if (!account) return res.status(404).json({ error: "Email not found" });
+
+    const otp = generateOTP();
+    const hashedOtp = await bcrypt.hash(otp, 10);
+
+    // Store OTP in pending_registrations (role = "password_reset")
+    await sql`
+      INSERT INTO pending_registrations (role, email, payload, twofa_code, twofa_expires)
+      VALUES (
+        'password_reset',
+        ${email},
+        '{}'::jsonb,
+        ${hashedOtp},
+        NOW() + INTERVAL '10 minutes'
+      )
+      ON CONFLICT (role, email)
+      DO UPDATE SET
+        twofa_code = EXCLUDED.twofa_code,
+        twofa_expires = EXCLUDED.twofa_expires,
+        created_at = CURRENT_TIMESTAMP
+    `;
+
+    await sendOTP(email, otp);
+
+    res.status(200).json({
+      success: true,
+      message: "OTP sent successfully to your email."
+    });
+  } catch (err) {
+    console.error("❌ Send password reset OTP failed:", err);
+    res.status(500).json({ error: "Failed to send reset OTP" });
+  }
+};
+
+
+
+export const verifyPasswordResetOTP = async (req, res) => {
+  const { email, otp } = req.body;
+  if (!email || !otp)
+    return res.status(400).json({ error: "Email and OTP are required" });
+
+  try {
+    const rows = await sql`
+      SELECT * FROM pending_registrations
+      WHERE role = 'password_reset' AND email = ${email}
+    `;
+    const pending = rows[0];
+    if (!pending)
+      return res.status(404).json({ error: "No password reset request found" });
+
+    const valid = await bcrypt.compare(otp, pending.twofa_code);
+    const expired = new Date(pending.twofa_expires) < new Date();
+    if (!valid || expired)
+      return res.status(400).json({ error: "Invalid or expired OTP" });
+
+    // Mark as verified (optional)
+    await sql`
+      UPDATE pending_registrations
+      SET twofa_expires = NOW() + INTERVAL '5 minutes'
+      WHERE id = ${pending.id}
+    `;
+
+    res.status(200).json({
+      success: true,
+      message: "OTP verified successfully. You may now reset your password."
+    });
+  } catch (err) {
+    console.error("❌ Verify password reset OTP failed:", err);
+    res.status(500).json({ error: "OTP verification failed" });
+  }
+};
+
+
+export const updatePasswordAfterOTP = async (req, res) => {
+  const { email, newPassword } = req.body;
+  if (!email || !newPassword)
+    return res.status(400).json({ error: "Email and new password are required" });
+
+  try {
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    // Determine which table holds this account
+    const [u, p, a] = await Promise.all([
+      sql`SELECT id FROM users WHERE email = ${email}`,
+      sql`SELECT id FROM providers WHERE email = ${email}`,
+      sql`SELECT id FROM admins WHERE email = ${email}`
+    ]);
+
+    let tableName;
+    if (u[0]) tableName = "users";
+    else if (p[0]) tableName = "providers";
+    else if (a[0]) tableName = "admins";
+    else return res.status(404).json({ error: "Account not found" });
+
+    // ✅ Update password safely
+    await sql.query(
+      `UPDATE ${tableName} SET password = $1, updated_at = NOW() WHERE email = $2`,
+      [hashed, email]
+    );
+
+    // Clean up temporary record
+    await sql`
+      DELETE FROM pending_registrations
+      WHERE role = 'password_reset' AND email = ${email}
+    `;
+
+    res.status(200).json({ success: true, message: "Password updated successfully." });
+  } catch (err) {
+    console.error("❌ Password update failed:", err);
+    res.status(500).json({ error: "Failed to update password" });
+  }
+};
+

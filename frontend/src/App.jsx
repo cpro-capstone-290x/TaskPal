@@ -13,8 +13,10 @@ import PaymentSuccess from "./pages/payment/paymentSuccess";
 import Execution from "./pages/execution/execution";
 import ServicesPage from "./pages/services/ServicesPage";
 import ForgotPasswordUser from "./pages/LoginPage/components/forgotPassword";
+import ProtectedRoute from "./pages/components/ProtectedRoute";
 
 function App() {
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Routes>
@@ -23,7 +25,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/chat/:bookingId/:role" element={<ChatRoom />} />
-        <Route path="/profile/:id" element={<Profile />} />
+        <Route path="/profile/:id" element={<ProtectedRoute> <Profile /></ProtectedRoute>} />
         <Route path="/profileProvider/:id" element={<ProfileProvider />} />
         <Route path="/booking" element={<BookingPage />} /> {/* ✅ ADD THIS */}
         <Route path="/booking/initiate/:providerId" element={<BookingInitializePage  />} /> {/* ✅ ADD THIS */}

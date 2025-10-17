@@ -123,6 +123,23 @@ async function initDB() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`;
 
+    
+
+        // 🚨 MIGRATION FIX: Add rejection_reason column if it doesn't exist 🚨
+        try {
+             await sql`
+                 ALTER TABLE providers
+                 ADD COLUMN rejection_reason TEXT
+             `;
+             console.log("✅ Migration: Added 'rejection_reason' to providers table.");
+         } catch (e) {
+             // We expect this to fail if the column already exists, which is fine.
+             // If it fails for another reason, we still want the other tables to try to initialize.
+             if (!e.message.includes('column "rejection_reason" already exists')) {
+                 console.error("⚠️ Migration Warning: Could not add 'rejection_reason' column:", e.message);
+             }
+         }
+
     await sql`
     CREATE TABLE IF NOT EXISTS authorized_users (
         id SERIAL PRIMARY KEY,

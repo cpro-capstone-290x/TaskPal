@@ -12,6 +12,19 @@ const User = () => {
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("profile");
 
+  // Added for Edit Profile Feature
+  const [editMode, setEditMode] = useState(false);
+  const [formData, setFormData] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    unit_no: "",
+    street: "",
+    city: "",
+    province: "",
+    postal_code: "",
+  });
+
   // ✅ Fetch user details
   useEffect(() => {
     const fetchUser = async () => {
@@ -32,6 +45,22 @@ const User = () => {
 
     fetchUser();
   }, [id]);
+
+  //  Sync form data when user is loaded
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        email: user.email || "",
+        unit_no: user.unit_no || "",
+        street: user.street || "",
+        city: user.city || "",
+        province: user.province || "",
+        postal_code: user.postal_code || "",
+      });
+    }
+  }, [user]);
 
   // ✅ Fetch bookings (for both History & Ongoing)
   useEffect(() => {
@@ -59,6 +88,25 @@ const User = () => {
     fetchBookings();
   }, [activeTab, id]);
 
+  // 🧩 Edit Profile Handlers
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = async () => {
+    try {
+      const res = await axios.put(`http://localhost:5000/api/users/${id}`, formData);
+      const updated = res.data?.data || res.data;
+      setUser(updated);
+      setEditMode(false);
+      alert("Profile updated successfully!");
+    } catch (err) {
+      console.error(err);
+      alert(err?.response?.data?.error || "Failed to update profile.");
+    }
+  };
+
   if (loading)
     return <p className="text-center mt-10 text-gray-500">Loading...</p>;
   if (error)
@@ -69,306 +117,380 @@ const User = () => {
   const menuItems = [
     { key: "profile", label: "Profile" },
     { key: "bookings", label: "Booking History" },
-    { key: "ongoing", label: "Ongoing" }, // 👈 NEW TAB
+    { key: "ongoing", label: "Ongoing" },
   ];
 
   // ✅ Show only "Paid" bookings where completedClient is not "completed"
-    const ongoingBookings = bookings.filter(
-      (b) =>
-        b.status === "Paid" &&
-        (!b.completedclient || b.completedclient.toLowerCase() !== "completed")
-    );
-
+  const ongoingBookings = bookings.filter(
+    (b) =>
+      b.status === "Paid" &&
+      (!b.completedclient || b.completedclient.toLowerCase() !== "completed")
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 shadow-sm p-6 flex flex-col justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-8">
-            <img
-              src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
-              alt="Profile Avatar"
-              className="w-12 h-12 rounded-full"
-            />
-            <div>
-              <h2 className="text-lg font-semibold text-gray-800">
-                {user.first_name} {user.last_name}
-              </h2>
-              <p className="text-sm text-gray-500 capitalize">
-                {user.type_of_user}
-              </p>
+    <>
+      {/*  Floating Edit Button */}
+      {activeTab === "profile" && !editMode && (
+        <button
+          onClick={() => setEditMode(true)}
+          className="fixed bottom-6 right-6 px-4 py-2 rounded-full shadow-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+        >
+          Edit Profile
+        </button>
+      )}
+
+      {/*  Edit Profile Modal */}
+      {editMode && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-2xl">
+            <h3 className="text-lg font-semibold mb-4">Edit Profile</h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                { label: "First Name", name: "first_name" },
+                { label: "Last Name", name: "last_name" },
+                { label: "Email", name: "email", type: "email" },
+                { label: "Unit #", name: "unit_no" },
+                { label: "Street", name: "street" },
+                { label: "City", name: "city" },
+                { label: "Province", name: "province" },
+                { label: "Postal Code", name: "postal_code" },
+              ].map((field) => (
+                <div key={field.name}>
+                  <label className="block text-sm text-gray-600 mb-1">
+                    {field.label}
+                  </label>
+                  <input
+                    type={field.type || "text"}
+                    name={field.name}
+                    value={formData[field.name]}
+                    onChange={handleChange}
+                    className="w-full border rounded px-3 py-2"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => setEditMode(false)}
+                className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
+              >
+                Save Changes
+              </button>
             </div>
           </div>
-
-          <nav className="space-y-2">
-            {menuItems.map((item) => (
-              <button
-                key={item.key}
-                onClick={() => setActiveTab(item.key)}
-                className={`w-full text-left px-4 py-2 rounded-lg font-medium transition ${
-                  activeTab === item.key
-                    ? "bg-green-600 text-white"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </nav>
         </div>
+      )}
 
-        <button
-          onClick={() => {
-            localStorage.removeItem("authToken");
-            navigate("/login");
-          }}
-          className="w-full mt-6 px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium hover:bg-red-200 transition"
-        >
-          Logout
-        </button>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 p-10">
-        {/* Profile Tab */}
-        {activeTab === "profile" && (
-          <div className="max-w-3xl bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-              User Profile
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* First Name */}
+      {/* Main Dashboard Layout */}
+      <div className="min-h-screen bg-gray-50 flex">
+        {/* Sidebar */}
+        <aside className="w-64 bg-white border-r border-gray-200 shadow-sm p-6 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-3 mb-8">
+              <img
+                src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+                alt="Profile Avatar"
+                className="w-12 h-12 rounded-full"
+              />
               <div>
-                <label className="block text-gray-600 text-sm font-medium mb-1">
-                  First Name
-                </label>
-                <input
-                  type="text"
-                  value={user.first_name || ""}
-                  readOnly
-                  className="w-full px-4 py-2 bg-gray-50 border text-gray-700 border-gray-200 rounded-lg"
-                />
+                <h2 className="text-lg font-semibold text-gray-800">
+                  {user.first_name} {user.last_name}
+                </h2>
+                <p className="text-sm text-gray-500 capitalize">
+                  {user.type_of_user}
+                </p>
               </div>
+            </div>
 
-              {/* Last Name */}
-              <div>
-                <label className="block text-gray-600 text-sm font-medium mb-1">
-                  Last Name
-                </label>
-                <input
-                  type="text"
-                  value={user.last_name || ""}
-                  readOnly
-                  className="w-full px-4 py-2 bg-gray-50 border text-gray-700 border-gray-200 rounded-lg"
-                />
-              </div>
-
-              {/* Email */}
-              <div className="md:col-span-2">
-                <label className="block text-gray-600 text-sm font-medium mb-1">
-                  Email
-                </label>
-                <input
-                  type="text"
-                  value={user.email || ""}
-                  readOnly
-                  className="w-full px-4 py-2 bg-gray-50 border text-gray-700 border-gray-200 rounded-lg"
-                />
-              </div>
-
-              {/* Address */}
-              <div className="md:col-span-2">
-                <label className="block text-gray-600 text-sm font-medium mb-1">
-                  Address
-                </label>
-                <textarea
-                  value={`${user.unit_no || ""} ${user.street || ""}, ${
-                    user.city || ""
-                  }, ${user.province || ""}, ${user.postal_code || ""}`}
-                  readOnly
-                  rows="3"
-                  className="w-full px-4 py-2 bg-gray-50 border text-gray-700 border-gray-200 rounded-lg"
-                ></textarea>
-              </div>
-
-              {/* Verification */}
-              <div className="md:col-span-2 flex items-center gap-3 mt-2">
-                <span
-                  className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${
-                    user.is_verified
-                      ? "bg-green-100 text-green-700 border border-green-200"
-                      : "bg-yellow-100 text-yellow-700 border border-yellow-200"
+            <nav className="space-y-2">
+              {menuItems.map((item) => (
+                <button
+                  key={item.key}
+                  onClick={() => setActiveTab(item.key)}
+                  className={`w-full text-left px-4 py-2 rounded-lg font-medium transition ${
+                    activeTab === item.key
+                      ? "bg-green-600 text-white"
+                      : "text-gray-700 hover:bg-gray-100"
                   }`}
                 >
-                  {user.is_verified ? "Verified" : "Not Verified"}
-                </span>
-                <span className="text-gray-500 text-sm">
-                  Joined on{" "}
-                  {new Date(user.created_at).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </span>
+                  {item.label}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          <button
+            onClick={() => {
+              localStorage.removeItem("authToken");
+              navigate("/login");
+            }}
+            className="w-full mt-6 px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium hover:bg-red-200 transition"
+          >
+            Logout
+          </button>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 p-10">
+          {/* Profile Tab */}
+          {activeTab === "profile" && (
+            <div className="max-w-3xl bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+                User Profile
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* First Name */}
+                <div>
+                  <label className="block text-gray-600 text-sm font-medium mb-1">
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    value={user.first_name || ""}
+                    readOnly
+                    className="w-full px-4 py-2 bg-gray-50 border text-gray-700 border-gray-200 rounded-lg"
+                  />
+                </div>
+
+                {/* Last Name */}
+                <div>
+                  <label className="block text-gray-600 text-sm font-medium mb-1">
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    value={user.last_name || ""}
+                    readOnly
+                    className="w-full px-4 py-2 bg-gray-50 border text-gray-700 border-gray-200 rounded-lg"
+                  />
+                </div>
+
+                {/* Email */}
+                <div className="md:col-span-2">
+                  <label className="block text-gray-600 text-sm font-medium mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="text"
+                    value={user.email || ""}
+                    readOnly
+                    className="w-full px-4 py-2 bg-gray-50 border text-gray-700 border-gray-200 rounded-lg"
+                  />
+                </div>
+
+                {/* Address */}
+                <div className="md:col-span-2">
+                  <label className="block text-gray-600 text-sm font-medium mb-1">
+                    Address
+                  </label>
+                  <textarea
+                    value={`${user.unit_no || ""} ${user.street || ""}, ${
+                      user.city || ""
+                    }, ${user.province || ""}, ${user.postal_code || ""}`}
+                    readOnly
+                    rows="3"
+                    className="w-full px-4 py-2 bg-gray-50 border text-gray-700 border-gray-200 rounded-lg"
+                  ></textarea>
+                </div>
+
+                {/* Verification */}
+                <div className="md:col-span-2 flex items-center gap-3 mt-2">
+                  <span
+                    className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${
+                      user.is_verified
+                        ? "bg-green-100 text-green-700 border border-green-200"
+                        : "bg-yellow-100 text-yellow-700 border border-yellow-200"
+                    }`}
+                  >
+                    {user.is_verified ? "Verified" : "Not Verified"}
+                  </span>
+                  <span className="text-gray-500 text-sm">
+                    Joined on{" "}
+                    {new Date(user.created_at).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Booking History Tab */}
-        {activeTab === "bookings" && (
-          <div className="max-w-6xl bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-              Booking History
-            </h2>
+          {/* Booking History Tab */}
+          {activeTab === "bookings" && (
+            <div className="max-w-6xl bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+                Booking History
+              </h2>
 
-            {bookingLoading ? (
-              <p className="text-center text-gray-500">Loading bookings...</p>
-            ) : bookings.length === 0 ? (
-              <p className="text-center text-gray-500">
-                No booking history available.
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full border border-gray-100 text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-4 py-2 text-left text-gray-700 font-medium">
-                        Booking ID
-                      </th>
-                      <th className="px-4 py-2 text-left text-gray-700 font-medium">
-                        Provider
-                      </th>
-                      <th className="px-4 py-2 text-left text-gray-700 font-medium">
-                        Scheduled Date
-                      </th>
-                      <th className="px-4 py-2 text-left text-gray-700 font-medium">
-                        Price
-                      </th>
-                      <th className="px-4 py-2 text-left text-gray-700 font-medium">
-                        Status
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {bookings.map((b) => (
-                      <tr key={b.id} className="border-b hover:bg-gray-50 transition">
-                        <td className="px-4 py-2 text-gray-700 font-medium">#{b.id}</td>
-                        <td className="px-4 py-2 text-gray-700">{b.provider_name || "N/A"}</td>
-                        <td className="px-4 py-2 text-gray-700">
-                          {b.scheduled_date
-                            ? new Date(b.scheduled_date).toLocaleString()
-                            : "Not set"}
-                        </td>
-                        <td className="px-4 py-2 text-gray-700">
-                          {b.price ? `$${Number(b.price).toFixed(2)}` : "N/A"}
-                        </td>
-                        <td className="px-4 py-2">
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              b.status === "Paid"
-                                ? "bg-green-100 text-green-700"
-                                : b.status === "Pending"
-                                ? "bg-yellow-100 text-yellow-700"
-                                : "bg-blue-100 text-blue-700"
-                            }`}
-                          >
-                            {b.status}
-                          </span>
-                        </td>
+              {bookingLoading ? (
+                <p className="text-center text-gray-500">Loading bookings...</p>
+              ) : bookings.length === 0 ? (
+                <p className="text-center text-gray-500">
+                  No booking history available.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border border-gray-100 text-sm">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Booking ID
+                        </th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Provider
+                        </th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Scheduled Date
+                        </th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Price
+                        </th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Status
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
+                    </thead>
+                    <tbody>
+                      {bookings.map((b) => (
+                        <tr
+                          key={b.id}
+                          className="border-b hover:bg-gray-50 transition"
+                        >
+                          <td className="px-4 py-2 text-gray-700 font-medium">
+                            #{b.id}
+                          </td>
+                          <td className="px-4 py-2 text-gray-700">
+                            {b.provider_name || "N/A"}
+                          </td>
+                          <td className="px-4 py-2 text-gray-700">
+                            {b.scheduled_date
+                              ? new Date(b.scheduled_date).toLocaleString()
+                              : "Not set"}
+                          </td>
+                          <td className="px-4 py-2 text-gray-700">
+                            {b.price
+                              ? `$${Number(b.price).toFixed(2)}`
+                              : "N/A"}
+                          </td>
+                          <td className="px-4 py-2">
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                b.status === "Paid"
+                                  ? "bg-green-100 text-green-700"
+                                  : b.status === "Pending"
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : "bg-blue-100 text-blue-700"
+                              }`}
+                            >
+                              {b.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
 
-        {/* ✅ Ongoing Tab */}
-        {activeTab === "ongoing" && (
-          <div className="max-w-6xl bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-              Ongoing Bookings
-            </h2>
+          {/* ✅ Ongoing Tab */}
+          {activeTab === "ongoing" && (
+            <div className="max-w-6xl bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+                Ongoing Bookings
+              </h2>
 
-            {bookingLoading ? (
-              <p className="text-center text-gray-500">Loading ongoing bookings...</p>
-            ) : ongoingBookings.length === 0 ? (
-              <p className="text-center text-gray-500">
-                No ongoing bookings yet.
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full border border-gray-100 text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-4 py-2 text-left text-gray-700 font-medium">
-                        Booking ID
-                      </th>
-                      <th className="px-4 py-2 text-left text-gray-700 font-medium">
-                        Provider
-                      </th>
-                      <th className="px-4 py-2 text-left text-gray-700 font-medium">
-                        Scheduled Date
-                      </th>
-                      <th className="px-4 py-2 text-left text-gray-700 font-medium">
-                        Price
-                      </th>
-                      <th className="px-4 py-2 text-left text-gray-700 font-medium">
-                        Status
-                      </th>
-                      <th className="px-4 py-2 text-left text-gray-700 font-medium">
-                        Action
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ongoingBookings.map((b) => (
-                      <tr
-                        key={b.id}
-                        className="border-b hover:bg-green-50 transition cursor-pointer"
-                      >
-                        <td className="px-4 py-2 text-gray-700 font-medium">
-                          #{b.id}
-                        </td>
-                        <td className="px-4 py-2 text-gray-700">
-                          {b.provider_name || "N/A"}
-                        </td>
-                        <td className="px-4 py-2 text-gray-700">
-                          {b.scheduled_date
-                            ? new Date(b.scheduled_date).toLocaleString()
-                            : "Not set"}
-                        </td>
-                        <td className="px-4 py-2 text-green-700 font-medium">
-                          {b.price ? `$${Number(b.price).toFixed(2)}` : "N/A"}
-                        </td>
-                        <td className="px-4 py-2">
-                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                            Paid
-                          </span>
-                        </td>
-                        <td className="px-4 py-2 text-right">
-                          <button
-                            onClick={() => navigate(`/execution/${b.id}`)}
-                            className="bg-green-600 text-white px-4 py-1.5 rounded-full text-sm font-medium hover:bg-green-700 transition"
-                          >
-                            View Execution
-                          </button>
-                        </td>
+              {bookingLoading ? (
+                <p className="text-center text-gray-500">
+                  Loading ongoing bookings...
+                </p>
+              ) : ongoingBookings.length === 0 ? (
+                <p className="text-center text-gray-500">
+                  No ongoing bookings yet.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border border-gray-100 text-sm">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Booking ID
+                        </th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Provider
+                        </th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Scheduled Date
+                        </th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Price
+                        </th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Status
+                        </th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Action
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-
-      </main>
-    </div>
+                    </thead>
+                    <tbody>
+                      {ongoingBookings.map((b) => (
+                        <tr
+                          key={b.id}
+                          className="border-b hover:bg-green-50 transition cursor-pointer"
+                        >
+                          <td className="px-4 py-2 text-gray-700 font-medium">
+                            #{b.id}
+                          </td>
+                          <td className="px-4 py-2 text-gray-700">
+                            {b.provider_name || "N/A"}
+                          </td>
+                          <td className="px-4 py-2 text-gray-700">
+                            {b.scheduled_date
+                              ? new Date(b.scheduled_date).toLocaleString()
+                              : "Not set"}
+                          </td>
+                          <td className="px-4 py-2 text-green-700 font-medium">
+                            {b.price
+                              ? `$${Number(b.price).toFixed(2)}`
+                              : "N/A"}
+                          </td>
+                          <td className="px-4 py-2">
+                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                              Paid
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            <button
+                              onClick={() => navigate(`/execution/${b.id}`)}
+                              className="bg-green-600 text-white px-4 py-1.5 rounded-full text-sm font-medium hover:bg-green-700 transition"
+                            >
+                              View Execution
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </main>
+      </div>
+    </>
   );
 };
 

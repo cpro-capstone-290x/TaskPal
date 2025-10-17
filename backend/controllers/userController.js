@@ -38,47 +38,48 @@ export const getUser = async (req, res) => {
 };
 
 export const updateUsers = async (req, res) => {
-  const { id } = req.params;
-  const {
-    first_name,
-    last_name,
-    type_of_user,
-    email,
-    password,
-    unit_no,
-    street,
-    city,
-    province,
-    postal_code
-  } = req.body;
-
   try {
-    const updatedUser = await sql`
-      UPDATE users 
-      SET 
+    const { id } = req.params;
+    const {
+      first_name,
+      last_name,
+      email,
+      unit_no,
+      street,
+      city,
+      province,
+      postal_code,
+    } = req.body;
+
+    console.log("Updating user:", id, req.body);
+
+    const updated = await sql`
+      UPDATE users
+      SET
         first_name = ${first_name},
         last_name = ${last_name},
-        type_of_user = ${type_of_user},
         email = ${email},
-        password = ${password},
         unit_no = ${unit_no},
         street = ${street},
         city = ${city},
         province = ${province},
-        postal_code = ${postal_code},
-        updated_at = NOW()
+        postal_code = ${postal_code}
       WHERE id = ${id}
-      RETURNING *
+      RETURNING *;
     `;
 
-    if (updatedUser.length === 0) {
-      return res.status(404).json({ error: "User not found" });
+    if (updated.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, error: "User not found" });
     }
 
-    res.status(200).json({ success: true, data: updatedUser[0] });
-  } catch (error) {
-    console.error("❌ Failed to update user:", error);
-    res.status(500).json({ error: "Failed to update user" });
+    res.json({ success: true, data: updated[0] });
+  } catch (err) {
+    console.error("Error updating user:", err);
+    res
+      .status(500)
+      .json({ success: false, error: "Failed to update user" });
   }
 };
 

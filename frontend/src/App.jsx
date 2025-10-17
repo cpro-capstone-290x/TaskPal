@@ -15,6 +15,7 @@ import ServicesPage from "./pages/services/ServicesPage";
 import ForgotPasswordUser from "./pages/LoginPage/components/forgotPassword";
 import AdminLoginPage from "./pages/admin/adminLoginPage";
 import AdminHome from "./pages/admin/adminHome";
+import ProtectedRoute from "./pages/components/ProtectedRoute";
 
 function App() {
 

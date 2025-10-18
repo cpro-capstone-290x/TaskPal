@@ -18,6 +18,7 @@ import AdminHome from "./pages/admin/adminHome";
 import ProtectedRoute from "./pages/components/ProtectedRoute";
 import OTPResetPage from "./pages/LoginPage/components/OTPResetPage";
 import VerifyAuthorizedOTP from "./pages/profile/components/VerifyAuthorizedOTP";
+import ProviderProfile from "./pages/bookingpage/components/ProviderProfile";
 
 function App() {
 
@@ -42,6 +43,7 @@ function App() {
         <Route path="/admin/*" element={<AdminHome />} />
         <Route path="/otp-reset" element={<OTPResetPage />} />
         <Route path="/verify-authorized" element={<VerifyAuthorizedOTP />} />
+        <Route path="/provider/:id" element={<ProviderProfile />} /> {/* ✅ ADD THIS */}
       </Routes>
     </div>
   );

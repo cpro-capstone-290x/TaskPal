@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 
+
+
 const SearchBooking = () => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
@@ -14,6 +16,11 @@ const SearchBooking = () => {
     priceRange: [10, 150],
     eliteOnly: false,
   });
+
+  
+  const handleViewProfile = (providerId) => {
+    navigate(`/provider/${providerId}`);
+  };
 
   // ✅ Fetch providers from backend (filtered by category)
   useEffect(() => {
@@ -133,7 +140,10 @@ const SearchBooking = () => {
                   alt={p.name}
                   className="w-24 h-24 rounded-full object-cover border-4 border-sky-100 mb-2"
                 />
-                <button className="text-sky-700 text-sm font-semibold hover:underline">
+                <button
+                  onClick={() => handleViewProfile(p.id)}
+                  className="text-sky-700 text-sm font-semibold hover:underline"
+                >
                   View Profile & Reviews
                 </button>
               </div>

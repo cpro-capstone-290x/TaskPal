@@ -20,3 +20,23 @@ export const createReview = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const getReviewsByProvider = async (req, res) => {
+  try {
+    const { providerId } = req.params;
+    const reviews = await sql`
+      SELECT r.*, 
+             u.first_name AS reviewer_name, 
+             u.last_name AS reviewer_lastname
+      FROM reviews r
+      LEFT JOIN users u ON r.client_id = u.id
+      WHERE r.provider_id = ${providerId}
+      ORDER BY r.created_at DESC;
+    `;
+
+    res.status(200).json({ success: true, data: reviews });
+  } catch (err) {
+    console.error("Error fetching provider reviews:", err);
+    res.status(500).json({ success: false, error: "Failed to fetch provider reviews." });
+  }
+};

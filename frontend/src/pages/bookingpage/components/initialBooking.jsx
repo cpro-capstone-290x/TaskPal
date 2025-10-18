@@ -6,7 +6,7 @@ const BookingInit = () => {
   const { providerId } = useParams();
   const navigate = useNavigate();
 
-  const [step, setStep] = useState(1); // 1️⃣–4️⃣ progress steps
+  const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     notes: "",
     scheduled_date: "",
@@ -14,37 +14,35 @@ const BookingInit = () => {
   });
   const [loading, setLoading] = useState(false);
 
-  // Handle input updates
+  // ✅ Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Step navigation
+  // ✅ Step navigation
   const handleNext = () => {
     if (step === 1 && !form.notes.trim()) return alert("Please describe your task.");
-    if (step === 2 && !form.scheduled_date) return alert("Please select a date and time.");
+    if (step === 2 && !form.scheduled_date) return alert("Please select a valid date and time.");
     if (step === 3 && !form.price) return alert("Please enter your proposed price.");
     setStep((prev) => prev + 1);
   };
 
   const handleBack = () => setStep((prev) => prev - 1);
 
-  // ✅ Final Submit → Create booking
+  // ✅ Booking submission
   const handleBookNow = async () => {
     const token = localStorage.getItem("authToken");
     const userRole = localStorage.getItem("userRole");
     const clientId = localStorage.getItem("userId");
 
     if (!token || userRole !== "user") {
-      // ✅ Save current route before login
       localStorage.setItem("pendingRedirect", window.location.pathname);
       alert("⚠️ You must log in as a client to continue booking.");
       navigate("/login");
       return;
     }
 
-    // ✅ Continue booking logic if logged in
     setLoading(true);
     try {
       const res = await axios.post(
@@ -59,32 +57,26 @@ const BookingInit = () => {
           agreement_signed_by_provider: false,
           status: "Pending",
         },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       const booking = res.data;
 
       if (!booking?.bookingId || !booking?.provider_id) {
         console.error("❌ Invalid booking response:", res.data);
-        alert("Something went wrong while creating the chat room.");
+        alert("Something went wrong while creating your booking.");
         return;
       }
 
-      // ✅ Redirect to chat page
+      // ✅ Redirect to chat after successful booking
       navigate(`/chat/${booking.bookingId}/user`);
-
-
-
     } catch (err) {
       console.error("❌ Error creating booking:", err);
-      alert("Failed to create booking.");
+      alert("Failed to create booking. Please try again later.");
     } finally {
       setLoading(false);
     }
   };
-
 
   // 🟢 Step 1: Task Description
   const renderStep1 = () => (
@@ -98,28 +90,67 @@ const BookingInit = () => {
         value={form.notes}
         onChange={handleChange}
         placeholder='e.g. "Assemble my new 3-seater couch and mount a small shelf."'
-        className="w-full border text-white border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-green-600 focus:outline-none text-gray-700 resize-none"
+        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-green-600 focus:outline-none resize-none"
         rows={4}
       />
     </div>
   );
 
   // 🟢 Step 2: Schedule Date
-  const renderStep2 = () => (
-    <div>
-      <h3 className="text-lg font-semibold text-gray-800 mb-3">When would you like it done?</h3>
-      <p className="text-sm text-gray-600 mb-4">
-        Choose your preferred date and time for this task.
-      </p>
-      <input
-        type="datetime-local"
-        name="scheduled_date"
-        value={form.scheduled_date}
-        onChange={handleChange}
-        className="w-full border text-white border-gray-300 rounded-full px-4 py-3 focus:ring-2 focus:ring-green-600 focus:outline-none text-gray-700"
-      />
-    </div>
-  );
+  const renderStep2 = () => {
+    const getCurrentDateTime = () => {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      return now.toISOString().slice(0, 16);
+    };
+
+    const handleDateChange = (e) => {
+      const selectedDate = new Date(e.target.value);
+      const hours = selectedDate.getHours();
+
+      if (selectedDate < new Date()) {
+        alert("Please select a future date and time.");
+        return;
+      }
+      if (hours < 8 || hours >= 17) {
+        alert("Please select a time between 8:00 AM and 5:00 PM.");
+        return;
+      }
+
+      handleChange(e);
+    };
+
+    return (
+      <div>
+        <h3 className="text-lg font-semibold text-gray-800 mb-3">
+          When would you like it done?
+        </h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Choose your preferred date and time for this task.
+        </p>
+
+        <input
+          type="datetime-local"
+          name="scheduled_date"
+          value={form.scheduled_date}
+          onChange={handleDateChange}
+          min={getCurrentDateTime()}
+          className="w-full border border-gray-300 rounded-full px-4 py-3 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-green-600 focus:outline-none"
+        />
+
+        {/* Inline error display */}
+        {form.scheduled_date && (() => {
+          const d = new Date(form.scheduled_date);
+          const h = d.getHours();
+          if (d < new Date())
+            return <p className="text-red-500 text-sm mt-2">Please select a future date.</p>;
+          if (h < 8 || h >= 17)
+            return <p className="text-red-500 text-sm mt-2">Only between 8 AM and 5 PM allowed.</p>;
+          return null;
+        })()}
+      </div>
+    );
+  };
 
   // 🟢 Step 3: Price
   const renderStep3 = () => (
@@ -138,7 +169,7 @@ const BookingInit = () => {
           placeholder="80.00"
           min="0"
           step="0.01"
-          className="w-full border text-white border-gray-300 rounded-full px-4 py-3 focus:ring-2 focus:ring-green-600 focus:outline-none text-gray-700"
+          className="w-full border border-gray-300 rounded-full px-4 py-3 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-green-600 focus:outline-none"
         />
       </div>
     </div>
@@ -150,32 +181,23 @@ const BookingInit = () => {
       <h3 className="text-lg font-semibold text-gray-800 mb-3">Review your details</h3>
       <p className="text-sm text-gray-600 mb-4">Confirm before booking your provider.</p>
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-gray-700 space-y-2">
-        <p>
-          <strong>Task:</strong> {form.notes || "Not provided"}
-        </p>
+        <p><strong>Task:</strong> {form.notes || "Not provided"}</p>
         <p>
           <strong>Scheduled Date:</strong>{" "}
           {form.scheduled_date
             ? new Date(form.scheduled_date).toLocaleString()
             : "Not selected"}
         </p>
-        <p>
-          <strong>Price:</strong> ${form.price || "Not set"}
-        </p>
+        <p><strong>Price:</strong> ${form.price || "Not set"}</p>
       </div>
     </div>
   );
 
+  // 🧩 Main Return
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center">
-      {/* Header */}
-      <div className="w-full max-w-4xl px-6 py-6">
-        {/* <h1 className="text-2xl font-extrabold text-primary tracking-tight">
-          <span className="text-secondary">Task</span>Pal</h1> */}
-      </div>
-
       {/* Progress Bar */}
-      <div className="w-full max-w-4xl flex items-center justify-between px-6 mb-8">
+      <div className="w-full max-w-4xl flex items-center justify-between px-6 mt-8 mb-8">
         {["Task", "Schedule", "Price", "Summary"].map((label, index) => (
           <div key={index} className="flex-1 flex items-center">
             <div
@@ -183,7 +205,7 @@ const BookingInit = () => {
                 step === index + 1
                   ? "bg-green-700 text-white"
                   : step > index + 1
-                  ? "bg-green-400 text-white"
+                  ? "bg-green-500 text-white"
                   : "bg-gray-300 text-gray-600"
               }`}
             >
@@ -200,14 +222,14 @@ const BookingInit = () => {
         ))}
       </div>
 
-      {/* Step Card */}
+      {/* Step Content */}
       <div className="w-full max-w-2xl bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
         {step === 1 && renderStep1()}
         {step === 2 && renderStep2()}
         {step === 3 && renderStep3()}
         {step === 4 && renderStep4()}
 
-        {/* Buttons */}
+        {/* Navigation Buttons */}
         <div className="flex justify-between mt-8">
           {step > 1 ? (
             <button

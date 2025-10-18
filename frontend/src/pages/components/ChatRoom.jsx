@@ -272,12 +272,12 @@ const ChatRoom = () => {
                 </span>
               </p>
 
-              {/* Provider price input */}
-              {role === "provider" && bookingDetails.status === "Pending" && (
+              {/* 💬 Negotiation Section (both can propose until both agree) */}
+              {["Pending", "Negotiating"].includes(bookingDetails.status) && (
                 <div className="mt-3 space-y-2">
                   <input
                     type="number"
-                    placeholder="Enter price"
+                    placeholder={`Enter your proposed price (${role === "user" ? "client" : "provider"})`}
                     value={bookingDetails.price || ""}
                     onChange={(e) =>
                       setBookingDetails((prev) => ({
@@ -285,13 +285,55 @@ const ChatRoom = () => {
                         price: e.target.value,
                       }))
                     }
-                    className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-400"
+                    className="w-full border rounded-lg px-3 py-2 text-gray-800 focus:ring-2 focus:ring-sky-400"
+                    disabled={
+                      bookingDetails.agreement_signed_by_client &&
+                      bookingDetails.agreement_signed_by_provider
+                    }
                   />
+
                   <button
-                    onClick={handleUpdatePrice}
-                    className="btn btn-sm bg-sky-600 hover:bg-sky-700 text-white w-full"
+                    onClick={() => {
+                      const newPrice = bookingDetails.price;
+                      if (!newPrice || isNaN(newPrice) || Number(newPrice) <= 0) {
+                        alert("Please enter a valid price.");
+                        return;
+                      }
+
+                      axios
+                        .put(`http://localhost:5000/api/bookings/${bookingId}/price`, {
+                          price: newPrice,
+                        })
+                        .then((res) => {
+                          setBookingDetails(res.data.booking);
+                          socket.emit("booking_updated", res.data.booking);
+                          socket.emit("send_message", {
+                            bookingId,
+                            senderId: userId,
+                            message: `💬 ${
+                              role === "user" ? "Client" : "Provider"
+                            } proposed a new price: $${newPrice}`,
+                            timestamp: new Date(),
+                          });
+                          alert("New price proposed successfully!");
+                        })
+                        .catch((err) => {
+                          console.error("Error proposing new price:", err);
+                          alert("Failed to propose new price.");
+                        });
+                    }}
+                    disabled={
+                      bookingDetails.agreement_signed_by_client &&
+                      bookingDetails.agreement_signed_by_provider
+                    }
+                    className={`btn btn-sm w-full ${
+                      bookingDetails.agreement_signed_by_client &&
+                      bookingDetails.agreement_signed_by_provider
+                        ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                        : "bg-sky-600 hover:bg-sky-700 text-white"
+                    }`}
                   >
-                    Update Price
+                    💬 Propose New Price
                   </button>
                 </div>
               )}

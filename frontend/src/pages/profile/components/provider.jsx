@@ -49,8 +49,21 @@ const Provider = () => {
     const fetchProvider = async () => {
       setLoading(true);
       setError("");
+
+      const token = localStorage.getItem('authToken'); // Check your storage key!
+
+        if (!token) {
+             setError("You must be logged in to view this profile.");
+             setLoading(false);
+             return; // Stop the fetch attempt if no token exists
+        }
+
       try {
-        const res = await axios.get(`http://localhost:5000/api/providers/${id}`);
+        const res = await axios.get(`http://localhost:5000/api/providers/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
 
         if (res.data && res.data.data) {
           const fetchedData = res.data.data;

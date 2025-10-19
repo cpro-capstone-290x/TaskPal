@@ -19,16 +19,27 @@ export const protect = async (req, res, next) => {
 
             // Attach user data (without password) to the request object
             // This assumes the admin user details are in the 'admins' table
-            const user = await sql`
+            const adminUser = await sql`
                 SELECT id, first_name, email, role FROM admins WHERE id = ${decoded.id}
             `;
 
-            if (user.length === 0) {
-                return res.status(401).json({ error: 'Not authorized, admin not found' });
+            if (adminUser.length > 0) {
+                // Admin found. Attach user, and move on.
+                req.adminUser = adminUser[0]; 
+                return next(); // 🛑 IMPORTANT: Exit the middleware chain
             }
 
-            req.user = user[0]; // Attach the authenticated admin user to the request
-            next();
+            // Attach user data (without password) to the request object
+            // This assumes the provider user details are in the 'providers' table
+            const providerUser = await sql`
+                SELECT id, name, email, status FROM providers WHERE id = ${decoded.id}
+            `;
+
+            if (providerUser.length > 0) {
+                // Provider found. Attach user, and move on.
+                req.providerUser = providerUser[0]; 
+                return next(); // 🛑 IMPORTANT: Exit the middleware chain
+            }
 
         } catch (error) {
             console.error('Token verification error:', error);
@@ -44,10 +55,28 @@ export const protect = async (req, res, next) => {
 
 // 2. Admin Middleware (Checks if the user is an admin)
 export const admin = (req, res, next) => {
-    // This runs AFTER 'protect', so req.user should exist
-    if (req.user && req.user.role === 'admin') { // Assuming the role value is 'admin'
+    // This runs AFTER 'protect', so req.adminUser should exist
+    if (req.adminUser && req.adminUser.role === 'admin') { // Assuming the role value is 'admin'
         next();
     } else {
         res.status(403).json({ error: 'Not authorized as an admin' });
+    }
+};
+
+export const provider = (req, res, next) => {
+    // This runs AFTER 'protect', so req.providerUser should exist
+    if (req.providerUser && req.providerUser.status === 'Approved') { // Assuming the status value is 'Approved'
+        next();
+    } else {
+        res.status(403).json({ error: 'Not authorized as a provider' });
+    }
+};
+export const providerAuth = (req, res, next) => {
+    // This runs AFTER 'protect', so req.providerUser should exist
+    const { id } = req.params;
+if (req.providerUser && String(req.providerUser.id) === String(id)) {
+        next();
+    } else {
+        res.status(403).json({ error: 'Not authorized as this provider' });
     }
 };

@@ -166,9 +166,18 @@ const Provider = () => {
     setIsSaving(true);
     setSaveMessage({ type: '', message: 'Saving profile...' });
 
+    const token = localStorage.getItem('authToken');
+
+    const config = {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    };
+
     try {
       // Send the entire formData, which includes the potentially new profile_picture_url
-      const res = await axios.put(`http://localhost:5000/api/providers/${id}`, formData);
+      const res = await axios.put(`http://localhost:5000/api/providers/${id}`, formData, config);
 
       if (res.data && res.data.data) {
         setProvider(res.data.data); 

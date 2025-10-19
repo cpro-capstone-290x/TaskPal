@@ -70,7 +70,6 @@ const ExecutionPage = () => {
     }
   };
 
-
   // ✅ Submit review
   const handleSubmitReview = async () => {
     if (rating === 0 || comment.trim() === "") {
@@ -150,6 +149,15 @@ const ExecutionPage = () => {
           >
             🔄 Refresh
           </button>
+
+          {/* ✅ New Chat Button */}
+          <button
+            onClick={() => navigate(`/chat/${booking_id}/user`)}
+            className="bg-green-100 hover:bg-green-200 text-green-700 px-4 py-2 rounded-lg font-medium"
+          >
+            💬 Chat
+          </button>
+
           <button
             onClick={() => navigate(-1)}
             className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-medium"

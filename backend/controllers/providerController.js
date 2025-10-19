@@ -86,6 +86,52 @@ export const deleteProvider = async (req, res) => {
     }       
 }
 
+// Function for Admin to update ONLY the status of a provider
+// This will be used for the final Approve/Reject action.
+export const updateProviderStatus = async (req, res) => {
+    const { id } = req.params;
+    const { status, rejection_reason } = req.body; // status should be 'Approved', 'Rejected', or 'Suspended'
+
+    // Admin-level validation
+    if (!['Approved', 'Rejected', 'Suspended'].includes(status)) {
+        return res.status(400).json({ error: 'Invalid status provided for update.' });
+    }
+    
+    // FIX 1: Enforce reason for both Rejected AND Suspended
+    if ((status === 'Rejected' || status === 'Suspended') && !rejection_reason) {
+        return res.status(400).json({ error: `${status} reason is required for this action.` });
+    }
+    
+    try {
+        const updatedProvider = await sql`
+            UPDATE providers
+            SET
+                status = ${status},
+                -- FIX 2: Only null out rejection_reason if status is 'Approved'. 
+                -- Otherwise, save the reason provided by the user.
+                rejection_reason = ${status === 'Approved' ? null : rejection_reason},
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ${id}
+            RETURNING id, name, email, status, rejection_reason
+        `;
+        
+        if (updatedProvider.length === 0) {
+            return res.status(404).json({ error: 'Provider not found' });
+        }
+        
+        // --- Add Email/Notification Logic Here ---
+        // if (status === 'Approved') { sendApprovalEmail(updatedProvider[0]); }
+        // else if (status === 'Rejected') { sendRejectionEmail(updatedProvider[0]); }
+        // ----------------------------------------
+
+        res.status(200).json({ success: true, data: updatedProvider[0] });
+    } catch (error) {
+        // Log the detailed error on the server side for debugging
+        console.error("❌ Failed to update provider status:", error); 
+        res.status(500).json({ error: 'Failed to update provider status' });
+    }
+}
+
 export const getProvidersByServiceType = async (req, res) => {
   const { service_type } = req.params; // e.g. /service_type/Cleaning
 

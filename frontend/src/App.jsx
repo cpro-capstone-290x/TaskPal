@@ -13,6 +13,7 @@ import PaymentSuccess from "./pages/payment/paymentSuccess";
 import Execution from "./pages/execution/execution";
 import ServicesPage from "./pages/services/ServicesPage";
 import ForgotPasswordUser from "./pages/LoginPage/components/forgotPassword";
+import ContactPage from "./pages/contact/ContactPage";
 
 function App() {
   return (
@@ -32,6 +33,8 @@ function App() {
         <Route path="/provider/execution/:bookingId" element={<Execution />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordUser />} />
+        <Route path="/contact" element={<ContactPage />} />
+
       </Routes>
     </div>
   );

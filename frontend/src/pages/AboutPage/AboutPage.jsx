@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom"; // ✅ add this
 import Header from "../components/Header";
 
 const AboutPage = () => {
@@ -135,18 +136,18 @@ const AboutPage = () => {
             when you are.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <link
-              to="/register-provider"
+            <Link
+              to="/login?type=provider"
               className="bg-[#ffd166] text-[#222] px-6 py-3 rounded-lg font-semibold text-base hover:bg-[#f7c94b] transition-all"
             >
               Join as a Provider
-            </link>
-            <link
+            </Link>
+            <Link
               to="/contact"
               className="bg-white text-[#0077b6] px-6 py-3 rounded-lg font-semibold border-2 border-white hover:bg-[#005f8a] hover:text-white transition-all"
             >
               Find Help
-            </link>
+            </Link>
           </div>
         </section>
       </main>

@@ -15,6 +15,7 @@ import bookingRoutes from "./routes/bookingRoutes.js";
 import paymentRoutes from "./routes/paymentRoute.js";
 import executionRoutes from "./routes/executionRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
+import contactRoutes from "./routes/contactRoutes.js";
 import { sql } from "./config/db.js";
 
 dotenv.config();
@@ -54,6 +55,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/execution", executionRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/contact", contactRoutes);
 
 // ✅ SOCKET.IO LOGIC
 io.on("connection", (socket) => {

@@ -35,10 +35,7 @@ function App() {
           path="/profile/:id"
           element={
             <ProtectedRoute>
-<<<<<<< HEAD
-=======
               {" "}
->>>>>>> e72ade9 (About Us page)
               <Profile />
             </ProtectedRoute>
           }
@@ -55,20 +52,16 @@ function App() {
         <Route path="/provider/execution/:bookingId" element={<Execution />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordUser />} />
-        <Route path="/contact" element={<ContactPage />} /> {/* 👈 New Contact Page */}
-
+        <Route path="/contact" element={<ContactPage />} />{" "}
+        {/* 👈 New Contact Page */}
         {/* Admin Routes */}
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/admin/*" element={<AdminHome />} />
         <Route path="/otp-reset" element={<OTPResetPage />} />
         <Route path="/verify-authorized" element={<VerifyAuthorizedOTP />} />
-<<<<<<< HEAD
-        <Route path="/providers/public/:id" element={<ProviderProfile />} /> 
-=======
         <Route path="/provider/:id" element={<ProviderProfile />} />{" "}
         {/* ✅ ADD THIS */}
         <Route path="/about" element={<AboutPage />} />
->>>>>>> e72ade9 (About Us page)
       </Routes>
     </div>
   );

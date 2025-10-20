@@ -19,7 +19,7 @@ const SearchBooking = () => {
 
   
   const handleViewProfile = (providerId) => {
-    navigate(`/provider/${providerId}`);
+    navigate(`/providers/public/${providerId}`);
   };
 
   // ✅ Fetch providers from backend (filtered by category)

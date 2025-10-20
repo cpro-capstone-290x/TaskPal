@@ -1,4 +1,6 @@
 import nodemailer from "nodemailer";
+import dotenv from "dotenv";
+dotenv.config();
 
 //  sendContactMessage — sends email to TaskPal support
 export const sendContactMessage = async (req, res) => {
@@ -11,15 +13,17 @@ export const sendContactMessage = async (req, res) => {
         .json({ success: false, error: "All fields are required." });
     }
 
-    // Placeholder support email — replace later
-    const SUPPORT_EMAIL = "support_placeholder@taskpal.ca";
+    const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL;
+    const SUPPORT_PASS = process.env.SUPPORT_PASS;
+    const SUPPORT_USER = process.env.SUPPORT_USER;
+    
 
     //  Configure mail transporter
     const transporter = nodemailer.createTransport({
       service: "gmail", // can change to Outlook/SMTP later
       auth: {
-        user: "placeholder.taskpal@gmail.com", // your support email
-        pass: "placeholder-password", // app password (not your real password)
+        user: SUPPORT_USER,
+        pass: SUPPORT_PASS,
       },
     });
 

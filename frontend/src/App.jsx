@@ -46,7 +46,6 @@ function App() {
           path="/booking/initiate/:providerId"
           element={<BookingInitializePage />}
         />{" "}
-        {/* ✅ ADD THIS */}
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/execution/:bookingId" element={<Execution />} />
         <Route path="/provider/execution/:bookingId" element={<Execution />} />
@@ -60,8 +59,9 @@ function App() {
         <Route path="/otp-reset" element={<OTPResetPage />} />
         <Route path="/verify-authorized" element={<VerifyAuthorizedOTP />} />
         <Route path="/provider/:id" element={<ProviderProfile />} />{" "}
-        {/* ✅ ADD THIS */}
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/providers/public/:id" element={<ProviderProfile />} />
+
       </Routes>
     </div>
   );

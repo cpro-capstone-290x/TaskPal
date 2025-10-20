@@ -20,6 +20,7 @@ import ProtectedRoute from "./pages/components/ProtectedRoute";
 import OTPResetPage from "./pages/LoginPage/components/OTPResetPage";
 import VerifyAuthorizedOTP from "./pages/profile/components/VerifyAuthorizedOTP";
 import ProviderProfile from "./pages/bookingpage/components/ProviderProfile";
+import AboutPage from "./pages/AboutPage/AboutPage";
 
 function App() {
   return (
@@ -34,6 +35,10 @@ function App() {
           path="/profile/:id"
           element={
             <ProtectedRoute>
+<<<<<<< HEAD
+=======
+              {" "}
+>>>>>>> e72ade9 (About Us page)
               <Profile />
             </ProtectedRoute>
           }
@@ -57,7 +62,13 @@ function App() {
         <Route path="/admin/*" element={<AdminHome />} />
         <Route path="/otp-reset" element={<OTPResetPage />} />
         <Route path="/verify-authorized" element={<VerifyAuthorizedOTP />} />
+<<<<<<< HEAD
         <Route path="/providers/public/:id" element={<ProviderProfile />} /> 
+=======
+        <Route path="/provider/:id" element={<ProviderProfile />} />{" "}
+        {/* ✅ ADD THIS */}
+        <Route path="/about" element={<AboutPage />} />
+>>>>>>> e72ade9 (About Us page)
       </Routes>
     </div>
   );

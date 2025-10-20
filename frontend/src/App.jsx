@@ -1,4 +1,4 @@
-import {BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 // Pages
 import Home from "./pages/home";
@@ -13,6 +13,7 @@ import PaymentSuccess from "./pages/payment/paymentSuccess";
 import Execution from "./pages/execution/execution";
 import ServicesPage from "./pages/services/ServicesPage";
 import ForgotPasswordUser from "./pages/LoginPage/components/forgotPassword";
+import ContactPage from "./pages/contact/ContactPage"; // 👈 New Contact Page
 import AdminLoginPage from "./pages/admin/adminLoginPage";
 import AdminHome from "./pages/admin/adminHome";
 import ProtectedRoute from "./pages/components/ProtectedRoute";
@@ -21,7 +22,6 @@ import VerifyAuthorizedOTP from "./pages/profile/components/VerifyAuthorizedOTP"
 import ProviderProfile from "./pages/bookingpage/components/ProviderProfile";
 
 function App() {
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Routes>
@@ -30,15 +30,29 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/chat/:bookingId/:role" element={<ChatRoom />} />
-        <Route path="/profile/:id" element={<ProtectedRoute> <Profile /></ProtectedRoute>} />
+        <Route
+          path="/profile/:id"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/profileProvider/:id" element={<ProfileProvider />} />
         <Route path="/booking" element={<BookingPage />} /> {/* ✅ ADD THIS */}
-        <Route path="/booking/initiate/:providerId" element={<BookingInitializePage  />} /> {/* ✅ ADD THIS */}
+        <Route
+          path="/booking/initiate/:providerId"
+          element={<BookingInitializePage />}
+        />{" "}
+        {/* ✅ ADD THIS */}
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/execution/:bookingId" element={<Execution />} />
         <Route path="/provider/execution/:bookingId" element={<Execution />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordUser />} />
+        <Route path="/contact" element={<ContactPage />} /> {/* 👈 New Contact Page */}
+
+        {/* Admin Routes */}
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/admin/*" element={<AdminHome />} />
         <Route path="/otp-reset" element={<OTPResetPage />} />

@@ -57,7 +57,7 @@ function App() {
         <Route path="/admin/*" element={<AdminHome />} />
         <Route path="/otp-reset" element={<OTPResetPage />} />
         <Route path="/verify-authorized" element={<VerifyAuthorizedOTP />} />
-        <Route path="/provider/:id" element={<ProviderProfile />} /> {/* ✅ ADD THIS */}
+        <Route path="/providers/public/:id" element={<ProviderProfile />} /> 
       </Routes>
     </div>
   );

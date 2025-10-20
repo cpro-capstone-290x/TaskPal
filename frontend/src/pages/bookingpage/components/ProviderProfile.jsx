@@ -23,7 +23,7 @@ const ProviderProfile = () => {
     const fetchData = async () => {
       try {
         const [providerRes, reviewRes] = await Promise.all([
-          axios.get(`http://localhost:5000/api/providers/${id}`),
+          axios.get(`http://localhost:5000/api/providers/public/${id}`),
           axios.get(`http://localhost:5000/api/reviews/provider/${id}`),
         ]);
 
@@ -54,12 +54,14 @@ const ProviderProfile = () => {
         Loading provider profile...
       </div>
     );
+
   if (error)
     return (
       <div className="flex justify-center items-center h-screen text-red-500">
         {error}
       </div>
     );
+
   if (!provider)
     return (
       <div className="flex justify-center items-center h-screen text-gray-500">
@@ -75,7 +77,7 @@ const ProviderProfile = () => {
       {/* Page Header */}
       <div className="bg-white shadow-sm border-b border-gray-200 px-8 py-4 flex justify-between items-center mt-2">
         <h1 className="text-2xl font-bold text-green-700">
-          {provider.first_name} {provider.last_name}
+          {provider.name}
         </h1>
         <button
           onClick={() => navigate(-1)}
@@ -106,11 +108,13 @@ const ProviderProfile = () => {
                 {provider.name}
               </h2>
               <p className="text-gray-600">
-                {provider.service_type + " Services"}
+                {provider.service_type} Services
               </p>
-              <p className="text-gray-600">
-                {provider.city || "Red Deer"}, {provider.province || "AB"}
-              </p>
+              {(provider.city || provider.province) && (
+                <p className="text-gray-600">
+                  {provider.city || "Red Deer"}, {provider.province || "AB"}
+                </p>
+              )}
 
               {/* Contact Info */}
               <div className="text-sm text-gray-500 mt-3">
@@ -125,11 +129,9 @@ const ProviderProfile = () => {
               </div>
 
               {/* Bio */}
-              {provider.bio && (
-                <p className="mt-4 text-gray-700 leading-relaxed">
-                  {provider.bio}
-                </p>
-              )}
+              <p className="mt-4 text-gray-700 leading-relaxed">
+                {provider.bio || "No biography provided."}
+              </p>
             </div>
 
             {/* Rating + Book Now */}

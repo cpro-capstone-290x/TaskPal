@@ -1,28 +1,29 @@
+// controllers/paymentController.js
 import Stripe from "stripe";
-import dotenv from "dotenv";
-dotenv.config();
+import { sql } from "../config/db.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+// ✅ Create Stripe Checkout Session
 export const createPaymentIntent = async (req, res) => {
-  try {
-    const { booking_id, client_id, provider_id, amount } = req.body;
+  const { bookingId } = req.params;
+  console.log("💳 Creating PaymentIntent for booking:", bookingId);
 
-    if (!booking_id || !client_id || !provider_id || !amount) {
-      return res.status(400).json({ error: "Missing required fields" });
+  try {
+    // 1️⃣ Fetch booking info
+    const result = await sql`
+      SELECT * FROM bookings WHERE id = ${bookingId};
+    `;
+
+    if (result.length === 0) {
+      console.error("❌ Booking not found in DB");
+      return res.status(404).json({ message: "Booking not found" });
     }
 
-    console.log("💳 Creating payment for:", {
-      booking_id,
-      client_id,
-      provider_id,
-      amount,
-    });
+    const booking = result[0];
+    const price = booking.price ? Number(booking.price) * 100 : 5000; // default to $50 if no price
 
-    // Convert amount to cents (Stripe uses the smallest currency unit)
-    const totalAmount = Math.round(parseFloat(amount) * 100);
-
-    // ✅ Create a Stripe Checkout Session
+    // 2️⃣ Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
@@ -31,27 +32,25 @@ export const createPaymentIntent = async (req, res) => {
           price_data: {
             currency: "usd",
             product_data: {
-              name: `TaskPal Booking #${booking_id}`,
-              description: `Payment to provider ${provider_id}`,
+              name: `TaskPal Service - Booking #${bookingId}`,
+              description: booking.notes || "TaskPal booking payment",
             },
-            unit_amount: totalAmount,
+            unit_amount: price, // in cents
           },
           quantity: 1,
         },
       ],
-      success_url: `http://localhost:5173/payment-success?booking_id=${booking_id}`,
-      cancel_url: `http://localhost:5173/payment-cancelled`,
-      metadata: {
-        booking_id: booking_id.toString(),
-        client_id: client_id.toString(),
-        provider_id: provider_id.toString(),
-      },
+      success_url: `http://localhost:5173/payment-success/${bookingId}`,
+      cancel_url: `http://localhost:5173/payment-cancelled/${bookingId}`,
     });
 
     console.log("✅ Stripe session created:", session.url);
-    res.json({ success: true, url: session.url });
-  } catch (error) {
-    console.error("❌ Stripe error:", error);
-    res.status(500).json({ error: "Failed to create Stripe checkout session." });
+    return res.json({ url: session.url });
+  } catch (err) {
+    console.error("❌ Stripe Payment Error:", err);
+    return res.status(500).json({
+      message: "Stripe payment failed",
+      error: err.message,
+    });
   }
 };

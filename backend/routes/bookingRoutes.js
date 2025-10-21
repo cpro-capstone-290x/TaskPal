@@ -8,6 +8,7 @@ import {
   agreeToPrice,
   downloadAgreement,
 } from "../controllers/bookingController.js";
+import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -63,7 +64,7 @@ router.get("/", async (req, res) => {
 
 
 // ✅ Existing routes
-router.get("/:id", getBookingById);
+router.get("/:id", protect, getBookingById);
 router.post("/", bookTask);
 router.put("/:id/price", updateBookingPrice);
 router.put("/:id/agree", agreeToPrice);

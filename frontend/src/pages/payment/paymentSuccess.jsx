@@ -1,16 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
-  const location = useLocation();
+  const { bookingId } = useParams(); // ✅ read from /payment-success/:bookingId
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("verifying");
-
-  // ✅ Extract booking_id from URL
-  const queryParams = new URLSearchParams(location.search);
-  const bookingId = queryParams.get("booking_id");
 
   useEffect(() => {
     const handlePaymentSuccess = async () => {
@@ -21,21 +17,19 @@ const PaymentSuccess = () => {
       }
 
       try {
-        // 1️⃣ Update booking payment status
+        // 1️⃣ Update booking payment status in backend
         const res = await axios.put(
           `http://localhost:5000/api/bookings/${bookingId}/paid`
         );
-
         console.log("✅ Booking updated:", res.data);
 
-        // 2️⃣ Create Execution record
+        // 2️⃣ Create execution record
         const execRes = await axios.post("http://localhost:5000/api/execution", {
           booking_id: bookingId,
         });
-
         console.log("✅ Execution created:", execRes.data);
 
-        // 3️⃣ Redirect to Execution page
+        // 3️⃣ Redirect to execution page
         setStatus("success");
         setTimeout(() => {
           navigate(`/execution/${bookingId}`);

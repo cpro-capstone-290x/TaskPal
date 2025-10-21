@@ -50,43 +50,53 @@ const Provider = () => {
       setLoading(true);
       setError("");
 
-      const token = localStorage.getItem('authToken'); // Check your storage key!
+      const token = localStorage.getItem("authToken");
+      const role = localStorage.getItem("userRole");
+      const providerId = localStorage.getItem("providerId");
 
-        if (!token) {
-             setError("You must be logged in to view this profile.");
-             setLoading(false);
-             return; // Stop the fetch attempt if no token exists
-        }
+      if (!id) {
+        setError("No provider ID found in URL.");
+        setLoading(false);
+        return;
+      }
 
       try {
-        const res = await axios.get(`http://localhost:5000/api/providers/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
+        let url;
+
+        // ✅ Provider views their own profile
+        if (role === "provider" && parseInt(providerId) === parseInt(id)) {
+          url = `http://localhost:5000/api/providers/${id}`;
+        } else {
+          // ✅ Public route for clients or viewing another provider
+          url = `http://localhost:5000/api/providers/public/${id}`;
+        }
+
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await axios.get(url, { headers });
 
         if (res.data && res.data.data) {
           const fetchedData = res.data.data;
           setProvider(fetchedData);
-          // Initialize formData with fetched data, including picture URL
           setFormData({
             ...fetchedData,
-            profile_picture_url: fetchedData.profile_picture_url || '',
-          }); 
+            profile_picture_url: fetchedData.profile_picture_url || "",
+          });
         } else {
           setError("Provider not found.");
         }
       } catch (err) {
         console.error("Error fetching provider:", err);
-        setError("Failed to load provider data. Please try again.");
+        if (err.response && err.response.status === 403) {
+          setError("You are not authorized to view this profile.");
+        } else {
+          setError("Failed to load provider data. Please try again.");
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    if (id) {
-      fetchProvider();
-    }
+    fetchProvider();
   }, [id]);
 
   // --- Form Handlers ---

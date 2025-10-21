@@ -6,50 +6,50 @@ const jwtSecret = process.env.JWT_SECRET || 'JWT_SECRET';
 
 // 1. Protection Middleware (Checks for a valid token)
 export const protect = async (req, res, next) => {
-    let token;
+  const authHeader = req.headers.authorization;
 
-    // Check for token in the 'Authorization' header (Bearer Token format)
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-        try {
-            // Get token from header (format: "Bearer [TOKEN]")
-            token = req.headers.authorization.split(' ')[1];
+  if (!authHeader || !authHeader.startsWith("Bearer")) {
+    return res.status(401).json({ error: "No token, authorization denied" });
+  }
 
-            // Verify token
-            const decoded = jwt.verify(token, jwtSecret);
+  const token = authHeader.split(" ")[1];
 
-            // Attach user data (without password) to the request object
-            // This assumes the admin user details are in the 'admins' table
-            const adminUser = await sql`
-                SELECT id, first_name, email, role FROM admins WHERE id = ${decoded.id}
-            `;
+  try {
+    const decoded = jwt.verify(token, jwtSecret);
 
-            if (adminUser.length > 0) {
-                // Admin found. Attach user, and move on.
-                req.adminUser = adminUser[0]; 
-                return next(); // 🛑 IMPORTANT: Exit the middleware chain
-            }
-
-            // Attach user data (without password) to the request object
-            // This assumes the provider user details are in the 'providers' table
-            const providerUser = await sql`
-                SELECT id, name, email, status FROM providers WHERE id = ${decoded.id}
-            `;
-
-            if (providerUser.length > 0) {
-                // Provider found. Attach user, and move on.
-                req.providerUser = providerUser[0]; 
-                return next(); // 🛑 IMPORTANT: Exit the middleware chain
-            }
-
-        } catch (error) {
-            console.error('Token verification error:', error);
-            res.status(401).json({ error: 'Not authorized, token failed' });
-        }
+    // Try to find user in all three roles
+    const [adminUser] = await sql`
+      SELECT id, first_name AS name, email, 'admin' AS role
+      FROM admins WHERE id = ${decoded.id}
+    `;
+    if (adminUser) {
+      req.user = adminUser;
+      return next();
     }
 
-    if (!token) {
-        res.status(401).json({ error: 'Not authorized, no token' });
+    const [providerUser] = await sql`
+      SELECT id, name, email, status, 'provider' AS role
+      FROM providers WHERE id = ${decoded.id}
+    `;
+    if (providerUser) {
+      req.user = providerUser;
+      return next();
     }
+
+    const [normalUser] = await sql`
+      SELECT id, first_name AS name, email, 'user' AS role
+      FROM users WHERE id = ${decoded.id}
+    `;
+    if (normalUser) {
+      req.user = normalUser;
+      return next();
+    }
+
+    return res.status(403).json({ error: "User not found or not authorized" });
+  } catch (err) {
+    console.error("JWT verification error:", err);
+    return res.status(401).json({ error: "Invalid token" });
+  }
 };
 
 

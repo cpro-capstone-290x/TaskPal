@@ -5,7 +5,6 @@ import fs from "fs";
 export const bookTask = async (req, res) => {
   const { client_id, provider_id, notes, scheduled_date } = req.body;
 
-  // Basic validation
   if (!client_id || !provider_id || !scheduled_date) {
     return res
       .status(400)
@@ -13,14 +12,21 @@ export const bookTask = async (req, res) => {
   }
 
   try {
+    // 1️⃣ Create booking
     const [booking] = await sql`
       INSERT INTO bookings (client_id, provider_id, notes, scheduled_date)
       VALUES (${client_id}, ${provider_id}, ${notes}, ${scheduled_date})
       RETURNING id, client_id, provider_id, scheduled_date, status;
     `;
 
+    // 2️⃣ Initialize empty chat record
+    await sql`
+      INSERT INTO chat_messages (booking_id, messages)
+      VALUES (${booking.id}, '[]'::jsonb)
+    `;
+
     res.status(201).json({
-      message: "✅ Booking created successfully",
+      message: "✅ Booking created successfully, chat initialized",
       bookingId: booking.id,
       client_id: booking.client_id,
       provider_id: booking.provider_id,
@@ -33,17 +39,33 @@ export const bookTask = async (req, res) => {
   }
 };
 
+
 export const getBookingById = async (req, res) => {
   const { id } = req.params;
+
   try {
     const [booking] = await sql`SELECT * FROM bookings WHERE id = ${id}`;
     if (!booking) return res.status(404).json({ error: "Booking not found" });
-    res.json(booking);
+
+    const user = req.user;
+
+    // 🧠 Role-based access control
+    if (user.role === "user" && booking.client_id !== user.id) {
+      return res.status(403).json({ error: "Unauthorized to view this booking" });
+    }
+
+    if (user.role === "provider" && booking.provider_id !== user.id) {
+      return res.status(403).json({ error: "Unauthorized to view this booking" });
+    }
+
+    // Admins can view all
+    return res.json(booking);
   } catch (err) {
     console.error("Error fetching booking:", err);
-    res.status(500).json({ error: "Server error" });
+    return res.status(500).json({ error: "Server error" });
   }
 };
+
 
 // Update booking price (provider)
 export const updateBookingPrice = async (req, res) => {

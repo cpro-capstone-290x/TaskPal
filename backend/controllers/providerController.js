@@ -21,23 +21,20 @@ export const getProviders = async (req, res) => {
     }
 }
 export const getProvider = async (req, res) => {
-    const { id } = req.params;
-
   try {
-    const user = await sql`
-      SELECT * FROM providers WHERE id = ${id}
+    const [provider] = await sql`
+      SELECT *
+      FROM providers
+      WHERE id = ${req.params.id}
     `;
-
-    if (user.length === 0) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    res.status(200).json({ success: true, data: user[0] });
-  } catch (error) {
-    console.error("❌ Failed to fetch user:", error);
-    res.status(500).json({ error: "Failed to fetch user" });
+    if (!provider) return res.status(404).json({ error: "Provider not found" });
+    res.json({ success: true, data: provider });
+  } catch (err) {
+    console.error("❌ Error fetching provider:", err);
+    res.status(500).json({ error: "Failed to fetch provider" });
   }
-}
+};
+
 export const updateProvider = async (req, res) => {
     const { id } = req.params;
     const { name, provider_type, service_type, license_id, email, phone, document, status, password } = req.body;

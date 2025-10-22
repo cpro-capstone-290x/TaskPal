@@ -58,6 +58,23 @@ app.use((req, res, next) => {
   next();
 });
 
+// ✅ Middlewares
+app.use(express.json());
+
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",              // local dev
+      "https://task-pal-ruddy.vercel.app",  // your deployed frontend
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
+  })
+);
+app.use(helmet());
+app.use(morgan("dev"));
+app.use(express.urlencoded({ extended: true }));
+
 // ✅ Routes
 app.use("/api/users", userRoutes);
 app.use("/api/providers", providerRoutes);
@@ -72,28 +89,29 @@ app.use("/api/contact", contactRoutes);
 
 // ✅ SOCKET.IO Logic
 io.on("connection", (socket) => {
-  console.log("🟢 User connected:", socket.id);
+  console.log("✅ User connected:", socket.id);
 
+  // 🧩 User joins room
   socket.on("join_room", async ({ bookingId }) => {
     const room = `chat-${bookingId}`;
     socket.join(room);
     console.log(`📩 Joined room: ${room}`);
 
     try {
-      // Ensure chat record exists
+      // 🧩 Ensure chat record exists
       await sql`
         INSERT INTO chat_messages (booking_id)
         VALUES (${bookingId})
         ON CONFLICT (booking_id) DO NOTHING;
       `;
 
-      // Fetch existing messages
+      // 🧩 Fetch chat history
       const result = await sql`
         SELECT messages FROM chat_messages WHERE booking_id = ${bookingId};
       `;
       let chatHistory = result[0]?.messages || [];
 
-      // Normalize message format
+      // ✅ Normalize old messages that lack sender info
       chatHistory = chatHistory.map((m) => ({
         bookingId,
         sender_id: m.sender_id ?? 0,
@@ -102,6 +120,7 @@ io.on("connection", (socket) => {
         timestamp: m.timestamp ?? new Date().toISOString(),
       }));
 
+      // 🧩 Send history only to the newly joined user
       socket.emit("load_messages", chatHistory);
     } catch (error) {
       console.error("❌ Error loading chat history:", error);
@@ -109,6 +128,7 @@ io.on("connection", (socket) => {
     }
   });
 
+  // 🧩 When a new message is sent
   socket.on("send_message", async (data) => {
     const { bookingId, sender_id, sender_role, message } = data;
 
@@ -127,20 +147,23 @@ io.on("connection", (socket) => {
             updated_at = NOW()
         WHERE booking_id = ${bookingId};
       `;
+
       console.log("💾 Saved message:", fullMessage);
     } catch (err) {
       console.error("❌ Error saving message:", err);
     }
 
+    // 🧩 Broadcast to everyone except sender
     socket.to(`chat-${bookingId}`).emit("receive_message", fullMessage);
   });
 
+  // ✅ Disconnect
   socket.on("disconnect", () => {
     console.log("❌ User disconnected:", socket.id);
   });
-});
+}); // 🧠 ← THIS closing bracket was missing before!
 
-// ✅ Initialize Database Tables
+// ✅ Initialize DB Tables
 async function initDB() {
   try {
     await sql`
@@ -158,8 +181,7 @@ async function initDB() {
         postal_code VARCHAR(20),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `;
+    )`;
 
     await sql`
       CREATE TABLE IF NOT EXISTS providers (
@@ -170,12 +192,21 @@ async function initDB() {
         license_id VARCHAR(100),
         email VARCHAR(100) UNIQUE NOT NULL,
         phone VARCHAR(20),
-        document TEXT,                        
-        status VARCHAR(20) DEFAULT 'Pending', 
-        password VARCHAR(255) NOT NULL,       
+        document TEXT,
+        status VARCHAR(20) DEFAULT 'Pending',
+        rejection_reason TEXT,
+        password VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`;
+
+    await sql`
+    CREATE TABLE IF NOT EXISTS chat_messages (
+        booking_id INTEGER PRIMARY KEY REFERENCES bookings(id) ON DELETE CASCADE,
+        messages JSONB DEFAULT '[]'::jsonb,
+        updated_at TIMESTAMP DEFAULT NOW()
+    )`;
+
     await sql`
       CREATE TABLE IF NOT EXISTS authorized_users (
         id SERIAL PRIMARY KEY,
@@ -188,8 +219,7 @@ async function initDB() {
         relationship VARCHAR(50) NOT NULL,
         is_active BOOLEAN DEFAULT true,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `;
+    )`;
 
     await sql`
       CREATE TABLE IF NOT EXISTS admins (
@@ -200,8 +230,7 @@ async function initDB() {
         role VARCHAR(50) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `;
+    )`;
 
     await sql`
       CREATE TABLE IF NOT EXISTS pending_registrations (
@@ -213,8 +242,19 @@ async function initDB() {
         twofa_expires TIMESTAMP NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE (role, email)
-      );
-    `;
+    )`;
+
+    await sql`
+    CREATE TABLE IF NOT EXISTS bookings (
+        id SERIAL PRIMARY KEY,
+        client_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        provider_id INT NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
+        notes TEXT,
+        scheduled_date TIMESTAMP NOT NULL,
+        status VARCHAR(50) DEFAULT 'Pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`;
 
     await sql`
       CREATE TABLE IF NOT EXISTS reviews (
@@ -234,7 +274,7 @@ async function initDB() {
   }
 }
 
-// ✅ Start Server
+// ✅ Start server
 initDB()
   .then(() => {
     server.listen(PORT, () => {

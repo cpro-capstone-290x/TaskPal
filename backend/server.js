@@ -40,10 +40,14 @@ app.use((req, res, next) => {
 
 // ✅ Middlewares
 app.use(express.json());
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
-    methods: ["GET", "POST", "PUT"],
+    origin: [
+      "http://localhost:5173",              // local dev
+      "https://task-pal-ruddy.vercel.app",  // your deployed frontend
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
   })
 );

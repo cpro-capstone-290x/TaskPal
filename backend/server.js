@@ -57,11 +57,6 @@ app.use(helmet());
 app.use(morgan("dev"));
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Add this health check route
-app.get("/", (req, res) => {
-  res.send("🚀 TaskPal backend is live and running successfully!");
-});
-
 // ✅ Create HTTP + Socket.IO server
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -76,6 +71,13 @@ app.set("io", io);
 app.use((req, res, next) => {
   req.io = io;
   next();
+});
+
+app.use(express.urlencoded({ extended: true }));
+
+// ✅ Add this health check route
+app.get("/", (req, res) => {
+  res.send("🚀 TaskPal backend is live and running successfully!");
 });
 
 // ✅ Routes

@@ -41,7 +41,7 @@ try {
 // ✅ Allowed Origins (Local + Production)
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://task-pal-ruddy.vercel.app", // your Vercel frontend domain
+  "https://task-pal-zeta.vercel.app/", // your Vercel frontend domain
 ];
 
 // ✅ Middlewares

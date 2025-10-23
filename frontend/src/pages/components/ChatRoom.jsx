@@ -3,12 +3,24 @@ import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import axios from "axios";
 
-const socket = io("http://localhost:5000", { autoConnect: false });
+// ✅ Setup Socket.IO client
+const socket = io("http://localhost:5000", {
+  withCredentials: true,
+  transports: ["websocket", "polling"],
+  autoConnect: false,
+});
 
 const ChatRoom = () => {
-  const { bookingId, role } = useParams();
+  const { bookingId } = useParams();
   const navigate = useNavigate();
-  const [userId, setUserId] = useState(null);
+
+  const role = localStorage.getItem("userRole"); // "user" or "provider"
+  const storedUserId =
+    role === "provider"
+      ? parseInt(localStorage.getItem("providerId"))
+      : parseInt(localStorage.getItem("userId"));
+
+  const [userId, setUserId] = useState(storedUserId);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [bookingDetails, setBookingDetails] = useState(null);
@@ -16,103 +28,182 @@ const ChatRoom = () => {
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef(null);
 
-  // ✅ Scroll to latest message
+  const token = localStorage.getItem("authToken");
+  const axiosConfig = { headers: { Authorization: `Bearer ${token}` } };
+
+  // ✅ Scroll to last message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // ✅ Fetch booking + provider info
+  // ✅ Fetch booking info + provider info
   useEffect(() => {
     const fetchBooking = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/bookings/${bookingId}`);
+        if (!token) {
+          alert("Please log in to access the chat.");
+          navigate("/login");
+          return;
+        }
+
+        const res = await axios.get(
+          `http://localhost:5000/api/bookings/${bookingId}`,
+          axiosConfig
+        );
         const booking = res.data;
         setBookingDetails(booking);
 
-        // ✅ Fetch provider info (optional)
+        // ✅ Fetch provider details
         if (booking.provider_id) {
           const providerRes = await axios.get(
-            `http://localhost:5000/api/providers/${booking.provider_id}`
+            `http://localhost:5000/api/providers/public/${booking.provider_id}`
           );
           setProviderDetails(providerRes.data.data);
         }
       } catch (err) {
         console.error("❌ Booking not found:", err);
-        alert("This booking no longer exists or was deleted.");
+        alert("This booking no longer exists or is unauthorized.");
         navigate("/");
       } finally {
         setLoading(false);
       }
     };
+
     fetchBooking();
   }, [bookingId, navigate]);
 
-  // ✅ Setup socket connection after booking is confirmed to exist
+  // ✅ Setup socket connection
   useEffect(() => {
     if (loading || !bookingDetails) return;
-    const id = role === "user" ? 1 : 2;
-    setUserId(id);
 
     if (!socket.connected) socket.connect();
-    const room = `chat-${bookingId}`;
-    socket.emit("join_room", { bookingId: parseInt(bookingId), userId: id });
 
-    socket.off("receive_message").on("receive_message", (data) => {
+    socket.emit("join_room", { bookingId: parseInt(bookingId), role });
+
+    socket.on("load_messages", (history) => {
+      console.log("💬 Loaded chat history:", history);
+      setMessages(history || []);
+    });
+
+    socket.on("receive_message", (data) => {
+      // Avoid echo
+      if (
+        Number(data.sender_id) === userId &&
+        String(data.sender_role).toLowerCase() === String(role).toLowerCase()
+      )
+        return;
       setMessages((prev) => [...prev, data]);
     });
 
-    socket.off("booking_updated").on("booking_updated", (updatedBooking) => {
-      console.log("📡 Booking updated via socket:", updatedBooking);
+    socket.on("booking_updated", (updatedBooking) => {
       setBookingDetails(updatedBooking);
     });
 
     return () => {
-      socket.emit("leave_room", room);
+      socket.emit("leave_room", `chat-${bookingId}`);
+      socket.off("load_messages");
       socket.off("receive_message");
       socket.off("booking_updated");
+      socket.disconnect();
     };
-  }, [bookingId, bookingDetails, loading, role]);
+  }, [bookingId, bookingDetails, loading, role, userId]);
 
-  // ✅ Send chat message
+  // ✅ Send message
   const sendMessage = () => {
     if (!message.trim()) return;
+
     const newMessage = {
       bookingId: parseInt(bookingId),
-      senderId: userId,
+      sender_id: userId,
+      sender_role: role,
       message,
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
     };
+
+    setMessages((prev) => [...prev, newMessage]);
     socket.emit("send_message", newMessage);
     setMessage("");
   };
 
+  // ✅ Format time
   const formatTime = (ts) =>
     new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
+  // ✅ Update booking price (Provider)
   const handleUpdatePrice = async () => {
     try {
+      const newPrice = prompt(
+        "Enter a new price:",
+        bookingDetails.price || ""
+      );
+      if (!newPrice || isNaN(newPrice)) return alert("Invalid price.");
+
       const res = await axios.put(
         `http://localhost:5000/api/bookings/${bookingId}/price`,
-        { price: bookingDetails.price }
+        { price: newPrice },
+        axiosConfig
       );
       setBookingDetails(res.data.booking);
+
+      socket.emit("send_message", {
+        bookingId,
+        sender_id: userId,
+        sender_role: role,
+        message: `💬 Provider proposed a new price: $${newPrice}`,
+        timestamp: new Date().toISOString(),
+      });
     } catch (err) {
       console.error("Error updating price:", err);
     }
   };
 
+  // ✅ Agree to price
   const handleAgree = async () => {
     try {
       const res = await axios.put(
         `http://localhost:5000/api/bookings/${bookingId}/agree`,
-        { role }
+        { role },
+        axiosConfig
       );
       setBookingDetails(res.data.booking);
+
+      socket.emit("send_message", {
+        bookingId,
+        sender_id: userId,
+        sender_role: role,
+        message: `✅ ${role === "user" ? "Client" : "Provider"} agreed to the price.`,
+        timestamp: new Date().toISOString(),
+      });
     } catch (err) {
       console.error("Error agreeing to price:", err);
     }
   };
 
+      const handleProceedToPayment = async () => {
+        try {
+          const id = bookingDetails.id;
+          if (!id) return alert("Booking ID not found.");
+
+          const res = await axios.post(
+            `http://localhost:5000/api/payments/create-intent/${id}`,
+            {},
+            axiosConfig
+          );
+
+          if (res.data.url) {
+            window.location.href = res.data.url; // ✅ Redirect to Stripe checkout
+          } else {
+            alert("Failed to create payment session.");
+          }
+        } catch (err) {
+          console.error("❌ Payment error:", err);
+          alert("Something went wrong while initiating payment.");
+        }
+      };
+
+
+
+  // ✅ Loading state
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50 text-gray-600">
@@ -121,49 +212,35 @@ const ChatRoom = () => {
     );
   }
 
+  // ✅ UI
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* 🧍‍♂️ LEFT PANEL - Task Provider Info */}
+      {/* LEFT PANEL - Provider Info */}
       <div className="w-80 bg-white border-r border-gray-200 p-6 flex flex-col justify-between">
         {providerDetails ? (
           <>
             <div className="flex flex-col items-center text-center">
-              <img
-                src={providerDetails.image || "https://via.placeholder.com/100"}
-                alt={providerDetails.first_name}
-                className="w-28 h-28 rounded-full object-cover border-4 border-gray-100 mb-4"
-              />
-              <h3 className="text-xl font-bold text-gray-800">
-                {providerDetails.first_name} {providerDetails.last_name}
+              <div className="w-28 h-28 rounded-full border-4 border-gray-100 bg-gray-100 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-800">
+                {providerDetails.name || "Task Provider"}
               </h3>
-              <p className="text-gray-500 text-sm">{providerDetails.category || "Task Provider"}</p>
-
-              {/* ⭐ Ratings */}
-              <div className="flex items-center gap-1 mt-2 text-yellow-500 text-sm">
-                ⭐ <span className="text-gray-600">{providerDetails.rating || "5.0"}</span>
-                <span className="text-gray-400">
-                  ({providerDetails.review_count || 0} reviews)
-                </span>
+              <div className="flex items-center gap-1 mt-1 text-yellow-500 text-sm">
+                ⭐ <span className="text-gray-600">5.0</span>
+                <span className="text-gray-400">(0 reviews)</span>
               </div>
-
               <button className="mt-4 px-5 py-2 rounded-full text-sm font-medium bg-sky-600 text-white hover:bg-sky-700 transition">
                 View Profile
               </button>
             </div>
 
-            {/* 🧾 Provider Info Summary */}
-            <div className="mt-8 border-t border-gray-200 pt-4 text-gray-700 text-sm space-y-2">
+            <div className="mt-6 border-t border-gray-200 pt-4 text-sm text-gray-700 space-y-1">
               <p>
                 <span className="font-semibold">Service:</span>{" "}
                 {providerDetails.service_type || "General Task"}
               </p>
               <p>
-                <span className="font-semibold">Experience:</span>{" "}
-                {providerDetails.experience || "N/A"}
-              </p>
-              <p>
-                <span className="font-semibold">Hourly Rate:</span>{" "}
-                ${providerDetails.price || "N/A"}/hr
+                <span className="font-semibold">Provider Type:</span>{" "}
+                {providerDetails.provider_type || "Independent"}
               </p>
               <p>
                 <span className="font-semibold">Location:</span>{" "}
@@ -172,7 +249,7 @@ const ChatRoom = () => {
             </div>
           </>
         ) : (
-          <p className="text-center text-gray-500 mt-12">Loading provider...</p>
+          <p className="text-center text-gray-500 mt-10">Loading provider...</p>
         )}
 
         <div className="text-xs text-gray-400 mt-6 border-t border-gray-200 pt-4">
@@ -180,32 +257,47 @@ const ChatRoom = () => {
         </div>
       </div>
 
-      {/* 💬 CENTER - Chat Section */}
-      <div className="flex flex-col flex-1 border-r border-gray-200 bg-gray-100">
+      {/* CENTER - Chat Section */}
+      <div className="flex flex-col flex-1 bg-gray-100 border-r border-gray-200">
         <div className="border-b border-gray-200 px-6 py-4 bg-white flex justify-between items-center">
           <h2 className="font-semibold text-gray-800 text-lg">Chat Room</h2>
-          <img src="/logo.png" alt="TaskPal" className="h-6 opacity-70" />
         </div>
 
-        {/* 💬 Messages */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        {/* ✅ Messages */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-3 bg-gray-50">
           {messages.map((msg, i) => {
-            const isSender = msg.senderId === userId;
-            const senderName = msg.senderId === 1 ? "Client" : "Provider";
+            const senderId = Number(msg.sender_id ?? msg.senderId);
+            const senderRole = String(msg.sender_role || "").trim().toLowerCase();
+            const currentRole = String(role || "").trim().toLowerCase();
+            const currentId = Number(userId);
+
+            const isSender =
+              senderRole === currentRole && senderId === currentId;
+
+            const senderName = isSender
+              ? "You"
+              : senderRole === "provider"
+              ? "Provider"
+              : "Client";
+
             return (
               <div
                 key={i}
                 className={`flex ${isSender ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-xs px-4 py-2 rounded-2xl text-sm ${
+                  className={`relative max-w-[70%] px-4 py-2 rounded-2xl text-sm shadow-sm ${
                     isSender
                       ? "bg-sky-600 text-white rounded-br-none"
                       : "bg-white text-gray-800 border border-gray-200 rounded-bl-none"
                   }`}
                 >
-                  <p>{msg.message}</p>
-                  <div className="text-[11px] mt-1 text-gray-300">
+                  <p className="whitespace-pre-wrap break-words">{msg.message}</p>
+                  <div
+                    className={`text-[11px] mt-1 ${
+                      isSender ? "text-gray-200 text-right" : "text-gray-500 text-left"
+                    }`}
+                  >
                     {senderName} • {formatTime(msg.timestamp)}
                   </div>
                 </div>
@@ -215,7 +307,7 @@ const ChatRoom = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* ✏️ Input */}
+        {/* ✅ Input */}
         <div className="p-4 bg-white border-t border-gray-200 flex items-center gap-2">
           <input
             type="text"
@@ -223,7 +315,7 @@ const ChatRoom = () => {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-            className="flex-1 border border-gray-300 text-white rounded-full px-4 py-2 focus:ring-2 focus:ring-sky-400 focus:outline-none text-gray-700"
+            className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:ring-2 focus:ring-sky-400 focus:outline-none text-gray-700"
           />
           <button
             onClick={sendMessage}
@@ -234,194 +326,87 @@ const ChatRoom = () => {
         </div>
       </div>
 
-      {/* 📦 RIGHT PANEL - Booking Details */}
-      <div className="w-80 p-5 bg-white border-l border-gray-200 flex flex-col justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Booking Details</h2>
+      {/* RIGHT PANEL - Booking Info */}
+      <div className="w-80 bg-white p-6 flex flex-col justify-between border-l border-gray-200">
+        {bookingDetails && (
+          <div className="text-sm text-gray-700 space-y-2">
+            <p>
+              <strong>Booking ID:</strong> {bookingDetails.id}
+            </p>
+            <p>
+              <strong>Notes:</strong> {bookingDetails.notes || "N/A"}
+            </p>
+            <p>
+              <strong>Proposed Price:</strong>{" "}
+              {bookingDetails.price
+                ? `$${Number(bookingDetails.price).toFixed(2)}`
+                : "$0.00"}
+            </p>
+            <p>
+              <strong>Scheduled:</strong>{" "}
+              {new Date(bookingDetails.scheduled_date).toLocaleString()}
+            </p>
+            <p>
+              <strong>Status:</strong>{" "}
+              <span
+                className={`px-2 py-0.5 rounded text-white ${
+                  bookingDetails.status === "Negotiating"
+                    ? "bg-yellow-500"
+                    : bookingDetails.status === "Confirmed"
+                    ? "bg-green-600"
+                    : "bg-gray-500"
+                }`}
+              >
+                {bookingDetails.status}
+              </span>
+            </p>
 
-          {bookingDetails ? (
-            <div className="space-y-3 text-sm text-gray-700">
-              <p>
-                <strong>Booking ID:</strong> {bookingDetails.id}
-              </p>
-              <p>
-                <strong>Notes:</strong> {bookingDetails.notes || "No notes provided"}
-              </p>
-              <p>
-                <strong>Price:</strong>{" "}
-                {bookingDetails.price
-                  ? `$${Number(bookingDetails.price).toFixed(2)}`
-                  : "Not set"}
-              </p>
-              <p>
-                <strong>Scheduled:</strong>{" "}
-                {bookingDetails.scheduled_date
-                  ? new Date(bookingDetails.scheduled_date).toLocaleString()
-                  : "Not scheduled"}
-              </p>
-              <p>
-                <strong>Status:</strong>{" "}
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                    bookingDetails.status === "Confirmed"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-yellow-100 text-yellow-700"
-                  }`}
-                >
-                  {bookingDetails.status}
-                </span>
-              </p>
-
-              {/* 💬 Negotiation Section (both can propose until both agree) */}
-              {["Pending", "Negotiating"].includes(bookingDetails.status) && (
-                <div className="mt-3 space-y-2">
-                  <input
-                    type="number"
-                    placeholder={`Enter your proposed price (${role === "user" ? "client" : "provider"})`}
-                    value={bookingDetails.price || ""}
-                    onChange={(e) =>
-                      setBookingDetails((prev) => ({
-                        ...prev,
-                        price: e.target.value,
-                      }))
-                    }
-                    className="w-full border rounded-lg px-3 py-2 text-gray-800 focus:ring-2 focus:ring-sky-400"
-                    disabled={
-                      bookingDetails.agreement_signed_by_client &&
-                      bookingDetails.agreement_signed_by_provider
-                    }
-                  />
-
+            {/* ✅ Provider actions */}
+            {["Pending", "Negotiating"].includes(bookingDetails.status) &&
+              role === "provider" && (
+                <div className="mt-4 space-y-2">
                   <button
-                    onClick={() => {
-                      const newPrice = bookingDetails.price;
-                      if (!newPrice || isNaN(newPrice) || Number(newPrice) <= 0) {
-                        alert("Please enter a valid price.");
-                        return;
-                      }
-
-                      axios
-                        .put(`http://localhost:5000/api/bookings/${bookingId}/price`, {
-                          price: newPrice,
-                        })
-                        .then((res) => {
-                          setBookingDetails(res.data.booking);
-                          socket.emit("booking_updated", res.data.booking);
-                          socket.emit("send_message", {
-                            bookingId,
-                            senderId: userId,
-                            message: `💬 ${
-                              role === "user" ? "Client" : "Provider"
-                            } proposed a new price: $${newPrice}`,
-                            timestamp: new Date(),
-                          });
-                          alert("New price proposed successfully!");
-                        })
-                        .catch((err) => {
-                          console.error("Error proposing new price:", err);
-                          alert("Failed to propose new price.");
-                        });
-                    }}
-                    disabled={
-                      bookingDetails.agreement_signed_by_client &&
-                      bookingDetails.agreement_signed_by_provider
-                    }
-                    className={`btn btn-sm w-full ${
-                      bookingDetails.agreement_signed_by_client &&
-                      bookingDetails.agreement_signed_by_provider
-                        ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                        : "bg-sky-600 hover:bg-sky-700 text-white"
-                    }`}
+                    onClick={handleUpdatePrice}
+                    className="w-full bg-sky-600 text-white py-2 rounded hover:bg-sky-700"
                   >
                     💬 Propose New Price
                   </button>
-                </div>
-              )}
-
-              {/* Agreement buttons */}
-              {bookingDetails.price && bookingDetails.status !== "Confirmed" && (
-                <div className="mt-3">
                   <button
-                    disabled={
-                      (role === "user" && bookingDetails.agreement_signed_by_client) ||
-                      (role === "provider" && bookingDetails.agreement_signed_by_provider)
-                    }
                     onClick={handleAgree}
-                    className={`btn btn-sm w-full ${
-                      (role === "user" && bookingDetails.agreement_signed_by_client) ||
-                      (role === "provider" && bookingDetails.agreement_signed_by_provider)
-                        ? "bg-gray-300 cursor-not-allowed"
-                        : "bg-green-600 hover:bg-green-700 text-white"
-                    }`}
+                    className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
                   >
-                    {((role === "user" && bookingDetails.agreement_signed_by_client) ||
-                    (role === "provider" && bookingDetails.agreement_signed_by_provider))
-                      ? "Agreed ✅"
-                      : "Agree to Price"}
+                    ✅ Agree to Price
                   </button>
                 </div>
               )}
 
-              {/* ✅ Payment button for confirmed bookings */}
-              {bookingDetails.status === "Confirmed" && role === "user" && (
+            {/* ✅ Client actions */}
+            {["Pending", "Negotiating"].includes(bookingDetails.status) &&
+              role === "user" && (
                 <div className="mt-4 space-y-2">
                   <button
-                    onClick={async () => {
-                      try {
-                        const res = await axios.post(
-                          `http://localhost:5000/api/payments/create-intent`,
-                          {
-                            booking_id: bookingDetails.id,
-                            client_id: bookingDetails.client_id,
-                            provider_id: bookingDetails.provider_id,
-                            amount: bookingDetails.price,
-                          }
-                        );
-
-                        if (res.data.url) {
-                          window.location.href = res.data.url; // ✅ Redirect to Stripe checkout page
-                        } else {
-                          alert("Unable to load payment page. Please try again.");
-                        }
-                      } catch (err) {
-                        console.error("❌ Payment error:", err);
-                        alert("Error initiating payment. Please try again later.");
-                      }
-                    }}
-                    className="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 rounded-lg transition"
+                    onClick={handleAgree}
+                    className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
                   >
-                    Proceed to Payment 💳
-                  </button>
-
-                  <p className="text-xs text-gray-500 text-center">
-                    Secure payment powered by Stripe.
-                  </p>
-
-                  {/* Optional: Show agreement download button below payment */}
-                  <button
-                    onClick={() =>
-                      window.open(
-                        `http://localhost:5000/api/bookings/${bookingDetails.id}/agreement`,
-                        "_blank"
-                      )
-                    }
-                    className="w-full border border-sky-500 text-sky-600 rounded-lg py-2 hover:bg-sky-50 transition"
-                  >
-                    Download Agreement 📄
+                    ✅ Agree to Price
                   </button>
                 </div>
               )}
-            </div>
-          ) : (
-            <p className="text-gray-400">Loading booking details...</p>
-          )}
-        </div>
 
-        <div className="border-t border-gray-200 mt-4 pt-4 text-xs text-gray-400">
-          Both users can negotiate details before confirmation.
-        </div>
+            {/* ✅ Payment button for client */}
+            {bookingDetails.status === "Confirmed" && role === "user" && (
+              <div className="mt-6">
+                <button
+                  onClick={handleProceedToPayment}
+                  className="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700"
+                >
+                  💳 Proceed to Payment
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
-
     </div>
   );
 };

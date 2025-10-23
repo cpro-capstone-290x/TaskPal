@@ -1,5 +1,5 @@
-import express from 'express';
-import { protect, provider, providerAuth } from '../middleware/authMiddleware.js';
+import express from "express";
+import { protect, provider, providerAuth } from "../middleware/authMiddleware.js";
 import {
   getProviders,
   getProvider,
@@ -7,7 +7,7 @@ import {
   deleteProvider,
   getProvidersByServiceType,
   updateProviderStatus,
-} from '../controllers/providerController.js';
+} from "../controllers/providerController.js";
 
 const router = express.Router();
 
@@ -15,22 +15,17 @@ const router = express.Router();
 router.get("/public/:id", getProvider);
 router.get("/public/service_type/:service_type", getProvidersByServiceType);
 
-// Service type listing
+// General listing
+router.get("/", getProviders);
 router.get("/service_type/:service_type", getProvidersByServiceType);
 
-// Provider listing
-router.get("/", getProviders);
+// 🔐 Provider self-management
+router.route("/:id")
+  .get(protect, providerAuth, getProvider)
+  .put(protect, providerAuth, updateProvider)
+  .delete(protect, providerAuth, deleteProvider);
 
-// Protected routes (for provider self-management)
-router
-  .route("/:id")
-  .get(protect, providerAuth, getProvider)     // View own profile
-  .put(protect, providerAuth, updateProvider)  // Edit own profile
-  .delete(protect, providerAuth, deleteProvider); // Delete own profile
-
-// Admin-only provider status update
-router
-  .route("/:id/status")
-  .patch(protect, provider, updateProviderStatus);
+// 🔒 Admin-only status updates
+router.route("/:id/status").patch(protect, provider, updateProviderStatus);
 
 export default router;

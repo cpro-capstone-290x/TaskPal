@@ -73,6 +73,13 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(express.urlencoded({ extended: true }));
+
+// ✅ Add this health check route
+app.get("/", (req, res) => {
+  res.send("🚀 TaskPal backend is live and running successfully!");
+});
+
 // ✅ Routes
 app.use("/api/users", userRoutes);
 app.use("/api/providers", providerRoutes);
@@ -154,6 +161,7 @@ io.on("connection", (socket) => {
     console.log("❌ User disconnected:", socket.id);
   });
 });
+
 
 // ✅ Initialize Database Tables
 async function initDB() {

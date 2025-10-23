@@ -75,12 +75,15 @@ export const registerUser = async (req, res) => {
         created_at = CURRENT_TIMESTAMP
     `;
 
-    await sendOTP(email, otp);
+    sendOTP(email, otp)
+      .then(() => console.log(`✅ OTP email sent to ${email}`))
+      .catch(err => console.error("❌ OTP send failed:", err.message));
 
     return res.status(201).json({
       success: true,
       message: "OTP sent to email. Please verify to complete registration."
     });
+
   } catch (err) {
     console.error("❌ Registration (pending) failed:", err);
     return res.status(500).json({ error: "Registration failed" });

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
+import api from "../../../api";
 
 
 
@@ -27,13 +28,13 @@ const SearchBooking = () => {
     const fetchProviders = async () => {
       setLoading(true);
       try {
-        let url = "http://localhost:5000/api/providers/service_type";
+        let endpoint = "/api/providers/service_type";
 
         if (selectedCategory) {
-          url += `/${encodeURIComponent(selectedCategory)}`;
+          endpoint += `/${encodeURIComponent(selectedCategory)}`;
         }
 
-        const res = await axios.get(url);
+        const res = await api.get(endpoint);
         setProviders(res.data.data || []);
       } catch (error) {
         console.error("Error fetching providers:", error);

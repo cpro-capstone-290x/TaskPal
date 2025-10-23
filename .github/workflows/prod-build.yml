@@ -93,3 +93,24 @@ jobs:
             ${{ env.IMAGE_FRONTEND }}:${{ github.sha }}
           build-args: |
             NODE_ENV=production
+      # -------------------------------
+      # 7️⃣  Sync GitHub Secrets to Vercel
+      # -------------------------------
+      - name: 🔄 Sync GitHub Secrets to Vercel
+        run: |
+          npm install -g vercel
+          vercel env add VITE_API_URL production <<< "https://taskpal-backend.onrender.com/api"
+          vercel env add VITE_BACKEND_URL production <<< "https://taskpal-backend.onrender.com"
+          vercel env add VITE_STREAM_API_KEY production <<< "${{ secrets.STREAM_API_KEY }}"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      # -------------------------------
+      # 8️⃣  Trigger Vercel Deployment
+      # -------------------------------
+      - name: 🚀 Trigger Vercel Deployment (Frontend)
+        run: |
+          vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --confirm
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

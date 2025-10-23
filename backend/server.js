@@ -57,6 +57,11 @@ app.use(helmet());
 app.use(morgan("dev"));
 app.use(express.urlencoded({ extended: true }));
 
+// ✅ Add this health check route
+app.get("/", (req, res) => {
+  res.send("🚀 TaskPal backend is live and running successfully!");
+});
+
 // ✅ Create HTTP + Socket.IO server
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -72,11 +77,6 @@ app.use((req, res, next) => {
   req.io = io;
   next();
 });
-
-app.get("/", (req, res) => {
-  res.send("🚀 TaskPal backend is live!");
-});
-
 
 // ✅ Routes
 app.use("/api/users", userRoutes);
@@ -159,6 +159,7 @@ io.on("connection", (socket) => {
     console.log("❌ User disconnected:", socket.id);
   });
 });
+
 
 // ✅ Initialize Database Tables
 async function initDB() {

@@ -1,7 +1,7 @@
 // backend/controllers/userController.js
 
 import { sql } from "../config/db.js";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { sendOTP } from "../config/mailer.js"; // we'll make this helper
 import jwt from "jsonwebtoken";
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
+import api from "../../../api";
 
 const User = () => {
   const { id } = useParams();
@@ -30,7 +31,7 @@ const User = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/users/${id}`);
+        const res = await api.get(`/users/${id}`);
         if (res.data && res.data.success) {
           setUser(res.data.data);
         } else {
@@ -70,9 +71,7 @@ const User = () => {
     const fetchBookings = async () => {
       setBookingLoading(true);
       try {
-        const res = await axios.get(
-          `http://localhost:5000/api/bookings?client_id=${id}`
-        );
+        const res = await api.get(`/bookings?client_id=${id}`);
         if (res.data && Array.isArray(res.data)) {
           setBookings(res.data);
         } else if (res.data.data) {
@@ -97,7 +96,7 @@ const User = () => {
 
   const handleSave = async () => {
     try {
-      const res = await axios.put(`http://localhost:5000/api/users/${id}`, formData);
+      const res = await api.put(`/users/${id}`, formData);
       const updated = res.data?.data || res.data;
       setUser(updated);
       setEditMode(false);
@@ -516,9 +515,7 @@ const AuthorizedUserSection = ({ user, navigate, setActiveTab }) => {
 
     const fetchAuthorizedUser = async () => {
       try {
-        const res = await axios.get(
-          `http://localhost:5000/api/auth/authorized-users/${user.id}`
-        );
+        const res = await api.get(`/auth/authorized-users/${user.id}`);
         setAuthUser(res.data?.data || null);
       } catch (err) {
         console.error("Error fetching authorized user:", err);
@@ -603,9 +600,7 @@ const AuthorizedUserSection = ({ user, navigate, setActiveTab }) => {
                 )
               ) {
                 try {
-                  await axios.delete(
-                    `http://localhost:5000/api/auth/authorized-user/${authUser.id}`
-                  );
+                  await api.delete(`/auth/authorized-user/${authUser.id}`);
                   alert("Authorized user removed.");
                   setAuthUser(null);
                 } catch (err) {
@@ -654,8 +649,8 @@ const AuthorizedUserSection = ({ user, navigate, setActiveTab }) => {
           };
 
           try {
-            const res = await axios.post(
-              "http://localhost:5000/api/auth/registerAuthorizedUser",
+            const res = await api.post(
+              "/auth/registerAuthorizedUser",
               payload
             );
 

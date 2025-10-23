@@ -5,6 +5,9 @@ import cors from "cors";
 import dotenv from "dotenv";
 import http from "http";
 import { Server } from "socket.io";
+import fs from "fs";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 
 import userRoutes from "./routes/userRoutes.js";
 import providerRoutes from "./routes/providerRoutes.js";
@@ -22,6 +25,18 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+console.log("🧭 Current working dir:", process.cwd());
+console.log("📂 server.js location:", __dirname);
+
+try {
+  console.log("📂 Folder contents:", fs.readdirSync(__dirname));
+} catch (e) {
+  console.error("⚠️ Could not read directory:", e.message);
+}
 
 // ✅ Allowed Origins (Local + Production)
 const allowedOrigins = [

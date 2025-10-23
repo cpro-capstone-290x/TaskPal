@@ -1,18 +1,14 @@
-import nodemailer from "nodemailer";
+import Brevo from "@getbrevo/brevo";
 import dotenv from "dotenv";
 dotenv.config();
 
 
-export const transporter = nodemailer.createTransport({
-  host: "smtp-relay.brevo.com",
-  port: 587, // use 465 for SSL (secure true)
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  connectionTimeout: 30000, // 30s timeout for Render slow network
-});
+// ✅ Initialize Brevo client
+const apiInstance = new Brevo.TransactionalEmailsApi();
+apiInstance.setApiKey(
+  Brevo.TransactionalEmailsApiApiKeys.apiKey,
+  process.env.BREVO_API_KEY
+);
 
 export async function sendOTP(email, otp) {
   await transporter.sendMail({

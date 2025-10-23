@@ -5,7 +5,10 @@ const OTPProvider = ({ userData, onSuccess, onBack }) => {
     const email = userData?.email; 
     
     // NOTE: Use your actual API endpoint for OTP verification
-    const API_ENDPOINT = 'http://localhost:5000/api/auth/verifyProvider'; 
+    // const API_ENDPOINT = 'http://localhost:5000/api/auth/verifyProvider'; 
+    const API_ENDPOINT = import.meta.env.VITE_API_URL
+        ? `${import.meta.env.VITE_API_URL}/auth/verifyProvider`
+        : "https://taskpal-14oy.onrender.com/api/auth/verifyProvider";
 
     // State for the 6 individual inputs (easier for focus/backspace logic)
     const [otp, setOtp] = useState(Array(6).fill('')); 

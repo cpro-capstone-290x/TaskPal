@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 
 const InputField = ({ label, id, type = 'text', value, onChange, required = false, placeholder = '' }) => (
     <div className="flex flex-col">
@@ -47,6 +49,8 @@ const RegisterUser = ({ onSuccess }) => {
             [name]: value
         }));
     };
+
+    const navigate = useNavigate();
 
     // Function to handle form submission
     const handleSubmit = async (e) => {
@@ -112,9 +116,8 @@ const RegisterUser = ({ onSuccess }) => {
                 unit_no: '', street: '', city: '', province: 'Alberta', postal_code: '',
             });
 
-            onSuccess({ 
-                email: formData.email, 
-            }); 
+            // ✅ Redirect to OTP page
+            navigate(`/verify-otp?email=${encodeURIComponent(formData.email)}`);
 
         } catch (error) {
             console.error('Network or unexpected error:', error);

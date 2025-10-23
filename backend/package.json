@@ -10,7 +10,8 @@
     "dev": "nodemon server.js",
     "reset-db": "node resetDB.js",
     "test-db": "node testDB.js",
-    "test-stream": "node testStream.js"
+    "test-stream": "node testStream.js",
+    "testEmail": "node testEmail.js"
   },
   "dependencies": {
     "@arcjet/node": "^1.0.0-beta.12",

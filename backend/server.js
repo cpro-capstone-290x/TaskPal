@@ -73,6 +73,11 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get("/", (req, res) => {
+  res.send("🚀 TaskPal backend is live!");
+});
+
+
 // ✅ Routes
 app.use("/api/users", userRoutes);
 app.use("/api/providers", providerRoutes);

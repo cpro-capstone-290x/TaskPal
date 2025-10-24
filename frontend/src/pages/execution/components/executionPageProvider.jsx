@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import api from "../../../api";
 
 const ExecutionPageProvider = () => {
   const { bookingId } = useParams();
@@ -13,7 +14,7 @@ const ExecutionPageProvider = () => {
   // ✅ Fetch execution details
   const fetchExecution = async () => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/execution/${bookingId}`);
+      const res = await api.get(`/execution/${bookingId}`);
       setExecution(res.data.data || res.data);
     } catch (err) {
       console.error("Error fetching execution:", err);
@@ -31,7 +32,7 @@ const ExecutionPageProvider = () => {
     const handleStatusUpdate = async (field) => {
     setUpdating(true);
     try {
-        await axios.put(`http://localhost:5000/api/execution/${bookingId}/update`, { field });
+        await api.put(`/execution/${bookingId}/update`, { field });
 
         // ✅ Optional: short delay for UX, then reload the page
         setTimeout(() => {

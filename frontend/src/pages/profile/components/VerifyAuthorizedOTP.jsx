@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
+import api from "../../../api";
 
 const VerifyAuthorizedOTP = () => {
   const [otp, setOtp] = useState("");
@@ -14,7 +15,7 @@ const VerifyAuthorizedOTP = () => {
     setStatus({ loading: true, error: null, success: false });
 
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/verifyAuthorize", {
+      const res = await api.post("/auth/verifyAuthorize", {
         email,
         otp,
       });

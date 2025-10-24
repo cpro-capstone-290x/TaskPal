@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import axios from "axios";
+import api from "../../../api";
 
 // ✅ Setup Socket.IO client
 const socket = io("http://localhost:5000", {
@@ -46,17 +47,14 @@ const ChatRoom = () => {
           return;
         }
 
-        const res = await axios.get(
-          `http://localhost:5000/api/bookings/${bookingId}`,
-          axiosConfig
-        );
+        const res = await api.get(`/bookings/${bookingId}`, axiosConfig);
         const booking = res.data;
         setBookingDetails(booking);
 
         // ✅ Fetch provider details
         if (booking.provider_id) {
-          const providerRes = await axios.get(
-            `http://localhost:5000/api/providers/public/${booking.provider_id}`
+          const providerRes = await api.get(
+            `/providers/public/${booking.provider_id}`
           );
           setProviderDetails(providerRes.data.data);
         }
@@ -138,8 +136,8 @@ const ChatRoom = () => {
       );
       if (!newPrice || isNaN(newPrice)) return alert("Invalid price.");
 
-      const res = await axios.put(
-        `http://localhost:5000/api/bookings/${bookingId}/price`,
+      const res = await api.put(
+        `/bookings/${bookingId}/price`,
         { price: newPrice },
         axiosConfig
       );
@@ -160,8 +158,8 @@ const ChatRoom = () => {
   // ✅ Agree to price
   const handleAgree = async () => {
     try {
-      const res = await axios.put(
-        `http://localhost:5000/api/bookings/${bookingId}/agree`,
+      const res = await api.put(
+        `/bookings/${bookingId}/agree`,
         { role },
         axiosConfig
       );
@@ -184,8 +182,8 @@ const ChatRoom = () => {
           const id = bookingDetails.id;
           if (!id) return alert("Booking ID not found.");
 
-          const res = await axios.post(
-            `http://localhost:5000/api/payments/create-intent/${id}`,
+          const res = await api.post(
+            `/payments/create-intent/${id}`,
             {},
             axiosConfig
           );

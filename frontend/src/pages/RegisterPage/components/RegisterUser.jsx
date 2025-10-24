@@ -117,7 +117,7 @@ const RegisterUser = ({ onSuccess }) => {
             });
 
             // ✅ Redirect to OTP page
-            navigate(`/verify-otp?email=${encodeURIComponent(formData.email)}`);
+            onSuccess({ email: formData.email });
 
         } catch (error) {
             console.error('Network or unexpected error:', error);

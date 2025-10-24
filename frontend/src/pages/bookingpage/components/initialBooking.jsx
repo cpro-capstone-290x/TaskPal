@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import api from "../../../api";
 
 const BookingInit = () => {
   const { providerId } = useParams();
@@ -45,8 +46,8 @@ const BookingInit = () => {
 
     setLoading(true);
     try {
-      const res = await axios.post(
-        "http://localhost:5000/api/bookings",
+      const res = await api.post(
+        "/bookings",
         {
           client_id: clientId,
           provider_id: providerId,

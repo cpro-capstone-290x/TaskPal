@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
 import { Edit2, Save, X, CheckCircle, Clock, Upload, User as UserIcon } from 'lucide-react'; 
+import api from "../../../api";
 
 // --- Helper Component for Input Fields (Same as before) ---
 const ProfileField = ({ label, name, value, onChange, readOnly = false, type = 'text', className = '' }) => {
@@ -53,6 +54,8 @@ const Provider = () => {
       const token = localStorage.getItem("authToken");
       const role = localStorage.getItem("userRole");
       const providerId = localStorage.getItem("providerId");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
 
       if (!id) {
         setError("No provider ID found in URL.");
@@ -61,18 +64,15 @@ const Provider = () => {
       }
 
       try {
-        let url;
+        let url = "";
 
-        // ✅ Provider views their own profile
-        if (role === "provider" && parseInt(providerId) === parseInt(id)) {
-          url = `http://localhost:5000/api/providers/${id}`;
-        } else {
-          // ✅ Public route for clients or viewing another provider
-          url = `http://localhost:5000/api/providers/public/${id}`;
-        }
+          if (role === "provider" && parseInt(providerId) === parseInt(id)) {
+            url = `/providers/${id}`;
+          } else {
+            url = `/providers/public/${id}`;
+          }
 
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.get(url, { headers });
+          const res = await api.get(url,{ headers });
 
         if (res.data && res.data.data) {
           const fetchedData = res.data.data;
@@ -141,8 +141,8 @@ const Provider = () => {
     
     try {
       // 🚨 REPLACE WITH ACTUAL IMAGE UPLOAD API ENDPOINT
-      const uploadRes = await axios.post(
-        `http://localhost:5000/api/providers/upload-picture/${id}`, 
+      const uploadRes = await api.post(
+        `/providers/upload-picture/${id}`, 
         data, 
         {
           headers: {
@@ -187,7 +187,7 @@ const Provider = () => {
 
     try {
       // Send the entire formData, which includes the potentially new profile_picture_url
-      const res = await axios.put(`http://localhost:5000/api/providers/${id}`, formData, config);
+      const res = await api.put(`/providers/${id}`, formData, config);
 
       if (res.data && res.data.data) {
         setProvider(res.data.data); 

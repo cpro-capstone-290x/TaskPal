@@ -28,7 +28,7 @@ const SearchBooking = () => {
     const fetchProviders = async () => {
       setLoading(true);
       try {
-        let endpoint = "/api/providers/service_type";
+        let endpoint = "/providers/service_type";
 
         if (selectedCategory) {
           endpoint += `/${encodeURIComponent(selectedCategory)}`;

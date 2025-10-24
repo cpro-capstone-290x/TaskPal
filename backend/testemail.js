@@ -1,17 +1,11 @@
-import { transporter } from "./config/mailer.js";
+import { sendOTP } from "./config/mailer.js";
 
 async function testMail() {
-  try {
-    await transporter.sendMail({
-      from: `"TaskPal" <${process.env.EMAIL_USER}>`,
-      to: "jcsinoy91@gmail.com",
-      subject: "✅ Gmail App Password Test",
-      text: "If you see this, your Gmail App Password works!",
-    });
-    console.log("✅ Test email sent successfully!");
-  } catch (err) {
-    console.error("❌ Email send failed:", err);
-  }
+  const testEmail = "jcsinoy91@gmail.com";
+  const testOTP = Math.floor(100000 + Math.random() * 900000);
+
+  console.log("📨 Testing Brevo email send...");
+  await sendOTP(testEmail, testOTP);
 }
 
 testMail();

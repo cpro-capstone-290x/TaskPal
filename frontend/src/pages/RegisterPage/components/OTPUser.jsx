@@ -3,9 +3,8 @@ import React, { useState } from 'react';
 const OTPUser = ({ userData, onSuccess, onBack }) => {
     // Use the email passed from the registration step
     const email = userData?.email; 
-    
+
     // NOTE: Use your actual API endpoint for OTP verification
-    // const API_ENDPOINT = 'http://localhost:5000/api/auth/verifyUser'; 
     const API_ENDPOINT = import.meta.env.VITE_API_URL
         ? `${import.meta.env.VITE_API_URL}/auth/verifyUser`
         : "https://taskpal-14oy.onrender.com/api/auth/verifyUser";
@@ -49,6 +48,12 @@ const OTPUser = ({ userData, onSuccess, onBack }) => {
         e.preventDefault();
         const otpCode = otp.join(''); // Join the array into a 6-digit string
 
+        console.log("📨 Attempting OTP verification...");
+        console.log("➡️ API Endpoint:", API_ENDPOINT);
+        console.log("➡️ Email:", email);
+        console.log("➡️ OTP Code:", otpCode);
+        console.log("➡️ Role: user");
+
         if (otpCode.length !== 6) {
             setStatus({ loading: false, error: 'Please enter the complete 6-digit code.', success: false });
             return;
@@ -65,15 +70,19 @@ const OTPUser = ({ userData, onSuccess, onBack }) => {
                 body: JSON.stringify({ email: email, otp: otpCode, role: 'user' }), 
             });
 
+            console.log("📡 Server response status:", response.status);
             const result = await response.json();
+            console.log("📩 Server response body:", result);
 
             if (!response.ok) {
                 const errorMessage = result.error || 'OTP verification failed. Please check your code.';
+                console.warn("⚠️ OTP verification failed:", errorMessage);
                 setStatus({ loading: false, error: errorMessage, success: false });
                 return;
             }
 
             // SUCCESS: Call the parent prop function to notify the AuthPage
+            console.log("✅ OTP verified successfully! User data:", result.data);
             setStatus({ loading: false, error: null, success: true, message: '✅ OTP verified successfully! Redirecting...' });
             
             // Wait a moment for the user to see the success message, then transition
@@ -81,9 +90,8 @@ const OTPUser = ({ userData, onSuccess, onBack }) => {
                 onSuccess(result.data); // Pass any useful data up to the parent
             }, 500);
 
-
         } catch (error) {
-            console.error('Network or unexpected error:', error);
+            console.error("❌ Network or unexpected error:", error);
             setStatus({
                 loading: false,
                 error: 'Could not connect to the server. Please check your connection.',
@@ -94,7 +102,7 @@ const OTPUser = ({ userData, onSuccess, onBack }) => {
 
     // Placeholder for Resend OTP logic
     const handleResendOtp = async () => {
-        console.log('Resending OTP to:', email);
+        console.log("🔁 Resending OTP to:", email);
         // Implement your API call to trigger a new OTP here
         setStatus({ loading: true, error: null, success: false, message: 'Requesting new OTP...' });
         
@@ -149,7 +157,6 @@ const OTPUser = ({ userData, onSuccess, onBack }) => {
                 </div>
             )}
 
-
             <form onSubmit={handleVerify} className="space-y-6">
                 <div className="flex justify-center space-x-3">
                     {otpFields.map((_, index) => (
@@ -160,7 +167,6 @@ const OTPUser = ({ userData, onSuccess, onBack }) => {
                             maxLength="1"
                             inputMode="numeric"
                             autoComplete={index === 0 ? "one-time-code" : "off"}
-                            // Value is read from the state array
                             value={otp[index] || ''} 
                             onChange={(e) => handleOtpChange(e, index)}
                             onKeyDown={(e) => handleKeyDown(e, index)}
@@ -189,6 +195,7 @@ const OTPUser = ({ userData, onSuccess, onBack }) => {
                     )}
                 </button>
             </form>
+
             <div className="text-center mt-6">
                 Didn't receive the code?{' '}
                 <button 

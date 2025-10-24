@@ -89,8 +89,10 @@ const AuthPage = () => {
                     <div className="w-full max-w-xl bg-white shadow-2xl rounded-3xl p-10 text-center">
                         <h1 className="text-4xl font-black text-green-600 mb-4">🎉 Account Created!</h1>
                         <p className="text-gray-700 text-lg">Your email has been verified, and you are ready to use the application.</p>
-                        <button className="mt-6 w-full py-3 bg-sky-500 text-white font-bold rounded-xl hover:bg-sky-600 transition">
-                            Proceed to Dashboard
+                        <button 
+                        onClick ={() => window.location.href = '/login'}
+                        className="mt-6 w-full py-3 bg-sky-500 text-white font-bold rounded-xl hover:bg-sky-600 transition">
+                            Proceed to Login
                         </button>
                     </div>
                 );

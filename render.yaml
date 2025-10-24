@@ -1,0 +1,30 @@
+# render.yaml
+
+previews:
+  generation: automatic   # Enables automatic PR Preview Environments
+
+services:
+  # ───────────── FRONTEND ─────────────
+  - type: web
+    name: taskpal-frontend
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: VITE_API_URL
+        value: https://taskpal-backend.onrender.com
+    autoDeploy: true
+
+  # ───────────── BACKEND ─────────────
+  - type: web                # ✅ must be "web" to make it publicly accessible
+    name: taskpal-backend
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000

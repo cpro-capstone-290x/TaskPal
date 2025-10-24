@@ -1,95 +1,116 @@
-name: 🚀 CI/CD - Build & Push Prod Images
+# name: 🚀 CI/CD - Build & Push Prod Images
 
-on:
-  push:
-    branches: [ "main" ]     # Triggers on main (production) pushes
-  workflow_dispatch:          # Allows manual runs too
+# on:
+#   push:
+#     branches: [ "main" ]     # Triggers on main (production) pushes
+#   workflow_dispatch:          # Allows manual runs too
 
-jobs:
-  ci-cd-prod:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+# jobs:
+#   ci-cd-prod:
+#     runs-on: ubuntu-latest
+#     permissions:
+#       contents: read
+#       packages: write
 
-    env:
-      REGISTRY: ghcr.io
-      IMAGE_BACKEND: ghcr.io/cpro-capstone-290x/taskpal-backend
-      IMAGE_FRONTEND: ghcr.io/cpro-capstone-290x/taskpal-frontend
+#     env:
+#       REGISTRY: ghcr.io
+#       IMAGE_BACKEND: ghcr.io/cpro-capstone-290x/taskpal-backend
+#       IMAGE_FRONTEND: ghcr.io/cpro-capstone-290x/taskpal-frontend
 
-    steps:
-      # -------------------------------
-      # 1️⃣  Checkout repository
-      # -------------------------------
-      - name: 🧩 Checkout repository
-        uses: actions/checkout@v4
+#     steps:
+#       # -------------------------------
+#       # 1️⃣  Checkout repository
+#       # -------------------------------
+#       - name: 🧩 Checkout repository
+#         uses: actions/checkout@v4
 
-      # -------------------------------
-      # 2️⃣  Setup Node.js for CI
-      # -------------------------------
-      - name: 🧱 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: |
-            backend/package-lock.json
-            frontend/package-lock.json
+#       # -------------------------------
+#       # 2️⃣  Setup Node.js for CI
+#       # -------------------------------
+#       - name: 🧱 Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: 20
+#           cache: 'npm'
+#           cache-dependency-path: |
+#             backend/package-lock.json
+#             frontend/package-lock.json
 
-      # -------------------------------
-      # 3️⃣  Install & Test (CI)
-      # -------------------------------
-      - name: 📦 Install dependencies
-        run: |
-          cd backend && npm ci
-          cd ../frontend && npm ci
+#       # -------------------------------
+#       # 3️⃣  Install & Test (CI)
+#       # -------------------------------
+#       - name: 📦 Install dependencies
+#         run: |
+#           cd backend && npm ci
+#           cd ../frontend && npm ci
 
-      - name: 🧪 Run tests
-        run: |
-          cd backend && npm test || echo "⚠️ Backend tests skipped or none found"
-          cd ../frontend && npm test || echo "⚠️ Frontend tests skipped or none found"
+#       - name: 🧪 Run tests
+#         run: |
+#           cd backend && npm test || echo "⚠️ Backend tests skipped or none found"
+#           cd ../frontend && npm test || echo "⚠️ Frontend tests skipped or none found"
 
-      # -------------------------------
-      # 4️⃣  Log in to GHCR
-      # -------------------------------
-      - name: 🔐 Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+#       # -------------------------------
+#       # 4️⃣  Log in to GHCR
+#       # -------------------------------
+#       - name: 🔐 Log in to GHCR
+#         uses: docker/login-action@v3
+#         with:
+#           registry: ${{ env.REGISTRY }}
+#           username: ${{ github.actor }}
+#           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # -------------------------------
-      # 5️⃣  Build & Push Backend Image
-      # -------------------------------
-      - name: 🏗️ Build & Push Backend (Prod)
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          push: true
-          tags: |
-            ${{ env.IMAGE_BACKEND }}:latest
-            ${{ env.IMAGE_BACKEND }}:${{ github.sha }}
-          build-args: |
-            NODE_ENV=production
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-            STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            EMAIL_USER=${{ secrets.EMAIL_USER }}
-            EMAIL_PASS=${{ secrets.EMAIL_PASS }}
+#       # -------------------------------
+#       # 5️⃣  Build & Push Backend Image
+#       # -------------------------------
+#       - name: 🏗️ Build & Push Backend (Prod)
+#         uses: docker/build-push-action@v6
+#         with:
+#           context: ./backend
+#           file: ./backend/Dockerfile
+#           push: true
+#           tags: |
+#             ${{ env.IMAGE_BACKEND }}:latest
+#             ${{ env.IMAGE_BACKEND }}:${{ github.sha }}
+#           build-args: |
+#             NODE_ENV=production
+#             DATABASE_URL=${{ secrets.DATABASE_URL }}
+#             STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}
+#             JWT_SECRET=${{ secrets.JWT_SECRET }}
+#             EMAIL_USER=${{ secrets.EMAIL_USER }}
+#             EMAIL_PASS=${{ secrets.EMAIL_PASS }}
 
-      # -------------------------------
-      # 6️⃣  Build & Push Frontend Image
-      # -------------------------------
-      - name: 🌐 Build & Push Frontend (Prod)
-        uses: docker/build-push-action@v6
-        with:
-          context: ./frontend
-          file: ./frontend/Dockerfile.prod
-          push: true
-          tags: |
-            ${{ env.IMAGE_FRONTEND }}:latest
-            ${{ env.IMAGE_FRONTEND }}:${{ github.sha }}
-          build-args: |
-            NODE_ENV=production
+#       # -------------------------------
+#       # 6️⃣  Build & Push Frontend Image
+#       # -------------------------------
+#       - name: 🌐 Build & Push Frontend (Prod)
+#         uses: docker/build-push-action@v6
+#         with:
+#           context: ./frontend
+#           file: ./frontend/Dockerfile.prod
+#           push: true
+#           tags: |
+#             ${{ env.IMAGE_FRONTEND }}:latest
+#             ${{ env.IMAGE_FRONTEND }}:${{ github.sha }}
+#           build-args: |
+#             NODE_ENV=production
+#       # -------------------------------
+#       # 7️⃣  Sync GitHub Secrets to Vercel
+#       # -------------------------------
+#       - name: 🔄 Sync GitHub Secrets to Vercel
+#         run: |
+#           npm install -g vercel
+#           vercel env add VITE_API_URL production <<< "https://taskpal-backend.onrender.com/api"
+#           vercel env add VITE_BACKEND_URL production <<< "https://taskpal-backend.onrender.com"
+#           vercel env add VITE_STREAM_API_KEY production <<< "${{ secrets.STREAM_API_KEY }}"
+#         env:
+#           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+#       # -------------------------------
+#       # 8️⃣  Trigger Vercel Deployment
+#       # -------------------------------
+#       - name: 🚀 Trigger Vercel Deployment (Frontend)
+#         run: |
+#           vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --confirm
+#         env:
+#           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+#           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

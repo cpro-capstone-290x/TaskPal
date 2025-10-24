@@ -21,6 +21,8 @@ import OTPResetPage from "./pages/LoginPage/components/OTPResetPage";
 import VerifyAuthorizedOTP from "./pages/profile/components/VerifyAuthorizedOTP";
 import ProviderProfile from "./pages/bookingpage/components/ProviderProfile";
 import AboutPage from "./pages/AboutPage/AboutPage";
+import OTPUser from "./pages/RegisterPage/components/OTPUser";
+import OTPProvider from "./pages/RegisterPage/components/OTPProvider";
 
 function App() {
   return (
@@ -61,6 +63,8 @@ function App() {
         <Route path="/provider/:id" element={<ProviderProfile />} />{" "}
         <Route path="/about" element={<AboutPage />} />
         <Route path="/providers/public/:id" element={<ProviderProfile />} />
+        <Route path="/verify-otp" element={<OTPUser />} />
+        <Route path="/verify-otp-provider" element={<OTPProvider />} />
 
       </Routes>
     </div>

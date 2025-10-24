@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import api from "../../../api";
 
 const ExecutionPage = () => {
   const { bookingId } = useParams();
@@ -20,7 +21,7 @@ const ExecutionPage = () => {
   // ✅ Fetch execution details
   const fetchExecution = async () => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/execution/${bookingId}`);
+      const res = await api.get(`/execution/${bookingId}`);
       setExecution(res.data.data || res.data);
     } catch (err) {
       console.error("Error fetching execution:", err);
@@ -33,7 +34,7 @@ const ExecutionPage = () => {
   // ✅ Check if review already exists
   const checkExistingReview = async () => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/reviews/booking/${bookingId}`);
+      const res = await api.get(`/reviews/booking/${bookingId}`);
       if (res.data?.data) setReviewSubmitted(true);
     } catch (err) {
       console.log("No review found yet (this is fine).");
@@ -52,8 +53,8 @@ const ExecutionPage = () => {
     if (!execution) return;
     setUpdating(true);
     try {
-      const res = await axios.put(
-        `http://localhost:5000/api/execution/${bookingId}/update`,
+      const res = await api.put(
+        `/execution/${bookingId}/update`,
         { field: "completedclient" }
       );
       setExecution(res.data.data || res.data);
@@ -78,7 +79,7 @@ const ExecutionPage = () => {
     }
     setSubmittingReview(true);
     try {
-      await axios.post("http://localhost:5000/api/reviews", {
+      await api.post("/reviews", {
         booking_id: bookingId,
         client_id: execution.client_id,
         provider_id: execution.provider_id,

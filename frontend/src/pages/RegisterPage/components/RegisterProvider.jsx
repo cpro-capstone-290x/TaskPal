@@ -82,7 +82,10 @@ const RegisterProvider = ({ onSuccess }) => {
 
         const { confirm_password, ...restFormData } = formData;
         
-        const API_ENDPOINT = 'http://localhost:5000/api/auth/registerProvider';
+        // const API_ENDPOINT = 'http://localhost:5000/api/auth/registerProvider';
+        const API_ENDPOINT = import.meta.env.VITE_API_URL
+        ? `${import.meta.env.VITE_API_URL}/auth/registerProvider`
+        : "https://taskpal-14oy.onrender.com/api/auth/registerProvider";
 
         try {
             const response = await fetch(API_ENDPOINT, {

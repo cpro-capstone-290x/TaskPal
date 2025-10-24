@@ -46,7 +46,11 @@ const LoginUser = ({ onSuccess }) => {
     e.preventDefault();
     setStatus({ loading: true, error: null, success: false });
 
-    const API_ENDPOINT = 'http://localhost:5000/api/auth/loginUser';
+    const API_ENDPOINT =
+      import.meta.env.VITE_API_URL
+        ? `${import.meta.env.VITE_API_URL}/auth/loginUser`
+        : "https://taskpal-14oy.onrender.com/api/auth/loginUser";
+
 
     try {
       const response = await fetch(API_ENDPOINT, {

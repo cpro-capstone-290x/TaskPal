@@ -5,10 +5,9 @@ import axios from "axios";
 import api from '../../api';
 
 // ✅ Setup Socket.IO client
-const socket = io("http://localhost:5000", {
+const socket = io(import.meta.env.VITE_API_URL || "https://taskpal-backend.onrender.com", {
+  transports: ["websocket", "polling"], // ✅ must include polling for Render
   withCredentials: true,
-  transports: ["websocket", "polling"],
-  autoConnect: false,
 });
 
 const ChatRoom = () => {

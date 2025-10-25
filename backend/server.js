@@ -62,9 +62,13 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
   },
+  transports: ["websocket", "polling"], // ✅ ensure fallback support
+  allowEIO3: true, // ✅ compatibility for older clients
 });
+
 
 // ✅ Attach io to all requests
 app.set("io", io);

@@ -4,11 +4,16 @@ import { io } from "socket.io-client";
 import axios from "axios";
 import api from '../../api';
 
-// ✅ Setup Socket.IO client
-const socket = io(import.meta.env.VITE_API_URL || "https://taskpal-backend.onrender.com", {
-  transports: ["websocket", "polling"], // ✅ must include polling for Render
-  withCredentials: true,
-});
+const socket = io(
+  import.meta.env.VITE_SOCKET_URL || "https://taskpal-14oy.onrender.com",
+  {
+    transports: ["websocket", "polling"], // ✅ fallback ensures Render stays connected
+    withCredentials: true,
+    reconnectionAttempts: 5, // ✅ auto-retry
+    reconnectionDelay: 3000,
+  }
+);
+
 
 const ChatRoom = () => {
   const { bookingId } = useParams();

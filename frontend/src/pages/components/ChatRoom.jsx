@@ -4,11 +4,18 @@ import { io } from "socket.io-client";
 import axios from "axios";
 import api from '../../api';
 
-// ✅ Setup Socket.IO client
-const socket = io(import.meta.env.VITE_API_URL || "https://taskpal-backend.onrender.com", {
-  transports: ["websocket", "polling"], // ✅ must include polling for Render
-  withCredentials: true,
-});
+// ✅ Setup Socket.IO client (auto-detect environment)
+const socket = io(
+  import.meta.env.VITE_SOCKET_URL ||
+    (window.location.hostname === "localhost"
+      ? "http://localhost:5000"
+      : "https://taskpal-14oy.onrender.com"), // your Render backend URL
+  {
+    transports: ["websocket"], // Render works best with pure websocket
+    secure: true,
+    withCredentials: true,
+  }
+);
 
 const ChatRoom = () => {
   const { bookingId } = useParams();

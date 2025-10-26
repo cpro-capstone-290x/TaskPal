@@ -149,7 +149,7 @@ io.on("connection", (socket) => {
     try {
       await sql`
         UPDATE chat_messages
-        SET messages = messages || ${JSON.stringify([fullMessage])}::jsonb,
+        SET messages = coalesce(messages, '[]'::jsonb) || ${JSON.stringify([fullMessage])}::jsonb,
             updated_at = NOW()
         WHERE booking_id = ${bookingId};
       `;

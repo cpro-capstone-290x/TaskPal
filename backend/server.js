@@ -42,6 +42,7 @@ try {
 const allowedOrigins = [
   "http://localhost:5173",
   "https://task-pal-zeta.vercel.app", // your Vercel frontend domain
+  "https://taskpal-14oy.onrender.com",
 ];
 
 // ✅ Middlewares
@@ -149,7 +150,7 @@ io.on("connection", (socket) => {
     try {
       await sql`
         UPDATE chat_messages
-        SET messages = messages || ${JSON.stringify([fullMessage])}::jsonb,
+        SET messages = coalesce(messages, '[]'::jsonb) || ${JSON.stringify([fullMessage])}::jsonb,
             updated_at = NOW()
         WHERE booking_id = ${bookingId};
       `;

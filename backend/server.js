@@ -42,6 +42,7 @@ try {
 const allowedOrigins = [
   "http://localhost:5173",
   "https://task-pal-zeta.vercel.app", // your Vercel frontend domain
+  "https://taskpal-14oy.onrender.com",
 ];
 
 // ✅ Middlewares
@@ -62,9 +63,13 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
   },
+  transports: ["websocket", "polling"], // ✅ ensure fallback support
+  allowEIO3: true, // ✅ compatibility for older clients
 });
+
 
 // ✅ Attach io to all requests
 app.set("io", io);
@@ -145,7 +150,7 @@ io.on("connection", (socket) => {
     try {
       await sql`
         UPDATE chat_messages
-        SET messages = messages || ${JSON.stringify([fullMessage])}::jsonb,
+        SET messages = coalesce(messages, '[]'::jsonb) || ${JSON.stringify([fullMessage])}::jsonb,
             updated_at = NOW()
         WHERE booking_id = ${bookingId};
       `;

@@ -71,33 +71,55 @@ const ExecutionPage = () => {
     }
   };
 
-  // ✅ Submit review
-  const handleSubmitReview = async () => {
-    if (rating === 0 || comment.trim() === "") {
-      alert("Please provide both a rating and a comment.");
-      return;
-    }
-    setSubmittingReview(true);
-    try {
-      await api.post("/reviews", {
-        booking_id: bookingId,
-        client_id: execution.client_id,
-        provider_id: execution.provider_id,
-        rating,
-        comment,
-      });
-      alert("✅ Thank you! Your review has been submitted.");
-      setShowReviewModal(false);
-      setRating(0);
-      setComment("");
-      setReviewSubmitted(true);
-    } catch (err) {
-      console.error("Error submitting review:", err);
-      alert("❌ Failed to submit your review. Please try again later.");
-    } finally {
-      setSubmittingReview(false);
-    }
-  };
+    const handleSubmitReview = async () => {
+      if (!rating || !comment.trim()) {
+        return alert("Please provide both rating and comment.");
+      }
+
+      const token =
+        localStorage.getItem("authToken") ||
+        localStorage.getItem("userToken") ||
+        localStorage.getItem("providerToken");
+
+      console.log("Token used:", token); // ✅ Debug check
+
+      if (!token) {
+        alert("Please login again to continue.");
+        return;
+      }
+
+      setSubmittingReview(true);
+
+      try {
+        await api.post(
+          "/reviews",
+          {
+            booking_id: bookingId,
+            provider_id: execution.provider_id,
+            rating,
+            comment,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        alert("✅ Thank you! Your review has been submitted.");
+        setShowReviewModal(false);
+        setRating(0);
+        setComment("");
+        setReviewSubmitted(true);
+      } catch (err) {
+        console.error("Error submitting review:", err.response?.data);
+        alert(`❌ Failed: ${err.response?.data?.message || "Try again later."}`);
+      } finally {
+        setSubmittingReview(false);
+      }
+    };
+
+
 
   if (loading)
     return (

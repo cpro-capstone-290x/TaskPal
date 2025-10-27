@@ -1,186 +1,159 @@
 // src/components/Admin/ProviderReviewModal.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import api from '../../../api.js';
 
-// providerSummary is the object from the list fetch (e.g., {id, name, email, etc.})
+const STATUS_STYLES = {
+  Approved: 'btn-success',
+  Rejected: 'btn-error',
+  Suspended: 'btn-warning'
+};
+
 const ProviderReviewModal = ({ providerSummary, onClose, onActionSuccess }) => {
-    const [fullDetails, setFullDetails] = useState(null);
-    const [loading, setLoading] = useState(true);
-    // Setting initial status to 'Approved' is a good practice for the default state
-    const [actionStatus, setActionStatus] = useState('Approved');
-    const [rejectionReason, setRejectionReason] = useState('');
-    const [submitError, setSubmitError] = useState(null);
-    const token = localStorage.getItem('adminToken');
-    
-    // Ref for the DaisyUI modal element
-    const modalRef = useRef(null);
+  const modalRef = useRef(null);
+  const [details, setDetails] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [actionStatus, setActionStatus] = useState('Approved');
+  const [reason, setReason] = useState('');
+  const [errorMsg, setErrorMsg] = useState(null);
 
-    // 1. Fetch ALL data for review using the dedicated Admin route
-    useEffect(() => {
-        const fetchDetails = async () => {
-            try {
-                // Uses your dedicated GET /api/admin/providers/:id/review endpoint
-                const response = await axios.get(`http://localhost:5000/api/admin/providers/${providerSummary.id}/review`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setFullDetails(response.data.data);
-            } catch (err) {
-                console.error('Fetch error:', err);
-                setSubmitError('Could not load full provider details.');
-            } finally {
-                setLoading(false);
-            }
-        };
+  const token = localStorage.getItem('adminToken');
 
-        fetchDetails();
-
-        // Show the modal immediately after component mounts
-        if (modalRef.current) {
-            modalRef.current.showModal();
-        }
-
-    }, [providerSummary.id, token]);
-
-    // 2. Handle Approve/Reject/Suspend Action
-    const handleAction = async (newStatus) => {
-        setSubmitError(null);
-        const reason = rejectionReason.trim();
-        
-        // Frontend Validation: Enforce reason for Reject/Suspend (as defined in your component logic)
-        if ((newStatus === 'Rejected' || newStatus === 'Suspended') && !reason) {
-            return setSubmitError(`${newStatus} reason is mandatory for this action.`);
-        }
-        
-        try {
-            // Payload only includes the reason if it's available, otherwise null is sent.
-            // This is safe because the backend controls whether to save it based on 'status'.
-            const payload = {
-                status: newStatus,
-                rejection_reason: reason || null
-            };
-
-            // Uses your dedicated PATCH /api/providers/:id/status endpoint
-            await axios.patch(`http://localhost:5000/api/providers/${providerSummary.id}/status`, payload, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            // 3. Success: Close the modal and update the main list
-            // Close the DaisyUI modal first
-            if (modalRef.current) {
-                modalRef.current.close();
-            }
-            onActionSuccess(providerSummary.id); 
-            
-        } catch (err) {
-            console.error('Action error:', err);
-            setSubmitError(err.response?.data?.error || `Failed to ${newStatus.toLowerCase()} provider.`);
-        }
+  // ✅ Fetch full details & open modal
+  useEffect(() => {
+    const fetchDetails = async () => {
+      try {
+        const res = await api.get(
+          `/admin/providers/${providerSummary.id}/review`,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+        setDetails(res.data.data);
+      } catch (err) {
+        setErrorMsg('Unable to load provider details.');
+      } finally {
+        setLoading(false);
+      }
     };
 
-    // The component must return the DaisyUI dialog element
-    if (!fullDetails && !loading) return null;
+    fetchDetails();
+    setTimeout(() => modalRef.current?.showModal(), 20);
+  }, [providerSummary.id, token]);
 
-    return (
-        // DAISYUI MODAL STRUCTURE
-        <dialog ref={modalRef} className="modal" onClose={onClose}>
-            <div className="modal-box w-11/12 max-w-2xl p-6 bg-white text-black shadow-2xl">
-                
-                <h3 className="text-2xl font-bold border-b pb-3 mb-4 text-black">
-                    Review Provider: {providerSummary.name}
-                </h3>
-                
-                <h4 className="text-lg font-semibold mb-2 text-gray-700">Full Details</h4>
+  // ✅ Submit update
+  const handleSubmit = async () => {
+    setErrorMsg(null);
 
-                {/* Display Full Details */}
-                {loading ? (
-                    <div className="flex justify-center items-center py-8">
-                        <span className="loading loading-dots loading-lg text-primary"></span>
-                        <p className="ml-3 text-gray-600">Loading full details...</p>
-                    </div>
-                ) : (
-                    <div className="space-y-3 p-4 bg-gray-50 rounded-lg border border-gray-200 text-black">
-                        <p><strong>Email:</strong> <span className="text-gray-700">{fullDetails.email}</span></p>
-                        <p><strong>License ID:</strong> <span className="text-gray-700">{fullDetails.license_id}</span></p>
-                        <p>
-                            <strong>Documents:</strong> 
-                            <a 
-                                href={fullDetails.document} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="link link-primary ml-2 font-medium"
-                            >
-                                View Submitted File (Click to Open)
-                            </a>
-                        </p>
-                        <p><strong>Type:</strong> <span className="badge badge-lg badge-outline badge-info">{fullDetails.provider_type} / {fullDetails.service_type}</span></p>
-                    </div>
-                )}
-                
-                {submitError && (
-                    <div role="alert" className="alert alert-error mt-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        <span>{submitError}</span>
-                    </div>
-                )}
+    if ((actionStatus === 'Rejected' || actionStatus === 'Suspended') && !reason.trim()) {
+      return setErrorMsg(`Please provide a reason for ${actionStatus}.`);
+    }
 
-                {/* Status Selection and Reason Field */}
-                <div className="mt-6 border-t pt-4">
-                    <label className="label">
-                        <span className="label-text text-black font-semibold text-lg">Select Action:</span>
-                    </label>
-                    <div className="flex gap-3 mb-4">
-                        {['Approved', 'Rejected', 'Suspended'].map(status => (
-                            <button
-                                key={status}
-                                type="button"
-                                onClick={() => setActionStatus(status)}
-                                className={`btn ${actionStatus === status ? 
-                                    (status === 'Approved' ? 'btn-success' : status === 'Rejected' ? 'btn-error' : 'btn-warning') : 
-                                    'btn-ghost'
-                                }`}
-                                disabled={loading}
-                            >
-                                {status}
-                            </button>
-                        ))}
-                    </div>
+    try {
+      await api.patch(
+        `/providers/${providerSummary.id}/status`,
+        { status: actionStatus, rejection_reason: reason.trim() || null },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
 
-                    <label className="label mt-4">
-                        <span className={`label-text font-semibold ${actionStatus === 'Rejected' || actionStatus === 'Suspended' ? 'text-red-700' : 'text-gray-700'}`}>
-                            Reason for {actionStatus} ({actionStatus === 'Rejected' || actionStatus === 'Suspended' ? 'Mandatory' : 'Optional'})
-                        </span>
-                    </label>
-                    <textarea
-                        placeholder="Enter detailed reason here..."
-                        value={rejectionReason}
-                        onChange={(e) => setRejectionReason(e.target.value)}
-                        className="textarea textarea-bordered w-full h-24 bg-white text-black"
-                    />
-                </div>
+      modalRef.current?.close();
+      onActionSuccess(providerSummary.id);
+    } catch (err) {
+      setErrorMsg(err.response?.data?.error || `Failed to update provider.`);
+    }
+  };
 
-                {/* Action Buttons */}
-                <div className="modal-action flex flex-col sm:flex-row sm:justify-end items-center pt-4">
-                    <button 
-                        onClick={() => handleAction(actionStatus)} 
-                        className={`btn min-w-[150px] ${actionStatus === 'Approved' ? 'btn-success' : actionStatus === 'Rejected' ? 'btn-error' : 'btn-warning'} text-white mr-4`}
-                        disabled={loading || ((actionStatus === 'Rejected' || actionStatus === 'Suspended') && !rejectionReason.trim())}
-                    >
-                        {loading ? 'Submitting...' : `Confirm ${actionStatus}`}
-                    </button>
-                    <button 
-                        onClick={onClose} 
-                        className="btn btn-ghost mt-4 sm:mt-0"
-                    >
-                        Close Review
-                    </button>
-                </div>
+  return (
+    <dialog ref={modalRef} className="modal" onClose={onClose}>
+      <div className="modal-box max-w-2xl bg-white">
+        
+        {/* Modal header */}
+        <h3 className="text-xl font-bold border-b pb-3">
+          Reviewing: {providerSummary.name}
+        </h3>
+
+        {/* Provider Details */}
+        {loading ? (
+          <div className="py-8 flex justify-center items-center">
+            <span className="loading loading-spinner text-primary"></span>
+          </div>
+        ) : (
+          details && (
+            <div className="mt-4 bg-gray-50 border rounded-lg p-4">
+              <p><strong>Email:</strong> {details.email}</p>
+              <p><strong>License ID:</strong> {details.license_id}</p>
+              <p>
+                <strong>Document:</strong>
+                <a
+                  href={details.document}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-2 text-blue-600 underline"
+                >
+                  View file
+                </a>
+              </p>
+              <p><strong>Category:</strong> {details.provider_type} / {details.service_type}</p>
             </div>
-            {/* Background click handler to close the modal */}
-            <form method="dialog" className="modal-backdrop" onClick={onClose}>
-                <button>close</button>
-            </form>
-        </dialog>
-    );
+          )
+        )}
+
+        {/* Error */}
+        {errorMsg && (
+          <div className="alert alert-error mt-4 text-white">
+            <span>{errorMsg}</span>
+          </div>
+        )}
+
+        {/* Status & Reason Field */}
+        <div className="mt-6">
+          <label className="font-semibold">Set Status</label>
+          <div className="flex gap-3 mt-2">
+            {Object.keys(STATUS_STYLES).map((s) => (
+              <button
+                key={s}
+                className={`btn ${actionStatus === s ? STATUS_STYLES[s] : 'btn-outline'}`}
+                onClick={() => setActionStatus(s)}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <label className="font-semibold">
+            Reason {actionStatus === 'Approved' ? '(optional)' : '(required)'}
+          </label>
+          <textarea
+            className="textarea textarea-bordered w-full"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Provide more details here..."
+          />
+        </div>
+
+        {/* Actions */}
+        <div className="modal-action">
+          <button
+            className={`btn ${STATUS_STYLES[actionStatus]}`}
+            onClick={handleSubmit}
+            disabled={loading || ((actionStatus !== 'Approved') && !reason.trim())}
+          >
+            Confirm {actionStatus}
+          </button>
+
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+        </div>
+      </div>
+
+      {/* Close on backdrop click */}
+      <form method="dialog" className="modal-backdrop" onClick={onClose}>
+        <button>Close</button>
+      </form>
+    </dialog>
+  );
 };
 
 export default ProviderReviewModal;

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
 import { Star } from "lucide-react";
 import Header from "../../components/Header";
+import api from "../../../api";
 
 const ProviderProfile = () => {
   const { id } = useParams();
@@ -13,48 +13,49 @@ const ProviderProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Navigate to booking
-  const handleSelectProvider = (providerId) => {
-    navigate(`/booking/initiate/${providerId}`);
-  };
-
-  // Fetch provider + reviews
+  // ✅ Fetch provider (public route) + reviews (public route)
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [providerRes, reviewRes] = await Promise.all([
-          axios.get(`http://localhost:5000/api/providers/public/${id}`),
-          axios.get(`http://localhost:5000/api/reviews/provider/${id}`),
+        const [providerRes, reviewsRes] = await Promise.all([
+          api.get(`/providers/public/${id}`),
+          api.get(`/reviews/provider/${id}`),
         ]);
 
         setProvider(providerRes.data?.data || providerRes.data);
-        setReviews(reviewRes.data?.data || []);
+        setReviews(reviewsRes.data?.data || []);
       } catch (err) {
-        console.error("Error fetching provider data:", err);
-        setError("Failed to load provider profile.");
+        console.error("❌ Provider Fetch Error:", err);
+        setError(
+          err.response?.data?.message ||
+            "Failed to load provider profile. Please try again."
+        );
       } finally {
         setLoading(false);
       }
     };
+
     fetchData();
   }, [id]);
 
-  // Compute average rating
+  // ⭐ Average rating calculation
   const avgRating =
     reviews.length > 0
       ? (
-          reviews.reduce((sum, r) => sum + Number(r.rating), 0) / reviews.length
+          reviews.reduce((sum, r) => sum + Number(r.rating), 0) /
+          reviews.length
         ).toFixed(1)
-      : 0;
+      : "0.0";
 
-  // Loading / error / not found states
+  // ⏳ Loading state
   if (loading)
     return (
       <div className="flex justify-center items-center h-screen text-gray-500">
-        Loading provider profile...
+        Fetching provider details...
       </div>
     );
 
+  // ❌ Error state
   if (error)
     return (
       <div className="flex justify-center items-center h-screen text-red-500">
@@ -62,6 +63,7 @@ const ProviderProfile = () => {
       </div>
     );
 
+  // 🧐 Not found
   if (!provider)
     return (
       <div className="flex justify-center items-center h-screen text-gray-500">
@@ -71,17 +73,16 @@ const ProviderProfile = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Global Header */}
       <Header />
 
-      {/* Page Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200 px-8 py-4 flex justify-between items-center mt-2">
+      {/* Top bar */}
+      <div className="bg-white shadow-sm border-b px-8 py-4 flex justify-between items-center mt-2">
         <h1 className="text-2xl font-bold text-green-700">
           {provider.name}
         </h1>
         <button
           onClick={() => navigate(-1)}
-          className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-medium"
+          className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg"
         >
           ← Back
         </button>
@@ -90,97 +91,91 @@ const ProviderProfile = () => {
       {/* Main Content */}
       <main className="max-w-5xl mx-auto py-10 px-4 flex-1 w-full">
         {/* Provider Overview */}
-        <section className="bg-white shadow-sm border border-gray-100 rounded-2xl p-8 mb-10">
+        <section className="bg-white shadow-sm border rounded-2xl p-8 mb-10">
           <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
-            {/* Profile Photo */}
+
+            {/* Photo */}
             <img
               src={
                 provider.photo_url ||
-                "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+                "https://cdn-icons-png.flaticon.com/512/149/149071.png"
               }
               alt="Provider"
-              className="w-32 h-32 rounded-full object-cover border"
+              className="w-32 h-32 rounded-full object-cover border bg-gray-50"
             />
 
-            {/* Provider Info */}
+            {/* Info */}
             <div className="flex-1 space-y-2">
               <h2 className="text-2xl font-semibold text-gray-800">
                 {provider.name}
               </h2>
-              <p className="text-gray-600">
+              <p className="text-gray-600 capitalize">
                 {provider.service_type} Services
               </p>
-              {(provider.city || provider.province) && (
-                <p className="text-gray-600">
-                  {provider.city || "Red Deer"}, {provider.province || "AB"}
-                </p>
-              )}
+              <p className="text-gray-600">
+                {provider.city || "Somewhere"}, {provider.province || "Unknown"}
+              </p>
 
-              {/* Contact Info */}
-              <div className="text-sm text-gray-500 mt-3">
-                <p>
-                  <strong>Email:</strong> {provider.email}
-                </p>
+              {/* Contact */}
+              <div className="text-sm text-gray-500 mt-3 space-y-1">
+                <p><strong>Email:</strong> {provider.email}</p>
                 {provider.phone && (
-                  <p>
-                    <strong>Phone:</strong> {provider.phone}
-                  </p>
+                  <p><strong>Phone:</strong> {provider.phone}</p>
                 )}
               </div>
 
               {/* Bio */}
               <p className="mt-4 text-gray-700 leading-relaxed">
-                {provider.bio || "No biography provided."}
+                {provider.bio || "This provider hasn’t written a bio yet."}
               </p>
             </div>
 
-            {/* Rating + Book Now */}
-            <div className="text-center bg-green-50 border border-green-200 rounded-xl p-5 w-full md:w-60 flex flex-col items-center">
-              <h3 className="text-lg font-semibold text-green-700 mb-1">
-                ⭐ {avgRating} / 5
+            {/* Rating card */}
+            <div className="text-center bg-green-50 border border-green-300 rounded-xl p-5 w-full md:w-60">
+              <h3 className="text-3xl font-bold text-green-700">
+                ⭐ {avgRating}
               </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                {reviews.length} reviews
+              <p className="text-xs text-gray-500 mb-4">
+                Based on {reviews.length} review{reviews.length !== 1 ? "s" : ""}
               </p>
+
               <button
-                onClick={() => handleSelectProvider(provider.id)}
-                className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-full transition"
+                onClick={() => navigate(`/booking/initiate/${provider.id}`)}
+                className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-full transition"
               >
                 Book Now
               </button>
             </div>
+
           </div>
         </section>
 
-        {/* Reviews Section */}
-        <section className="bg-white shadow-sm border border-gray-100 rounded-2xl p-8 mb-10">
+        {/* Reviews */}
+        <section className="bg-white shadow-sm border rounded-2xl p-8">
           <h2 className="text-xl font-semibold text-gray-800 mb-6 border-b pb-2">
-            User Reviews
+            Customer Reviews
           </h2>
 
           {reviews.length === 0 ? (
-            <p className="text-gray-500 text-center">No reviews yet.</p>
+            <p className="text-center text-gray-500">No reviews yet.</p>
           ) : (
             <div className="space-y-6">
               {reviews.map((review) => (
-                <div
-                  key={review.id}
-                  className="border-b border-gray-100 pb-4 last:border-0"
-                >
+                <div key={review.id} className="border-b pb-4">
                   <div className="flex justify-between items-center mb-1">
                     <span className="font-medium text-gray-800">
-                      {review.reviewer_name || "Anonymous"}
+                      {review.reviewer_name || "Anonymous User"}
                     </span>
                     <div className="flex">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <Star
                           key={star}
-                          size={16}
-                          className={
+                          size={18}
+                          className={`${
                             star <= review.rating
                               ? "text-yellow-400 fill-yellow-400"
                               : "text-gray-300"
-                          }
+                          }`}
                         />
                       ))}
                     </div>

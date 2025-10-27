@@ -1,49 +1,53 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useLocation } from "react-router-dom";
+import api from "../../api.js"; 
 
 const PaymentSuccess = () => {
+  const location = useLocation();
+  const sessionId = new URLSearchParams(location.search).get("session_id");
   const navigate = useNavigate();
   const { bookingId } = useParams(); // ✅ read from /payment-success/:bookingId
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("verifying");
 
-  useEffect(() => {
-    const handlePaymentSuccess = async () => {
-      if (!bookingId) {
-        setStatus("invalid");
-        setLoading(false);
-        return;
-      }
+useEffect(() => {
+  const verifyPayment = async () => {
+    if (!sessionId) {
+      setStatus("invalid");
+      setLoading(false);
+      return;
+    }
 
-      try {
-        // 1️⃣ Update booking payment status in backend
-        const res = await axios.put(
-          `http://localhost:5000/api/bookings/${bookingId}/paid`
-        );
-        console.log("✅ Booking updated:", res.data);
+    try {
+      // ✅ Confirm from backend & get bookingId
+      const res = await api.get(`/payments/verify/${sessionId}`);
+      const bookingId = res.data.bookingId;
+      console.log("✅ Verified booking:", bookingId);
 
-        // 2️⃣ Create execution record
-        const execRes = await axios.post("http://localhost:5000/api/execution", {
-          booking_id: bookingId,
-        });
-        console.log("✅ Execution created:", execRes.data);
+      // ✅ Update booking → Paid
+      await api.put(`/bookings/${bookingId}/paid`);
 
-        // 3️⃣ Redirect to execution page
-        setStatus("success");
-        setTimeout(() => {
-          navigate(`/execution/${bookingId}`);
-        }, 1500);
-      } catch (err) {
-        console.error("❌ Error handling payment success:", err);
-        setStatus("error");
-      } finally {
-        setLoading(false);
-      }
-    };
+      // ✅ Create execution record
+      await api.post(`/execution`, { booking_id: bookingId });
 
-    handlePaymentSuccess();
-  }, [bookingId, navigate]);
+      setStatus("success");
+      setTimeout(() => {
+        navigate(`/execution/${bookingId}`);
+      }, 1500);
+
+    } catch (err) {
+      console.error("❌ Payment verify error:", err);
+      setStatus("error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  verifyPayment();
+}, [sessionId, navigate]);
+
 
   // 🌀 Loading UI
   if (loading)

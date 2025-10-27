@@ -62,12 +62,17 @@ router.put("/:bookingId/update", async (req, res) => {
   if (!allowed.includes(field)) return res.status(400).json({ success: false });
 
   try {
-    // ✅ Ensure record exists (create if missing)
-    let [execution] = await sql`SELECT * FROM execution WHERE booking_id = ${bookingId}`;
+    // ✅ Ensure record exists
+    let [execution] = await sql`
+      SELECT * FROM execution WHERE booking_id = ${bookingId};
+    `;
+    
     if (!execution) {
-      const [booking] = await sql`SELECT client_id, provider_id FROM bookings WHERE id = ${bookingId}`;
-      const clientId = booking?.client_id || null;
-      const providerId = booking?.provider_id || null;
+      const [booking] = await sql`
+        SELECT client_id, provider_id FROM bookings WHERE id = ${bookingId};
+      `;
+      const clientId = booking?.client_id;
+      const providerId = booking?.provider_id;
       [execution] = await sql`
         INSERT INTO execution (booking_id, client_id, provider_id)
         VALUES (${bookingId}, ${clientId}, ${providerId})
@@ -75,13 +80,29 @@ router.put("/:bookingId/update", async (req, res) => {
       `;
     }
 
-    // ✅ Now safely update
-    const updated = await sql.query(
-      `UPDATE execution SET ${field} = 'completed' WHERE booking_id = $1 RETURNING *;`,
-      [bookingId]
-    );
+    // ✅ Update current step
+    const updated = await sql`
+      UPDATE execution 
+      SET ${sql(field)} = 'completed'
+      WHERE booking_id = ${bookingId}
+      RETURNING *;
+    `;
 
-    res.status(200).json({ success: true, data: updated.rows[0] });
+    const updatedExecution = updated[0];
+
+    // ✅ Check if both sides completed
+    if (updatedExecution.completedprovider === "completed" &&
+        updatedExecution.completedclient === "completed") {
+      
+      await sql`
+        UPDATE bookings
+        SET status = 'Completed'
+        WHERE id = ${bookingId};
+      `;
+    }
+
+    res.status(200).json({ success: true, data: updatedExecution });
+
   } catch (err) {
     console.error("❌ Error updating execution:", err);
     res.status(500).json({ success: false, message: err.message });

@@ -48,7 +48,7 @@ function App() {
           path="/booking/initiate/:providerId"
           element={<BookingInitializePage />}
         />{" "}
-        <Route path="/payment-success/:bookingId" element={<PaymentSuccess />} />
+        <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/execution/:bookingId" element={<Execution />} />
         <Route path="/provider/execution/:bookingId" element={<Execution />} />
         <Route path="/services" element={<ServicesPage />} />

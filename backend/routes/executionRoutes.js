@@ -80,20 +80,17 @@ router.put("/:bookingId/update", async (req, res) => {
       `;
     }
 
-    // ✅ Update current step
-    const updated = await sql`
-      UPDATE execution 
-      SET ${sql(field)} = 'completed'
-      WHERE booking_id = ${bookingId}
-      RETURNING *;
-    `;
+    
 
-    const updatedExecution = updated[0];
+    const text = `UPDATE execution SET "${field}" = 'completed' WHERE booking_id = $1 RETURNING *;`;
+    const values = [bookingId];
+    const result = await sql.query(text, values);
+    const updatedExecution = result.rows[0];
 
-    // ✅ Check if both sides completed
+
     if (updatedExecution.completedprovider === "completed" &&
         updatedExecution.completedclient === "completed") {
-      
+
       await sql`
         UPDATE bookings
         SET status = 'Completed'
@@ -102,6 +99,7 @@ router.put("/:bookingId/update", async (req, res) => {
     }
 
     res.status(200).json({ success: true, data: updatedExecution });
+
 
   } catch (err) {
     console.error("❌ Error updating execution:", err);

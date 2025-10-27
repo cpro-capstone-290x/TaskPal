@@ -4,11 +4,16 @@ import { io } from "socket.io-client";
 import axios from "axios";
 import api from '../../api';
 
-// ✅ Setup Socket.IO client
-const socket = io(import.meta.env.VITE_API_URL || "https://taskpal-backend.onrender.com", {
-  transports: ["websocket", "polling"], // ✅ must include polling for Render
-  withCredentials: true,
-});
+const socket = io(
+  import.meta.env.VITE_SOCKET_URL || "https://taskpal-14oy.onrender.com",
+  {
+    transports: ["websocket", "polling"], // ✅ fallback ensures Render stays connected
+    withCredentials: true,
+    reconnectionAttempts: 5, // ✅ auto-retry
+    reconnectionDelay: 3000,
+  }
+);
+
 
 const ChatRoom = () => {
   const { bookingId } = useParams();
@@ -97,13 +102,17 @@ const ChatRoom = () => {
     });
 
     return () => {
-      socket.emit("leave_room", `chat-${bookingId}`);
-      socket.off("load_messages");
-      socket.off("receive_message");
-      socket.off("booking_updated");
-      socket.disconnect();
-    };
-  }, [bookingId, bookingDetails, loading, role, userId]);
+          // ✅ Use the same object format as "join_room" to be consistent
+          socket.emit("leave_room", { bookingId: parseInt(bookingId), role });
+          
+          // ✅ Clean up the listeners
+          socket.off("load_messages");
+          socket.off("receive_message");
+          socket.off("booking_updated");
+
+          // ✅ DO NOT disconnect here. Let the socket stay alive.
+        };
+      }, [bookingId, bookingDetails, loading, role, userId]);
 
   // ✅ Send message
   const sendMessage = () => {

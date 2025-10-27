@@ -4,6 +4,12 @@ import { sql } from "../config/db.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
+const host = process.env.FRONTEND_URL || "localhost:5173";
+
+const successUrl = `${protocol}://${host}/payment-success?session_id={CHECKOUT_SESSION_ID}`;
+const cancelUrl = `${protocol}://${host}/payment-cancel`;
+
 // ✅ Create Stripe Checkout Session
 export const createPaymentIntent = async (req, res) => {
   const { bookingId } = req.params;
@@ -40,8 +46,11 @@ export const createPaymentIntent = async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: `http://localhost:5173/payment-success/${bookingId}`,
-      cancel_url: `http://localhost:5173/payment-cancelled/${bookingId}`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      metadata: {
+        bookingId: String(bookingId),
+      }
     });
 
     console.log("✅ Stripe session created:", session.url);
@@ -54,3 +63,28 @@ export const createPaymentIntent = async (req, res) => {
     });
   }
 };
+
+export const verifyPaymentSession = async (req, res) => {
+  const { sessionId } = req.params;
+
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    console.log("🔍 Stripe verification session:", session);
+
+    if (!session || session.payment_status !== "paid") {
+      return res.status(400).json({ message: "Payment not verified" });
+    }
+
+    const bookingId = session.metadata?.bookingId;
+    if (!bookingId) {
+      return res.status(400).json({ message: "No booking reference in session" });
+    }
+
+    res.json({ bookingId });
+  } catch (error) {
+    console.error("❌ Stripe verification error:", error);
+    res.status(500).json({ message: "Stripe verification failed" });
+  }
+};
+

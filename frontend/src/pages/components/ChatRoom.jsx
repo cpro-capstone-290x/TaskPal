@@ -102,13 +102,17 @@ const ChatRoom = () => {
     });
 
     return () => {
-      socket.emit("leave_room", `chat-${bookingId}`);
-      socket.off("load_messages");
-      socket.off("receive_message");
-      socket.off("booking_updated");
-      socket.disconnect();
-    };
-  }, [bookingId, bookingDetails, loading, role, userId]);
+          // ✅ Use the same object format as "join_room" to be consistent
+          socket.emit("leave_room", { bookingId: parseInt(bookingId), role });
+          
+          // ✅ Clean up the listeners
+          socket.off("load_messages");
+          socket.off("receive_message");
+          socket.off("booking_updated");
+
+          // ✅ DO NOT disconnect here. Let the socket stay alive.
+        };
+      }, [bookingId, bookingDetails, loading, role, userId]);
 
   // ✅ Send message
   const sendMessage = () => {

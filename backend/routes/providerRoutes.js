@@ -12,8 +12,10 @@ import {
 const router = express.Router();
 
 // 🌐 Public routes — no token needed
-router.get("/public/:id", getProvider);
 router.get("/public/service_type/:service_type", getProvidersByServiceType);
+router.get("/public/:id", getProvider);
+router.get("/", getProviders); // listing is public
+router.get("/service_type/:service_type", getProvidersByServiceType);
 
 // General listing
 router.get("/", getProviders);

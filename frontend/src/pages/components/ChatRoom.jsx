@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import axios from "axios";
 import api from '../../api';
+import Header from "./Header";
 
 const socket = io(
   import.meta.env.VITE_SOCKET_URL || "https://taskpal-14oy.onrender.com",
@@ -219,6 +220,7 @@ const ChatRoom = () => {
   }
 
   // ✅ UI
+  <Header />
   return (
     <div className="flex h-screen bg-gray-50">
       {/* LEFT PANEL - Provider Info */}

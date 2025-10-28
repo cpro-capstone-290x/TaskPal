@@ -25,6 +25,7 @@ const User = () => {
     city: "",
     province: "",
     postal_code: "",
+    password: "",
   });
 
   // ✅ Fetch user details
@@ -140,7 +141,7 @@ const User = () => {
         </button>
       )}
 
-      {/*  Edit Profile Modal */}
+            {/*  Edit Profile Modal */}
       {editMode && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-2xl">
@@ -170,6 +171,24 @@ const User = () => {
                   />
                 </div>
               ))}
+
+              {/* 🆕 Only show password input if the email was changed */}
+              {formData.email !== user.email && (
+                <div className="md:col-span-2">
+                  <label className="block text-sm text-gray-600 mb-1">
+                    Current Password <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Enter your password to confirm email change"
+                    className="w-full border rounded px-3 py-2"
+                    required
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-2 mt-6">
@@ -189,6 +208,7 @@ const User = () => {
           </div>
         </div>
       )}
+
 
       {/* Main Dashboard Layout */}
       <div className="min-h-screen bg-gray-50 flex">

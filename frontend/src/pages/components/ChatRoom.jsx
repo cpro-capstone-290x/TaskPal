@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import axios from "axios";
 import api from '../../api';
+import Header from "./Header";
 
 const socket = io(
   import.meta.env.VITE_SOCKET_URL || "https://taskpal-14oy.onrender.com",
@@ -222,7 +223,30 @@ const ChatRoom = () => {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* LEFT PANEL - Provider Info */}
+      
       <div className="w-80 bg-white border-r border-gray-200 p-6 flex flex-col justify-between">
+          <button
+            onClick={() => navigate(`/profile/${bookingDetails.client_id}`)}
+            className="inline-flex items-center justify-center gap-2 w-full 
+                      px-4 py-2 rounded-lg 
+                      bg-white border border-gray-300 
+                      text-gray-700 font-medium
+                      hover:bg-gray-100 hover:border-gray-400
+                      transition-all duration-200 active:scale-[0.98] shadow-sm"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              stroke="currentColor"
+              className="w-4 h-4"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Profile
+          </button>
+
         {providerDetails ? (
           <>
             <div className="flex flex-col items-center text-center">

@@ -1,13 +1,20 @@
 import express from 'express';
-import { createReview, getReviewByBooking } from '../controllers/reviewController.js';
+import {
+  createReview,
+  getReviewByBooking,
+  getReviewsByProvider
+} from '../controllers/reviewController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// 🟢 Public route: anyone can view reviews for a provider
-router.get('/reviews/booking', getReviewByBooking);
+// ✅ Public — view reviews by provider
+router.get('/provider/:providerId', getReviewsByProvider);
 
-// 🔒 Protected route: only logged-in users can create reviews
+// ✅ Public — view review by booking
+router.get('/booking/:bookingId', getReviewByBooking);
+
+// 🔒 Auth required — create review
 router.post('/', protect, createReview);
 
 export default router;

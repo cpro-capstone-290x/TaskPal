@@ -48,6 +48,7 @@ export const updateUsers = async (req, res) => {
       city,
       province,
       postal_code,
+      password,
     } = req.body;
 
     console.log("Updating user:", id, req.body);

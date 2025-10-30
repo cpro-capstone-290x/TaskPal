@@ -47,13 +47,16 @@ const SearchBooking = () => {
   }, [selectedCategory]);
 
 
-  // ✅ Apply frontend filters (price, elite, etc.)
-  const filteredProviders = providers.filter((p) => {
-    if (filters.eliteOnly && !p.is_elite) return false;
-    if (p.price < filters.priceRange[0] || p.price > filters.priceRange[1])
-      return false;
-    return true;
-  });
+  // ✅ Apply frontend filters (price, elite, status, etc.)
+  const filteredProviders = providers.filter((p) => {
+    // ✅ ADD THIS LINE: Only show approved providers
+    if (p.status !== "Approved") return false; 
+
+    if (filters.eliteOnly && !p.is_elite) return false;
+    if (p.price < filters.priceRange[0] || p.price > filters.priceRange[1])
+      return false;
+    return true;
+  });
 
   const handlePriceChange = (e) => {
     const value = parseInt(e.target.value, 10);

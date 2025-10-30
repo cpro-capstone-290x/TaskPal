@@ -49,6 +49,7 @@ const SearchBooking = () => {
 
   // ✅ Apply frontend filters (price, elite, etc.)
   const filteredProviders = providers.filter((p) => {
+    if (p.status !== "Approved") return false;
     if (filters.eliteOnly && !p.is_elite) return false;
     if (p.price < filters.priceRange[0] || p.price > filters.priceRange[1])
       return false;

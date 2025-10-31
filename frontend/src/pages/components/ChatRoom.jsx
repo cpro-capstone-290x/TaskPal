@@ -391,37 +391,131 @@ const ChatRoom = () => {
               </span>
             </p>
 
-            {/* ✅ Provider actions */}
-            {["Pending", "Negotiating"].includes(bookingDetails.status) &&
-              role === "provider" && (
-                <div className="mt-4 space-y-2">
-                  <button
-                    onClick={handleUpdatePrice}
-                    className="w-full bg-sky-600 text-white py-2 rounded hover:bg-sky-700"
-                  >
-                    💬 Propose New Price
-                  </button>
-                  <button
-                    onClick={handleAgree}
-                    className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
-                  >
-                    ✅ Agree to Price
-                  </button>
-                </div>
-              )}
+            {/* 💬 Negotiation Section (both can propose until both agree) */}
+            {["Pending", "Negotiating"].includes(bookingDetails.status) && (
+              <div className="mt-3 space-y-2">
+                <input
+                  type="number"
+                  placeholder={`Enter your proposed price (${role === "user" ? "client" : "provider"})`}
+                  value={bookingDetails.price || ""}
+                  onChange={(e) =>
+                    setBookingDetails((prev) => ({
+                      ...prev,
+                      price: e.target.value,
+                    }))
+                  }
+                  className="w-full border rounded-lg px-3 py-2 text-gray-800 focus:ring-2 focus:ring-sky-400"
+                  disabled={
+                    bookingDetails.agreement_signed_by_client &&
+                    bookingDetails.agreement_signed_by_provider
+                  }
+                />
 
-            {/* ✅ Client actions */}
-            {["Pending", "Negotiating"].includes(bookingDetails.status) &&
-              role === "user" && (
-                <div className="mt-4 space-y-2">
-                  <button
-                    onClick={handleAgree}
-                    className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
-                  >
-                    ✅ Agree to Price
-                  </button>
-                </div>
-              )}
+                <button
+                  onClick={async () => {
+                    const newPrice = bookingDetails.price;
+                    if (!newPrice || isNaN(newPrice) || Number(newPrice) <= 0) {
+                      alert("Please enter a valid price.");
+                      return;
+                    }
+
+                    try {
+                      const res = await api.put(
+                        `/bookings/${bookingId}/price`,
+                        { price: newPrice },
+                        axiosConfig
+                      );
+                      const updatedBooking = res.data.booking;
+                      setBookingDetails(updatedBooking);
+
+                      // Create message for the chat
+                      const proposalMsg = {
+                        bookingId,
+                        sender_id: userId,
+                        sender_role: role,
+                        message: `💬 ${
+                          role === "user" ? "Client" : "Provider"
+                        } proposed a new price: $${newPrice}`,
+                        timestamp: new Date().toISOString(),
+                      };
+
+                      // ✅ Show immediately in local chat
+                      setMessages((prev) => [...prev, proposalMsg]);
+
+                      // ✅ Emit to others via Socket.IO
+                      socket.emit("booking_updated", updatedBooking);
+                      socket.emit("send_message", proposalMsg);
+
+                      alert("New price proposed successfully!");
+                    } catch (err) {
+                      console.error("Error proposing new price:", err);
+                      alert("Failed to propose new price.");
+                    }
+                  }}
+                  disabled={
+                    bookingDetails.agreement_signed_by_client &&
+                    bookingDetails.agreement_signed_by_provider
+                  }
+                  className={`w-full py-2 rounded text-white font-medium transition ${
+                    bookingDetails.agreement_signed_by_client &&
+                    bookingDetails.agreement_signed_by_provider
+                      ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                      : "bg-sky-600 hover:bg-sky-700"
+                  }`}
+                >
+                  💬 Propose New Price
+                </button>
+
+                {/* ✅ Agree to Price */}
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await api.put(
+                        `/bookings/${bookingId}/agree`,
+                        { role },
+                        axiosConfig
+                      );
+                      const updatedBooking = res.data.booking;
+                      setBookingDetails(updatedBooking);
+
+                      // Create message for agreement
+                      const agreeMsg = {
+                        bookingId,
+                        sender_id: userId,
+                        sender_role: role,
+                        message: `✅ ${role === "user" ? "Client" : "Provider"} agreed to the price.`,
+                        timestamp: new Date().toISOString(),
+                      };
+
+                      // ✅ Show in chat immediately
+                      setMessages((prev) => [...prev, agreeMsg]);
+
+                      // ✅ Emit to others
+                      socket.emit("booking_updated", updatedBooking);
+                      socket.emit("send_message", agreeMsg);
+
+                      alert("You have agreed to the price!");
+                    } catch (err) {
+                      console.error("Error agreeing to price:", err);
+                      alert("Failed to agree to price.");
+                    }
+                  }}
+                  disabled={
+                    bookingDetails.agreement_signed_by_client &&
+                    bookingDetails.agreement_signed_by_provider
+                  }
+                  className={`w-full py-2 rounded text-white font-medium transition ${
+                    bookingDetails.agreement_signed_by_client &&
+                    bookingDetails.agreement_signed_by_provider
+                      ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                      : "bg-green-600 hover:bg-green-700"
+                  }`}
+                >
+                  ✅ Agree to Price
+                </button>
+              </div>
+            )}
+
 
             {/* ✅ Payment button for client */}
             {bookingDetails.status === "Confirmed" && role === "user" && (

@@ -31,6 +31,8 @@ const ChatRoom = () => {
   const [messages, setMessages] = useState([]);
   const [bookingDetails, setBookingDetails] = useState(null);
   const [providerDetails, setProviderDetails] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef(null);
 
@@ -208,7 +210,31 @@ const ChatRoom = () => {
         }
       };
 
+      const handleViewProfile = async () => {
+        try {
+          const providerId = bookingDetails?.provider_id;
+          if (!providerId) {
+            alert("No provider found for this booking.");
+            return;
+          }
 
+          const [providerRes, reviewsRes] = await Promise.all([
+            api.get(`/providers/public/${providerId}`),
+            api.get(`/reviews/provider/${providerId}`),
+          ]);
+
+          setProviderDetails(providerRes.data?.data || providerRes.data);
+          setReviews(reviewsRes.data?.data || []);
+        } catch (err) {
+          console.error("❌ Provider Fetch Error:", err);
+          alert(
+            err.response?.data?.message ||
+              "Failed to load provider profile. Please try again."
+          );
+        } finally {
+          setLoading(false);
+        }
+      };
 
   // ✅ Loading state
   if (loading) {
@@ -258,9 +284,16 @@ const ChatRoom = () => {
                 ⭐ <span className="text-gray-600">5.0</span>
                 <span className="text-gray-400">(0 reviews)</span>
               </div>
-              <button className="mt-4 px-5 py-2 rounded-full text-sm font-medium bg-sky-600 text-white hover:bg-sky-700 transition">
+              <button
+                onClick={async () => {
+                  await handleViewProfile(); // fetch provider + reviews
+                  setIsProfileModalOpen(true); // open modal
+                }}
+                className="mt-4 px-5 py-2 rounded-full text-sm font-medium bg-sky-600 text-white hover:bg-sky-700 transition"
+              >
                 View Profile
               </button>
+
             </div>
 
             <div className="mt-6 border-t border-gray-200 pt-4 text-sm text-gray-700 space-y-1">
@@ -391,37 +424,131 @@ const ChatRoom = () => {
               </span>
             </p>
 
-            {/* ✅ Provider actions */}
-            {["Pending", "Negotiating"].includes(bookingDetails.status) &&
-              role === "provider" && (
-                <div className="mt-4 space-y-2">
-                  <button
-                    onClick={handleUpdatePrice}
-                    className="w-full bg-sky-600 text-white py-2 rounded hover:bg-sky-700"
-                  >
-                    💬 Propose New Price
-                  </button>
-                  <button
-                    onClick={handleAgree}
-                    className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
-                  >
-                    ✅ Agree to Price
-                  </button>
-                </div>
-              )}
+            {/* 💬 Negotiation Section (both can propose until both agree) */}
+            {["Pending", "Negotiating"].includes(bookingDetails.status) && (
+              <div className="mt-3 space-y-2">
+                <input
+                  type="number"
+                  placeholder={`Enter your proposed price (${role === "user" ? "client" : "provider"})`}
+                  value={bookingDetails.price || ""}
+                  onChange={(e) =>
+                    setBookingDetails((prev) => ({
+                      ...prev,
+                      price: e.target.value,
+                    }))
+                  }
+                  className="w-full border rounded-lg px-3 py-2 text-gray-800 focus:ring-2 focus:ring-sky-400"
+                  disabled={
+                    bookingDetails.agreement_signed_by_client &&
+                    bookingDetails.agreement_signed_by_provider
+                  }
+                />
 
-            {/* ✅ Client actions */}
-            {["Pending", "Negotiating"].includes(bookingDetails.status) &&
-              role === "user" && (
-                <div className="mt-4 space-y-2">
-                  <button
-                    onClick={handleAgree}
-                    className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
-                  >
-                    ✅ Agree to Price
-                  </button>
-                </div>
-              )}
+                <button
+                  onClick={async () => {
+                    const newPrice = bookingDetails.price;
+                    if (!newPrice || isNaN(newPrice) || Number(newPrice) <= 0) {
+                      alert("Please enter a valid price.");
+                      return;
+                    }
+
+                    try {
+                      const res = await api.put(
+                        `/bookings/${bookingId}/price`,
+                        { price: newPrice },
+                        axiosConfig
+                      );
+                      const updatedBooking = res.data.booking;
+                      setBookingDetails(updatedBooking);
+
+                      // Create message for the chat
+                      const proposalMsg = {
+                        bookingId,
+                        sender_id: userId,
+                        sender_role: role,
+                        message: `💬 ${
+                          role === "user" ? "Client" : "Provider"
+                        } proposed a new price: $${newPrice}`,
+                        timestamp: new Date().toISOString(),
+                      };
+
+                      // ✅ Show immediately in local chat
+                      setMessages((prev) => [...prev, proposalMsg]);
+
+                      // ✅ Emit to others via Socket.IO
+                      socket.emit("booking_updated", updatedBooking);
+                      socket.emit("send_message", proposalMsg);
+
+                      alert("New price proposed successfully!");
+                    } catch (err) {
+                      console.error("Error proposing new price:", err);
+                      alert("Failed to propose new price.");
+                    }
+                  }}
+                  disabled={
+                    bookingDetails.agreement_signed_by_client &&
+                    bookingDetails.agreement_signed_by_provider
+                  }
+                  className={`w-full py-2 rounded text-white font-medium transition ${
+                    bookingDetails.agreement_signed_by_client &&
+                    bookingDetails.agreement_signed_by_provider
+                      ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                      : "bg-sky-600 hover:bg-sky-700"
+                  }`}
+                >
+                  💬 Propose New Price
+                </button>
+
+                {/* ✅ Agree to Price */}
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await api.put(
+                        `/bookings/${bookingId}/agree`,
+                        { role },
+                        axiosConfig
+                      );
+                      const updatedBooking = res.data.booking;
+                      setBookingDetails(updatedBooking);
+
+                      // Create message for agreement
+                      const agreeMsg = {
+                        bookingId,
+                        sender_id: userId,
+                        sender_role: role,
+                        message: `✅ ${role === "user" ? "Client" : "Provider"} agreed to the price.`,
+                        timestamp: new Date().toISOString(),
+                      };
+
+                      // ✅ Show in chat immediately
+                      setMessages((prev) => [...prev, agreeMsg]);
+
+                      // ✅ Emit to others
+                      socket.emit("booking_updated", updatedBooking);
+                      socket.emit("send_message", agreeMsg);
+
+                      alert("You have agreed to the price!");
+                    } catch (err) {
+                      console.error("Error agreeing to price:", err);
+                      alert("Failed to agree to price.");
+                    }
+                  }}
+                  disabled={
+                    bookingDetails.agreement_signed_by_client &&
+                    bookingDetails.agreement_signed_by_provider
+                  }
+                  className={`w-full py-2 rounded text-white font-medium transition ${
+                    bookingDetails.agreement_signed_by_client &&
+                    bookingDetails.agreement_signed_by_provider
+                      ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                      : "bg-green-600 hover:bg-green-700"
+                  }`}
+                >
+                  ✅ Agree to Price
+                </button>
+              </div>
+            )}
+
 
             {/* ✅ Payment button for client */}
             {bookingDetails.status === "Confirmed" && role === "user" && (
@@ -437,8 +564,172 @@ const ChatRoom = () => {
           </div>
         )}
       </div>
+      {/* 🟦 Provider Profile Modal */}
+      {isProfileModalOpen && providerDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl p-8 relative">
+            {/* Close Button */}
+            <button
+              onClick={() => setIsProfileModalOpen(false)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 text-2xl"
+            >
+              ✕
+            </button>
+            {/* 🟦 Provider Profile Modal (DaisyUI Version) */}
+            <input
+              type="checkbox"
+              id="provider-profile-modal"
+              className="modal-toggle"
+              checked={isProfileModalOpen}
+              readOnly
+            />
+            <div className="modal">
+              <div className="modal-box w-11/12 max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-xl relative">
+                {/* Close button */}
+                <button
+                  onClick={() => setIsProfileModalOpen(false)}
+                  className="btn btn-sm btn-circle absolute right-4 top-4"
+                >
+                  ✕
+                </button>
+
+                {/* Provider Overview */}
+                <section className="space-y-8">
+                  <div className="flex flex-col md:flex-row gap-8 items-start justify-between">
+                    {/* Photo */}
+                    <img
+                      src={
+                        providerDetails.photo_url ||
+                        "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+                      }
+                      alt="Provider"
+                      className="w-32 h-32 rounded-full object-cover border bg-gray-50"
+                    />
+
+                    {/* Info */}
+                    <div className="flex-1 space-y-2">
+                      <h2 className="text-2xl font-bold text-gray-800">
+                        {providerDetails.name}
+                      </h2>
+                      <p className="text-gray-600 capitalize">
+                        {providerDetails.service_type} Services
+                      </p>
+                      <p className="text-gray-600">
+                        {providerDetails.city || "Somewhere"},{" "}
+                        {providerDetails.province || "Unknown"}
+                      </p>
+
+                      {/* Contact */}
+                      <div className="text-sm text-gray-500 mt-3 space-y-1">
+                        <p>
+                          <strong>Email:</strong> {providerDetails.email}
+                        </p>
+                        {providerDetails.phone && (
+                          <p>
+                            <strong>Phone:</strong> {providerDetails.phone}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Bio */}
+                      <p className="mt-4 text-gray-700 leading-relaxed">
+                        {providerDetails.bio ||
+                          "This provider hasn’t written a bio yet."}
+                      </p>
+                    </div>
+
+                    {/* Rating Card */}
+                  <div className="md:absolute md:right-20 md:top-10 md:w-64">
+                    <div className="card bg-gradient-to-br from-green-50 to-white border border-green-200 shadow-md rounded-2xl text-center p-6">
+                      <div className="flex flex-col items-center justify-center space-y-2">
+                        <div className="flex items-center justify-center gap-2">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="#facc15"
+                            className="w-8 h-8 drop-shadow-sm"
+                          >
+                            <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.11a.563.563 0 00.475.347l5.518.405a.563.563 0 01.32.989l-4.21 3.647a.563.563 0 00-.182.557l1.285 5.37a.563.563 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0l-4.725 2.885a.563.563 0 01-.84-.61l1.285-5.37a.563.563 0 00-.182-.557l-4.21-3.647a.563.563 0 01.32-.989l5.518-.405a.563.563 0 00.475-.347l2.125-5.11z" />
+                          </svg>
+                          <h3 className="text-4xl font-extrabold text-green-700 leading-none">
+                            {reviews.length > 0
+                              ? (
+                                  reviews.reduce((a, b) => a + b.rating, 0) / reviews.length
+                                ).toFixed(1)
+                              : "5.0"}
+                          </h3>
+                        </div>
+
+                        <p className="text-xs text-gray-600 mb-3">
+                          Based on {reviews.length} review
+                          {reviews.length !== 1 ? "s" : ""}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  </div>
+
+                  {/* Reviews */}
+                  <div className="divider">Customer Reviews</div>
+
+                  {reviews.length === 0 ? (
+                    <p className="text-center text-gray-500">No reviews yet.</p>
+                  ) : (
+                    <div className="space-y-6">
+                      {reviews.map((review) => (
+                        <div key={review.id} className="border-b pb-4">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-medium text-gray-800">
+                              {review.reviewer_name || "Anonymous User"}
+                            </span>
+                            <div className="flex">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <svg
+                                  key={star}
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill={star <= review.rating ? "#facc15" : "none"}
+                                  viewBox="0 0 24 24"
+                                  strokeWidth={1.5}
+                                  stroke={star <= review.rating ? "#facc15" : "#d1d5db"}
+                                  className="w-4 h-4"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.11a.563.563 0 00.475.347l5.518.405a.563.563 0 01.32.989l-4.21 3.647a.563.563 0 00-.182.557l1.285 5.37a.563.563 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0l-4.725 2.885a.563.563 0 01-.84-.61l1.285-5.37a.563.563 0 00-.182-.557l-4.21-3.647a.563.563 0 01.32-.989l5.518-.405a.563.563 0 00.475-.347l2.125-5.11z"
+                                  />
+                                </svg>
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-gray-600 text-sm">{review.comment}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+
+                {/* Modal Footer */}
+                <div className="modal-action justify-center">
+                  <button
+                    onClick={() => setIsProfileModalOpen(false)}
+                    className="btn btn-outline btn-sm"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
+  
+  
 };
 
 export default ChatRoom;

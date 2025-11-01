@@ -80,3 +80,4 @@ if (req.providerUser && String(req.providerUser.id) === String(id)) {
         res.status(403).json({ error: 'Not authorized as this provider' });
     }
 };
+

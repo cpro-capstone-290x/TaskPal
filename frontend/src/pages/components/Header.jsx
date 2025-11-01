@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { io } from 'socket.io-client';
 
 // --- SVG Icons (Moved outside component for cleanliness) ---
 
@@ -235,6 +236,7 @@ const Header = () => {
   const [userRole, setUserRole] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const navigate = useNavigate();
+  const socketRef = useRef(null);
 
   // ✅ Check login status on load
   useEffect(() => {
@@ -287,25 +289,39 @@ const Header = () => {
       //   .then(data => setNotifications(data))
       //   .catch(err => console.error("Failed to fetch notifications:", err));
 
-      // Faking an initial load for demo purposes (remove this in production)
-      setNotifications([
-        {
-          id: 1,
-          type: 'message',
-          title: 'Welcome!',
-          message: 'This is your notification center.',
-          timestamp: new Date().toISOString(),
-          read: false,
-        },
-      ]);
+      // Making an initial load for demo purposes (remove this in production)
+      // setNotifications([
+      //   {
+      //     id: 1,
+      //     type: 'message',
+      //     title: 'Welcome!',
+      //     message: 'This is your notification center.',
+      //     timestamp: new Date().toISOString(),
+      //     read: false,
+      //   },
+      // ]);
 
       // 2. SET UP WEBSOCKET LISTENER
       // This is where you connect to Socket.IO or your WebSocket server
-      // const socket = io(); // (This is a placeholder)
-      
-      // Make sure your server emits events for this specific user
-      // You might need to make the socket join a "room" based on the userId
-      // socket.emit('join_room', userId);
+      const socketUrl = "http://localhost:5000"; // Or "https://taskpal-14oy.onrender.com"
+      socketRef.current = io(socketUrl, {
+        transports: ['websocket', 'polling']
+      });
+      const socket = socketRef.current;
+
+      socket.on('connect', () => {
+        console.log("🔔 Connected to notification socket:", socket.id);
+        socket.emit('join_notification_room', { userId });
+      });
+
+      socket.on('connect_error', (err) => {
+        console.error('Socket connection error:', err.message);
+      });
+
+      // Listen for all our notification types
+      socket.on('new_message', (data) => {
+        addNotification(data);
+      });
 
       // Listen for 'new_message' event from your server
       // socket.on('new_message', (data) => {
@@ -316,17 +332,26 @@ const Header = () => {
       //   });
       // });
       
-      // socket.on('new_booking', (data) => { /* ... */ });
-      // socket.on('payment_agreed', (data) => { /* ... */ });
+      socket.on('new_booking', (data) => {
+        addNotification(data);
+      });
+      socket.on('payment_agreed', (data) => {
+        addNotification(data);
+      });
 
       // Clean up the listener when the component unmounts or user logs out
-      // return () => {
-      //   socket.disconnect();
-      // };
+      return () => {
+        console.log("Disconnecting notif socket...")
+        socket.disconnect();
+      };
 
     } else {
       // If user logs out, clear notifications
       setNotifications([]);
+      if (socketRef.current) {
+         socketRef.current.disconnect();
+         socketRef.current = null;
+      }
     }
   }, [isLoggedIn, userId, addNotification]); // Dependencies
 

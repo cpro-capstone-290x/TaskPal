@@ -102,6 +102,12 @@ app.use("/api/contact", contactRoutes);
 io.on("connection", (socket) => {
   console.log("🟢 User connected:", socket.id);
 
+  socket.on("join_notification_room", ({ userId }) => {
+    const room = `user-${userId}`;
+    socket.join(room);
+    console.log(`📩 Joined notification room: ${room}`);
+  });
+
   socket.on("join_room", async ({ bookingId }) => {
     const room = `chat-${bookingId}`;
     socket.join(room);
@@ -138,7 +144,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("send_message", async (data) => {
-    const { bookingId, sender_id, sender_role, message } = data;
+    const { bookingId, sender_id, sender_role, message, recipientId } = data;
 
     const fullMessage = {
       bookingId,
@@ -161,7 +167,17 @@ io.on("connection", (socket) => {
     }
 
     socket.to(`chat-${bookingId}`).emit("receive_message", fullMessage);
-  });
+
+  if (recipientId) {
+    const notificationData = {
+      type: 'message',
+      title: 'New Message',
+      message: message.substring(0, 50) + '...'
+    };
+    io.to(`user-${recipientId}`).emit('new_message', notificationData);
+    console.log(`🔔 Sent 'new_message' notification to user ${recipientId}`);
+  }
+});
 
   socket.on("disconnect", () => {
     console.log("❌ User disconnected:", socket.id);

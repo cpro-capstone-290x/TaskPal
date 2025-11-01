@@ -25,6 +25,15 @@ export const bookTask = async (req, res) => {
       VALUES (${booking.id}, '[]'::jsonb)
     `;
 
+        const notificationData = {
+      type: 'booking', // This will use the CalendarIcon in the header
+      title: 'New Booking Request',
+      message: `You have a new request. Notes: ${booking.notes ? booking.notes.substring(0, 30) : 'N/A'}...`
+    };
+    // Emit to the provider's private notification room
+    req.io.to(`user-${booking.provider_id}`).emit('new_booking', notificationData);
+    console.log(`🔔 Sent 'new_booking' notification to user ${booking.provider_id}`);
+
     res.status(201).json({
       message: "✅ Booking created successfully, chat initialized",
       bookingId: booking.id,
@@ -85,6 +94,15 @@ export const updateBookingPrice = async (req, res) => {
     // ✅ Broadcast to both client and provider via chat room
     req.io.to(`chat-${id}`).emit("booking_updated", booking);
 
+        const notificationData = {
+      type: 'payment', // This will use the DollarIcon
+      title: 'Price Updated',
+      message: `The provider proposed a new price: $${booking.price}`
+    };
+    // Emit to the client's private notification room
+    req.io.to(`user-${booking.client_id}`).emit('payment_agreed', notificationData);
+    console.log(`🔔 Sent 'payment_agreed' notification to user ${booking.client_id}`);
+
     res.json({ message: "Price updated successfully", booking });
   } catch (err) {
     console.error("Error updating price:", err);
@@ -103,6 +121,9 @@ export const agreeToPrice = async (req, res) => {
     if (!booking) return res.status(404).json({ error: "Booking not found" });
 
     let updated;
+    let notificationData = {};
+    let notifyTo = null;
+    let eventType = 'payment_agreed';
     if (role === "user") {
       updated = await sql`
         UPDATE bookings
@@ -110,6 +131,14 @@ export const agreeToPrice = async (req, res) => {
         WHERE id = ${id}
         RETURNING *;
       `;
+      // Notify PROVIDER that client agreed
+      notifyTo = `user-${updated[0].provider_id}`;
+      notificationData = {
+        type: 'payment',
+        title: 'Client Agreed',
+        message: 'The client has agreed to the price.'
+      };
+
     } else if (role === "provider") {
       updated = await sql`
         UPDATE bookings
@@ -117,6 +146,14 @@ export const agreeToPrice = async (req, res) => {
         WHERE id = ${id}
         RETURNING *;
       `;
+      // Notify CLIENT that provider agreed
+      notifyTo = `user-${updated[0].client_id}`;
+      notificationData = {
+        type: 'payment',
+        title: 'Provider Agreed',
+        message: 'The provider has agreed to the price.'
+      };
+
     } else {
       return res.status(400).json({ error: "Invalid role" });
     }
@@ -134,12 +171,41 @@ export const agreeToPrice = async (req, res) => {
         WHERE id = ${id}
         RETURNING *;
       `;
-      req.io.to(`chat-${id}`).emit("booking_updated", confirmed[0]); // <--- broadcast to both clients
-      return res.json({ message: "Booking confirmed", booking: confirmed[0] });
+
+      if (!confirmed) {
+        console.error(`❌ Failed to find booking ${id} for final confirmation.`);
+        return res.status(404).json({ error: "Booking not found during final update." });
+      }
+
+      const confirmedBooking = confirmed;
+      req.io.to(`chat-${id}`).emit("booking_updated", confirmedBooking); // <--- broadcast to both clients
+      
+      const clientNotification = {
+        type: 'booking', // Use CalendarIcon
+        title: 'Booking Confirmed!',
+        message: `Your booking (ID: ${confirmedBooking.id}) is confirmed.`
+      };
+      req.io.to(`user-${confirmedBooking.client_id}`).emit('new_booking', clientNotification);
+
+      const providerNotification = {
+        type: 'booking',
+        title: 'Booking Confirmed!',
+        message: `Your booking (ID: ${confirmedBooking.id}) is confirmed.`
+      };
+      req.io.to(`user-${confirmedBooking.provider_id}`).emit('new_booking', providerNotification);
+      console.log(`🔔 Sent 'new_booking' (Confirmed) to client ${confirmedBooking.client_id} and provider ${confirmedBooking.provider_id}`);
+
+      return res.json({ message: "Booking confirmed", booking: confirmedBooking });
     }
 
     // ✅ Otherwise, still negotiating → notify both sides
     req.io.to(`chat-${id}`).emit("booking_updated", updatedBooking); // <--- broadcast to both clients
+    
+    if (notifyTo) {
+      req.io.to(notifyTo).emit(eventType, notificationData);
+      console.log(`🔔 Sent '${eventType}' notification to ${notifyTo}`);
+    }
+
     res.json({ message: "Agreement updated", booking: updatedBooking });
   } catch (err) {
     console.error("❌ Error updating agreement:", err);

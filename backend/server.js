@@ -8,6 +8,7 @@ import { Server } from "socket.io";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import { put } from "@vercel/blob";
 
 import userRoutes from "./routes/userRoutes.js";
 import providerRoutes from "./routes/providerRoutes.js";
@@ -97,6 +98,20 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/execution", executionRoutes);
 app.use("/api/reviews",  reviewRoutes);
 app.use("/api/contact", contactRoutes);
+
+app.get("/test-upload", async (req, res) => {
+  try {
+    const { url } = await put("Client-Provider-Agreement/test.txt", "Hello Blob!", {
+      access: "public",
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+    });
+    console.log("✅ Uploaded to Blob:", url);
+    res.json({ success: true, url });
+  } catch (err) {
+    console.error("❌ Upload test failed:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ✅ SOCKET.IO Logic
 io.on("connection", (socket) => {

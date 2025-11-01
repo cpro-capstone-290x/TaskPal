@@ -1,5 +1,6 @@
 import { sql } from "../config/db.js";
 import PDFDocument from "pdfkit";
+import { put } from "@vercel/blob";
 import fs from "fs";
 
 export const bookTask = async (req, res) => {
@@ -213,6 +214,8 @@ export const agreeToPrice = async (req, res) => {
   }
 };
 
+
+
 export const downloadAgreement = async (req, res) => {
   const { id } = req.params;
 
@@ -244,59 +247,85 @@ export const downloadAgreement = async (req, res) => {
       ? new Date(booking.scheduled_date).toLocaleString()
       : "Not scheduled";
 
-    // ✅ Configure response headers before writing
-    const filename = `agreement_booking_${id}.pdf`;
-    res.setHeader("Content-Disposition", `attachment; filename=${filename}`);
-    res.setHeader("Content-Type", "application/pdf");
+    // ✅ Generate PDF in memory
+    const PDFBuffer = await new Promise((resolve, reject) => {
+      const chunks = [];
+      const doc = new PDFDocument();
 
-    // ✅ Stream PDF to response
-    const doc = new PDFDocument();
-    doc.pipe(res);
+      doc.on("data", (chunk) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", reject);
 
-    // --- HEADER
-    doc.fontSize(22).text("TaskPal Service Agreement", { align: "center" });
-    doc.moveDown(2);
+      // --- HEADER
+      doc.fontSize(22).text("TaskPal Service Agreement", { align: "center" });
+      doc.moveDown(2);
 
-    // --- BOOKING DETAILS
-    doc.fontSize(14).text("Booking Summary", { underline: true });
-    doc.moveDown(0.5);
-    doc.fontSize(12);
-    doc.text(`Booking ID: ${booking.id}`);
-    doc.text(`Client ID: ${booking.client_id}`);
-    doc.text(`Provider ID: ${booking.provider_id}`);
-    doc.text(`Notes: ${booking.notes || "N/A"}`);
-    doc.text(`Price: $${price}`);
-    doc.text(`Scheduled Date: ${scheduledDate}`);
-    doc.text(`Status: ${booking.status}`);
-    doc.moveDown(1.5);
+      // --- BOOKING DETAILS
+      doc.fontSize(14).text("Booking Summary", { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(12);
+      doc.text(`Booking ID: ${booking.id}`);
+      doc.text(`Client ID: ${booking.client_id}`);
+      doc.text(`Provider ID: ${booking.provider_id}`);
+      doc.text(`Notes: ${booking.notes || "N/A"}`);
+      doc.text(`Price: $${price}`);
+      doc.text(`Scheduled Date: ${scheduledDate}`);
+      doc.text(`Status: ${booking.status}`);
+      doc.moveDown(1.5);
 
-    // --- AGREEMENT TERMS
-    doc.fontSize(14).text("Agreement Terms", { underline: true });
-    doc.moveDown(0.5);
-    doc.fontSize(12);
-    doc.text(
-      "This document confirms that both parties have reviewed and agreed to the TaskPal Terms & Conditions. " +
-        "Once signed, the provider commits to fulfilling the service as described, and the client agrees to pay the stated price."
-    );
-    doc.moveDown(1.5);
+      // --- AGREEMENT TERMS
+      doc.fontSize(14).text("Agreement Terms", { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(12);
+      doc.text(
+        "This document confirms that both parties have reviewed and agreed to the TaskPal Terms & Conditions. " +
+          "Once signed, the provider commits to fulfilling the service as described, and the client agrees to pay the stated price."
+      );
+      doc.moveDown(1.5);
 
-    // --- SIGNATURE SECTION
-    doc.text("___________________________", { continued: true }).text("     ", {
-      continued: true,
+      // --- SIGNATURE SECTION
+      doc.text("___________________________", { continued: true }).text("     ", {
+        continued: true,
+      });
+      doc.text("___________________________");
+      doc.text("Client Signature", { continued: true }).text("               ");
+      doc.text("Provider Signature");
+      doc.moveDown(2);
+
+      doc.text("Digitally signed via TaskPal Platform.", { align: "center" });
+      doc.end();
     });
-    doc.text("___________________________");
-    doc.text("Client Signature", { continued: true }).text("               ");
-    doc.text("Provider Signature");
-    doc.moveDown(2);
 
-    doc.text("Digitally signed via TaskPal Platform.", { align: "center" });
+// ✅ Upload PDF to Vercel Blob (safe overwrite)
+const blobPath = `Client-Provider-Agreement/agreement_booking_${id}.pdf`;
 
-    // ✅ Properly end the document
-    doc.end();
+const upload = await put(blobPath, PDFBuffer, {
+  access: "public",
+  contentType: "application/pdf",
+  token: process.env.BLOB_READ_WRITE_TOKEN,
+  allowOverwrite: true, // ✅ correct placement for v2.x
+});
+
+console.log("✅ Uploaded to Blob:", upload.url);
+
+// ✅ Save the Blob URL to the bookings table
+await sql`
+  UPDATE bookings
+  SET agreement_pdf_url = ${upload.url}, updated_at = NOW()
+  WHERE id = ${id};
+`;
+
+console.log("💾 Saved agreement URL to DB for booking:", id);
+
+// ✅ Return JSON response
+res.status(200).json({
+  success: true,
+  message: "Agreement uploaded successfully to Vercel Blob",
+  url: upload.url,
+});
+
   } catch (err) {
-    console.error("❌ Error generating agreement:", err);
-    if (!res.headersSent) {
-      res.status(500).json({ error: "Failed to generate agreement" });
-    }
+    console.error("❌ Error generating/downloading agreement:", err);
+    res.status(500).json({ error: "Failed to generate/download agreement" });
   }
 };

@@ -117,76 +117,76 @@ const ChatRoom = () => {
         };
       }, [bookingId, bookingDetails, loading, role, userId]);
 
-  // ✅ Send message
-  const sendMessage = () => {
-    if (!message.trim()) return;
+      // ✅ Send message
+      const sendMessage = () => {
+        if (!message.trim()) return;
 
-    const newMessage = {
-      bookingId: parseInt(bookingId),
-      sender_id: userId,
-      sender_role: role,
-      message,
-      timestamp: new Date().toISOString(),
-    };
+        const newMessage = {
+          bookingId: parseInt(bookingId),
+          sender_id: userId,
+          sender_role: role,
+          message,
+          timestamp: new Date().toISOString(),
+        };
 
-    setMessages((prev) => [...prev, newMessage]);
-    socket.emit("send_message", newMessage);
-    setMessage("");
-  };
+        setMessages((prev) => [...prev, newMessage]);
+        socket.emit("send_message", newMessage);
+        setMessage("");
+      };
 
-  // ✅ Format time
-  const formatTime = (ts) =>
-    new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      // ✅ Format time
+      const formatTime = (ts) =>
+        new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-  // ✅ Update booking price (Provider)
-  const handleUpdatePrice = async () => {
-    try {
-      const newPrice = prompt(
-        "Enter a new price:",
-        bookingDetails.price || ""
-      );
-      if (!newPrice || isNaN(newPrice)) return alert("Invalid price.");
+      // ✅ Update booking price (Provider)
+      const handleUpdatePrice = async () => {
+        try {
+          const newPrice = prompt(
+            "Enter a new price:",
+            bookingDetails.price || ""
+          );
+          if (!newPrice || isNaN(newPrice)) return alert("Invalid price.");
 
-      const res = await api.put(
-        `/bookings/${bookingId}/price`,
-        { price: newPrice },
-        axiosConfig
-      );
-      setBookingDetails(res.data.booking);
+          const res = await api.put(
+            `/bookings/${bookingId}/price`,
+            { price: newPrice },
+            axiosConfig
+          );
+          setBookingDetails(res.data.booking);
 
-      socket.emit("send_message", {
-        bookingId,
-        sender_id: userId,
-        sender_role: role,
-        message: `💬 Provider proposed a new price: $${newPrice}`,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (err) {
-      console.error("Error updating price:", err);
-    }
-  };
+          socket.emit("send_message", {
+            bookingId,
+            sender_id: userId,
+            sender_role: role,
+            message: `💬 Provider proposed a new price: $${newPrice}`,
+            timestamp: new Date().toISOString(),
+          });
+        } catch (err) {
+          console.error("Error updating price:", err);
+        }
+      };
 
-  // ✅ Agree to price
-  const handleAgree = async () => {
-    try {
-      const res = await api.put(
-        `/bookings/${bookingId}/agree`,
-        { role },
-        axiosConfig
-      );
-      setBookingDetails(res.data.booking);
+        // ✅ Agree to price
+        const handleAgree = async () => {
+          try {
+            const res = await api.put(
+              `/bookings/${bookingId}/agree`,
+              { role },
+              axiosConfig
+            );
+            setBookingDetails(res.data.booking);
 
-      socket.emit("send_message", {
-        bookingId,
-        sender_id: userId,
-        sender_role: role,
-        message: `✅ ${role === "user" ? "Client" : "Provider"} agreed to the price.`,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (err) {
-      console.error("Error agreeing to price:", err);
-    }
-  };
+            socket.emit("send_message", {
+              bookingId,
+              sender_id: userId,
+              sender_role: role,
+              message: `✅ ${role === "user" ? "Client" : "Provider"} agreed to the price.`,
+              timestamp: new Date().toISOString(),
+            });
+          } catch (err) {
+            console.error("Error agreeing to price:", err);
+          }
+        };
 
       const handleProceedToPayment = async () => {
         try {
@@ -235,6 +235,58 @@ const ChatRoom = () => {
           setLoading(false);
         }
       };
+
+      const handleDownloadAgreement = async () => {
+        try {
+          const id = bookingDetails.id;
+          if (!id) return alert("Booking ID not found.");
+
+          console.log(
+            "📡 Download request URL:",
+            `${api.defaults.baseURL}/bookings/${id}/agreement`
+          );
+
+          // ✅ 1️⃣ If already uploaded to Blob, open directly
+          if (bookingDetails.agreement_pdf_url) {
+            console.log("☁️ Downloading from Blob:", bookingDetails.agreement_pdf_url);
+            window.open(bookingDetails.agreement_pdf_url, "_blank");
+            return;
+          }
+
+          // ✅ 2️⃣ Otherwise, request backend to generate & upload
+          const response = await api.get(`/bookings/${id}/agreement`, {
+            headers: { Authorization: `Bearer ${token}` },
+            // ⛔ remove responseType: "arraybuffer"
+          });
+
+          // ✅ 3️⃣ Backend should respond with JSON (including the Blob URL)
+          if (response.data?.url) {
+            console.log("✅ Agreement uploaded to Blob:", response.data.url);
+            window.open(response.data.url, "_blank");
+          } else {
+            alert("No agreement file URL found in server response.");
+          }
+        } catch (err) {
+          console.error("❌ Error downloading agreement:", err);
+
+          let errorMessage = "Failed to download agreement.";
+          if (err.response?.data) {
+            if (err.response.data instanceof ArrayBuffer) {
+              errorMessage = new TextDecoder().decode(err.response.data);
+            } else if (typeof err.response.data === "string") {
+              errorMessage = err.response.data;
+            } else if (typeof err.response.data === "object" && err.response.data.error) {
+              errorMessage = err.response.data.error;
+            }
+          }
+
+          alert(errorMessage);
+        }
+      };
+
+
+
+
 
   // ✅ Loading state
   if (loading) {
@@ -549,6 +601,18 @@ const ChatRoom = () => {
               </div>
             )}
 
+            {/* ✅ Show Download Agreement when both have agreed */}
+            {bookingDetails.agreement_signed_by_client &&
+            bookingDetails.agreement_signed_by_provider && (
+              <div className="mt-4">
+                <button
+                  onClick={handleDownloadAgreement}
+                  className="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 transition"
+                >
+                  📄 Download Agreement
+                </button>
+              </div>
+            )}
 
             {/* ✅ Payment button for client */}
             {bookingDetails.status === "Confirmed" && role === "user" && (

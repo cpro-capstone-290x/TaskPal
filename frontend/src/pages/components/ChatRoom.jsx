@@ -284,9 +284,20 @@ const ChatRoom = () => {
         }
       };
 
-
-
-
+      const handleCancelBooking = async () => {
+        try {
+          const confirmCancel = window.confirm(
+            "Are you sure you want to cancel this booking?"
+          );
+          if (!confirmCancel) return;
+          const res = await api.put(`/bookings/${bookingId}/cancel`, {}, axiosConfig);
+          alert("Booking cancelled successfully.");
+          navigate("/");
+        } catch (err) {
+          console.error("Error cancelling booking:", err);
+          alert("Failed to cancel booking.");
+        }
+      };
 
   // ✅ Loading state
   if (loading) {
@@ -464,16 +475,21 @@ const ChatRoom = () => {
             <p>
               <strong>Status:</strong>{" "}
               <span
-                className={`px-2 py-0.5 rounded text-white ${
+                className={`px-2 py-0.5 rounded text-white font-medium ${
                   bookingDetails.status === "Negotiating"
                     ? "bg-yellow-500"
                     : bookingDetails.status === "Confirmed"
                     ? "bg-green-600"
+                    : bookingDetails.status === "Cancelled"
+                    ? "bg-red-600"
+                    : bookingDetails.status === "Completed"
+                    ? "bg-blue-600"
                     : "bg-gray-500"
                 }`}
               >
                 {bookingDetails.status}
               </span>
+
             </p>
 
             {/* 💬 Negotiation Section (both can propose until both agree) */}
@@ -597,6 +613,12 @@ const ChatRoom = () => {
                   }`}
                 >
                   ✅ Agree to Price
+                </button>
+                <button
+                  onClick={handleCancelBooking}
+                  className="w-full bg-red-600 text-white py-2 rounded hover:bg-red-700 transition"
+                >
+                  ❌ Cancel Booking
                 </button>
               </div>
             )}

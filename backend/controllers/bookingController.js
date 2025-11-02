@@ -329,3 +329,63 @@ res.status(200).json({
     res.status(500).json({ error: "Failed to generate/download agreement" });
   }
 };
+
+// controllers/bookingController.js
+export const cancelBooking = async (req, res) => {
+  const { id } = req.params;
+  const user = req.user;
+
+  try {
+    // 1️⃣ Find the booking
+    const [booking] = await sql`SELECT * FROM bookings WHERE id = ${id}`;
+    if (!booking) return res.status(404).json({ error: "Booking not found" });
+
+    // 2️⃣ Check permissions — only the client or provider can cancel
+    if (
+      (user.role === "user" && booking.client_id !== user.id) ||
+      (user.role === "provider" && booking.provider_id !== user.id)
+    ) {
+      return res.status(403).json({ error: "Unauthorized to cancel this booking" });
+    }
+
+    // 3️⃣ Prevent re-cancelling or cancelling confirmed/completed bookings
+    if (["Cancelled", "Completed"].includes(booking.status)) {
+      return res.status(400).json({ error: `Booking already ${booking.status}` });
+    }
+
+    // 4️⃣ Update status to Cancelled (soft delete)
+    const [updatedBooking] = await sql`
+      UPDATE bookings
+      SET status = 'Cancelled', updated_at = NOW()
+      WHERE id = ${id}
+      RETURNING *;
+    `;
+
+    // 5️⃣ Optional: Emit socket notification to the other party
+    req.io.to(`chat-${id}`).emit("booking_updated", updatedBooking);
+
+    // Notify the other party (client ↔ provider)
+    const notifyTo =
+      user.role === "user"
+        ? `user-${booking.provider_id}`
+        : `user-${booking.client_id}`;
+
+    const notificationData = {
+      type: "booking",
+      title: "Booking Cancelled",
+      message: `Booking (ID: ${id}) has been cancelled by the ${user.role}.`,
+    };
+
+    req.io.to(notifyTo).emit("booking_cancelled", notificationData);
+
+    console.log(`🛑 Booking ${id} cancelled by ${user.role}.`);
+
+    res.json({
+      message: "Booking cancelled successfully.",
+      booking: updatedBooking,
+    });
+  } catch (err) {
+    console.error("❌ Error cancelling booking:", err);
+    res.status(500).json({ error: "Failed to cancel booking." });
+  }
+};

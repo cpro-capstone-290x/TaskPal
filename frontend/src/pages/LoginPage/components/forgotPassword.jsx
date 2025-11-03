@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../../components/Header";
+import axios from "axios";
+
+// ✅ Create a reliable API base URL that adapts to environment
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "https://taskpal-14oy.onrender.com/api";
 
 const InputField = ({ label, id, type = "text", value, onChange, required = false, placeholder = "" }) => (
   <div className="flex flex-col">
@@ -38,24 +43,35 @@ const ForgotPasswordUser = () => {
     setStatus({ loading: true, error: null, success: false });
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/send-reset-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const data = await res.json();
+      // ✅ Always hit the correct backend URL
+      const res = await axios.post(`${API_BASE_URL}/auth/send-reset-otp`, { email });
 
-      if (!res.ok) throw new Error(data.error || "Failed to send OTP");
+      if (res.data?.success) {
+        // ✅ Store for next step
+        localStorage.setItem("resetEmail", email);
+        localStorage.setItem("resetPassword", newPassword);
 
-      // ✅ Store info for the next page
-      localStorage.setItem("resetEmail", email);
-      localStorage.setItem("resetPassword", newPassword);
+        setStatus({
+          loading: false,
+          error: null,
+          success: true,
+        });
 
-      // ✅ Go to OTP verification page
-      navigate("/otp-reset");
-
+        // ⏳ Redirect after 1.5s
+        setTimeout(() => navigate("/otp-reset"), 1500);
+      } else {
+        throw new Error(res.data?.error || "Failed to send OTP");
+      }
     } catch (err) {
-      setStatus({ loading: false, success: false, error: err.message });
+      console.error("❌ Send reset OTP error:", err);
+      setStatus({
+        loading: false,
+        success: false,
+        error:
+          err.response?.data?.error ||
+          err.message ||
+          "Failed to send OTP. Please try again later.",
+      });
     }
   };
 
@@ -67,15 +83,24 @@ const ForgotPasswordUser = () => {
           Forgot Your Password?
         </h1>
         <p className="text-center text-gray-500 mb-6 leading-relaxed">
-          Enter your registered email and your new password.
+          Enter your registered email and your new password. We’ll send a one-time code to verify your identity.
         </p>
 
+        {/* ⚠️ Error Message */}
         {status.error && (
           <div className="p-4 bg-red-50 border border-red-300 text-red-700 rounded-xl text-center font-semibold mb-4">
             ❌ {status.error}
           </div>
         )}
 
+        {/* ✅ Success Message */}
+        {status.success && (
+          <div className="p-4 bg-green-50 border border-green-300 text-green-700 rounded-xl text-center font-semibold mb-4 animate-pulse-once">
+            ✅ OTP sent successfully! Redirecting...
+          </div>
+        )}
+
+        {/* 🧾 Form */}
         <form onSubmit={handleSendOTP} className="space-y-6">
           <InputField
             label="Registered Email"
@@ -110,7 +135,7 @@ const ForgotPasswordUser = () => {
             disabled={status.loading}
             className="w-full py-3 bg-sky-600 text-white font-extrabold text-lg rounded-xl shadow-md hover:bg-sky-700 disabled:bg-sky-400 transition"
           >
-            {status.loading ? "Sending..." : "Send OTP"}
+            {status.loading ? "Sending OTP..." : "Send OTP"}
           </button>
         </form>
       </div>

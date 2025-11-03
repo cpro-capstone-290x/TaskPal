@@ -196,13 +196,13 @@ const handleSave = async (e) => {
   const token = localStorage.getItem("authToken");
   const providerId = localStorage.getItem("providerId");
 
-  // ✅ Remove client-side restriction; let backend authorize
   if (!token) {
     setSaveMessage({ type: "error", message: "Session expired. Please log in again." });
     setIsSaving(false);
     return;
   }
 
+  // ✅ 1️⃣ Define config first
   const config = {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -210,14 +210,25 @@ const handleSave = async (e) => {
     },
   };
 
+  // ✅ 2️⃣ Prepare payload safely
+  const payload = { ...formData };
+  if (!payload.password || payload.password.trim() === "") {
+    delete payload.password; // prevent overwriting hash
+  }
+
   try {
-    const res = await api.put(`/providers/${id}`, formData, config);
+    // ✅ 3️⃣ Then use config here
+    const res = await api.put(`/providers/${id}`, payload, config);
 
     if (res.data?.success) {
       setProvider(res.data.data);
       setFormData(res.data.data);
       setIsEditing(false);
       setSaveMessage({ type: "success", message: "Profile updated successfully! ✅" });
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     } else {
       setSaveMessage({
         type: "error",
@@ -238,6 +249,7 @@ const handleSave = async (e) => {
     setTimeout(() => setSaveMessage({ type: "", message: "" }), 5000);
   }
 };
+
 
   // --- Cancel Function ---
   const handleCancel = () => {

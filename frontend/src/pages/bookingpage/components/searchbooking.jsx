@@ -1,14 +1,11 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 import api from "../../../api";
-
-
 
 const SearchBooking = () => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
-  const selectedCategory = queryParams.get("category"); // ✅ "Cleaning", "Moving", etc.
+  const selectedCategory = queryParams.get("category"); // e.g. "Cleaning", "Moving"
   const navigate = useNavigate();
 
   const [providers, setProviders] = useState([]);
@@ -18,18 +15,17 @@ const SearchBooking = () => {
     eliteOnly: false,
   });
 
-  
+  // ✅ Navigate to provider profile page
   const handleViewProfile = (providerId) => {
     navigate(`/providers/public/${providerId}`);
   };
 
-  // ✅ Fetch providers from backend (filtered by category)
+  // ✅ Fetch providers filtered by category from backend
   useEffect(() => {
     const fetchProviders = async () => {
       setLoading(true);
       try {
         let endpoint = "/providers/service_type";
-
         if (selectedCategory) {
           endpoint += `/${encodeURIComponent(selectedCategory)}`;
         }
@@ -37,7 +33,7 @@ const SearchBooking = () => {
         const res = await api.get(endpoint);
         setProviders(res.data.data || []);
       } catch (error) {
-        console.error("Error fetching providers:", error);
+        console.error("❌ Error fetching providers:", error);
       } finally {
         setLoading(false);
       }
@@ -46,18 +42,23 @@ const SearchBooking = () => {
     fetchProviders();
   }, [selectedCategory]);
 
-
-  // ✅ Apply frontend filters (price, elite, status, etc.)
+  // ✅ Apply client-side filters
   const filteredProviders = providers.filter((p) => {
-    // ✅ ADD THIS LINE: Only show approved providers
-  if (p.status !== "Approved") return false; 
+    // Only show approved providers
+    if (p.status !== "Approved") return false;
 
-  if (filters.eliteOnly && !p.is_elite) return false;
-  if (p.price < filters.priceRange[0] || p.price > filters.priceRange[1])
+    // Apply Elite filter
+    if (filters.eliteOnly && !p.is_elite) return false;
+
+    // Apply price range filter (if price exists)
+    if (p.price && (p.price < filters.priceRange[0] || p.price > filters.priceRange[1])) {
       return false;
+    }
+
     return true;
   });
 
+  // ✅ Handle price range adjustment
   const handlePriceChange = (e) => {
     const value = parseInt(e.target.value, 10);
     setFilters((prev) => ({
@@ -66,10 +67,10 @@ const SearchBooking = () => {
     }));
   };
 
+  // ✅ Handle booking initiation
   const handleSelectProvider = (providerId) => {
-    // Navigate to the chat room for the selected provider
     navigate(`/booking/initiate/${providerId}`);
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 md:p-10 flex flex-col md:flex-row gap-6">
@@ -123,7 +124,7 @@ const SearchBooking = () => {
         </div>
       </div>
 
-      {/* Right Side - Providers */}
+      {/* Right Side - Provider Cards */}
       <div className="flex-1 space-y-6">
         {loading ? (
           <p className="text-center text-gray-500">Loading providers...</p>
@@ -137,10 +138,14 @@ const SearchBooking = () => {
               key={p.id}
               className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-start gap-6"
             >
-              {/* Profile Image */}
+              {/* ✅ Profile Image */}
               <div className="flex flex-col items-center w-full md:w-1/4">
                 <img
-                  src={p.image || "https://via.placeholder.com/100"}
+                  src={
+                    p.profile_picture_url
+                      ? p.profile_picture_url // ✅ actual URL from Vercel Blob
+                      : "https://via.placeholder.com/100?text=No+Image"
+                  }
                   alt={p.name}
                   className="w-24 h-24 rounded-full object-cover border-4 border-sky-100 mb-2"
                 />
@@ -152,14 +157,14 @@ const SearchBooking = () => {
                 </button>
               </div>
 
-              {/* Info */}
+              {/* ✅ Provider Info */}
               <div className="flex-1">
                 <div className="flex justify-between items-start">
                   <h3 className="text-xl font-semibold text-gray-800">
                     {p.name || `${p.first_name} ${p.last_name}`}
                   </h3>
                   <span className="text-lg font-bold text-gray-800">
-                    ${p.price}/hr
+                    ${p.price || 0}/hr
                   </span>
                 </div>
 
@@ -182,10 +187,12 @@ const SearchBooking = () => {
                 </div>
               </div>
 
-              {/* CTA */}
+              {/* ✅ Call to Action */}
               <div className="flex flex-col items-center justify-center md:w-1/5 w-full mt-4 md:mt-0">
-                <button onClick={() => handleSelectProvider(p.id)} className="px-6 py-2 rounded-full bg-sky-600 text-white font-semibold hover:bg-sky-700 transition">
-                  
+                <button
+                  onClick={() => handleSelectProvider(p.id)}
+                  className="px-6 py-2 rounded-full bg-sky-600 text-white font-semibold hover:bg-sky-700 transition"
+                >
                   Select & Continue
                 </button>
                 <p className="text-xs text-gray-500 text-center mt-2">

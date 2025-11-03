@@ -11,12 +11,14 @@
     "reset-db": "node resetDB.js",
     "test-db": "node testDB.js",
     "test-stream": "node testStream.js",
-    "testEmail": "node testEmail.js"
+    "testEmail": "node testEmail.js",
+    "test-blob": "node testVercelBlob.js"
   },
   "dependencies": {
     "@arcjet/node": "^1.0.0-beta.12",
     "@getbrevo/brevo": "^3.0.1",
     "@neondatabase/serverless": "^1.0.1",
+    "@vercel/blob": "^2.0.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
@@ -25,6 +27,7 @@
     "helmet": "^7.0.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
+    "multer": "^2.0.2",
     "nodemailer": "^6.9.14",
     "pdfkit": "^0.17.2",
     "socket.io": "^4.8.1",

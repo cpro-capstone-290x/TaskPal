@@ -7,6 +7,7 @@ import {
   updateBookingPrice,
   agreeToPrice,
   downloadAgreement,
+  cancelBooking
 } from "../controllers/bookingController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -69,6 +70,7 @@ router.post("/", bookTask);
 router.put("/:id/price", updateBookingPrice);
 router.put("/:id/agree", agreeToPrice);
 router.get("/:id/agreement", downloadAgreement);
+router.put("/:id/cancel", protect, cancelBooking);
 // ✅ NEW ROUTE to mark booking as Paid and record payment details
 router.put("/:id/paid", async (req, res) => {
   try {

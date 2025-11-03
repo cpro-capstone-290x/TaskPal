@@ -47,60 +47,68 @@ export const updateProvider = async (req, res) => {
     phone,
     document,
     status,
-    password,
-    profile_picture_url, // ✅ allow updating picture URL
+    password, // only update if changed
+    profile_picture_url,
   } = req.body;
 
   try {
-    // 🔐 Authorization check: only the provider themselves or an admin can update
-    if (
-      !req.user ||
-      (req.user.role !== "admin" && req.user.id !== parseInt(id))
-    ) {
+    // 🔐 Authorization check
+    if (!req.user || (req.user.role !== "admin" && req.user.id !== parseInt(id))) {
       return res
         .status(403)
         .json({ error: "Forbidden: You are not allowed to edit this provider." });
     }
 
-    // ✅ Optional: hash password if it's being updated
-    let hashedPassword = password;
-    if (password) {
+    // ✅ Dynamic update fields
+    const updates = [];
+    const params = [];
+
+    if (name) updates.push(`name = $${params.push(name)}`);
+    if (provider_type) updates.push(`provider_type = $${params.push(provider_type)}`);
+    if (service_type) updates.push(`service_type = $${params.push(service_type)}`);
+    if (license_id) updates.push(`license_id = $${params.push(license_id)}`);
+    if (email) updates.push(`email = $${params.push(email)}`);
+    if (phone) updates.push(`phone = $${params.push(phone)}`);
+    if (document) updates.push(`document = $${params.push(document)}`);
+    if (status) updates.push(`status = $${params.push(status)}`);
+    if (profile_picture_url) updates.push(`profile_picture_url = $${params.push(profile_picture_url)}`);
+
+    // ✅ Hash password only if provided and non-empty
+    if (password && password.trim() !== "") {
       const salt = await bcrypt.genSalt(10);
-      hashedPassword = await bcrypt.hash(password, salt);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      updates.push(`password = $${params.push(hashedPassword)}`);
     }
 
-    const updatedProvider = await sql`
-      UPDATE providers 
-      SET
-        name = COALESCE(${name}, name),
-        provider_type = COALESCE(${provider_type}, provider_type),
-        service_type = COALESCE(${service_type}, service_type),
-        license_id = COALESCE(${license_id}, license_id),
-        email = COALESCE(${email}, email),
-        phone = COALESCE(${phone}, phone),
-        document = COALESCE(${document}, document),
-        status = COALESCE(${status}, status),
-        password = COALESCE(${hashedPassword}, password),
-        profile_picture_url = COALESCE(${profile_picture_url}, profile_picture_url),
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${id}
+    if (updates.length === 0) {
+      return res.status(400).json({ error: "No valid fields provided to update" });
+    }
+
+    // ✅ Add updated_at
+    const query = `
+      UPDATE providers
+      SET ${updates.join(", ")}, updated_at = NOW()
+      WHERE id = $${params.push(id)}
       RETURNING *;
     `;
 
-    if (updatedProvider.length === 0) {
+    // 🧠 With Neon’s tagged client, use parameterized query
+    const result = await sql.unsafe(query, params);
+
+    if (!result || result.length === 0) {
       return res.status(404).json({ error: "Provider not found" });
     }
 
-    res.status(200).json({ success: true, data: updatedProvider[0] });
+    return res.status(200).json({ success: true, data: result[0] });
   } catch (error) {
-    if (error.code === "23505") {
-      // Unique violation
-      return res.status(400).json({ error: "Email already exists" });
-    }
     console.error("❌ Failed to update provider:", error);
     res.status(500).json({ error: "Failed to update provider" });
   }
 };
+
+
+
+
 
 export const deleteProvider = async (req, res) => {
     const { id } = req.params;
@@ -194,21 +202,55 @@ export const uploadProviderProfilePicture = async (req, res) => {
   }
 
   try {
-    // ✅ Upload to Vercel Blob folder
-    const fileName = `Provider-Profile/${Date.now()}-${file.originalname}`;
+    // ✅ Step 1: Get existing provider details
+    const [provider] = await sql`
+      SELECT id, name, profile_picture_url
+      FROM providers
+      WHERE id = ${providerId};
+    `;
+
+    if (!provider) {
+      return res.status(404).json({ success: false, message: "Provider not found" });
+    }
+
+    // ✅ Step 2: Delete existing Blob if exists
+    if (provider.profile_picture_url) {
+      try {
+        const urlParts = provider.profile_picture_url.split("/");
+        const existingFileName = urlParts[urlParts.length - 1]; // extract filename from URL
+        await del(`Provider-Profile/${existingFileName}`);
+        console.log(`🗑️ Deleted old profile picture: ${existingFileName}`);
+      } catch (delError) {
+        console.warn("⚠️ Failed to delete previous profile picture:", delError.message);
+      }
+    }
+
+    // ✅ Step 3: Generate clean name (slug) from provider name
+    const safeName = provider.name
+      ? provider.name.replace(/[^a-z0-9]/gi, "-").toLowerCase()
+      : "provider";
+
+    // ✅ Step 4: Upload new file to Vercel Blob with provider info
+    const fileName = `Provider-Profile/${providerId}-${safeName}-${Date.now()}-${file.originalname}`;
     const blob = await put(fileName, file.buffer, {
       access: "public",
       contentType: file.mimetype,
     });
 
-    // ✅ Update database
+    // ✅ Step 5: Update database
     await sql`
       UPDATE providers
-      SET profile_picture_url = ${blob.url}
+      SET profile_picture_url = ${blob.url}, updated_at = CURRENT_TIMESTAMP
       WHERE id = ${providerId};
     `;
 
-    return res.json({ success: true, blobUrl: blob.url });
+    console.log(`✅ Uploaded new profile picture for provider #${providerId}`);
+
+    return res.json({
+      success: true,
+      blobUrl: blob.url,
+      message: "Profile picture uploaded successfully.",
+    });
   } catch (error) {
     console.error("❌ Upload failed:", error);
     return res.status(500).json({ success: false, message: "Upload failed" });

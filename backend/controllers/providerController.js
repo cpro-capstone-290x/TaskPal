@@ -2,6 +2,7 @@ import { sql } from "../config/db.js";
 import bcrypt from "bcrypt";
 import { sendOTP } from "../config/mailer.js"; // we'll make this helper
 import jwt from "jsonwebtoken";
+import { put } from "@vercel/blob";
 
 // Generate 6-digit OTP
 function generateOTP() {
@@ -36,37 +37,71 @@ export const getProvider = async (req, res) => {
 };
 
 export const updateProvider = async (req, res) => {
-    const { id } = req.params;
-    const { name, provider_type, service_type, license_id, email, phone, document, status, password } = req.body;
-    try {
-        const updatedProvider = await sql`
-        UPDATE providers 
-        SET
-            name = COALESCE(${name}, name),
-            provider_type = COALESCE(${provider_type}, provider_type),
-            service_type = COALESCE(${service_type}, service_type),
-            license_id = COALESCE(${license_id}, license_id),
-            email = COALESCE(${email}, email),
-            phone = COALESCE(${phone}, phone),
-            document = COALESCE(${document}, document),
-            status = COALESCE(${status}, status),
-            password = COALESCE(${password}, password),
-            updated_at = CURRENT_TIMESTAMP
-        WHERE id = ${id}
-        RETURNING *
-        `;
-        if (updatedProvider.length === 0) {
-            return res.status(404).json({ error: 'Provider not found' });
-        }
-        res.status(200).json({ success: true, data: updatedProvider[0] });
-    } catch (error) {
-        if (error.code === '23505') { // Unique violation
-            return res.status(400).json({ error: 'Email already exists' });
-        }
-        console.error("❌ Failed to update provider:", error);
-        res.status(500).json({ error: 'Failed to update provider' });
-    }   
-}
+  const { id } = req.params;
+  const {
+    name,
+    provider_type,
+    service_type,
+    license_id,
+    email,
+    phone,
+    document,
+    status,
+    password,
+    profile_picture_url, // ✅ allow updating picture URL
+  } = req.body;
+
+  try {
+    // 🔐 Authorization check: only the provider themselves or an admin can update
+    if (
+      !req.user ||
+      (req.user.role !== "admin" && req.user.id !== parseInt(id))
+    ) {
+      return res
+        .status(403)
+        .json({ error: "Forbidden: You are not allowed to edit this provider." });
+    }
+
+    // ✅ Optional: hash password if it's being updated
+    let hashedPassword = password;
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      hashedPassword = await bcrypt.hash(password, salt);
+    }
+
+    const updatedProvider = await sql`
+      UPDATE providers 
+      SET
+        name = COALESCE(${name}, name),
+        provider_type = COALESCE(${provider_type}, provider_type),
+        service_type = COALESCE(${service_type}, service_type),
+        license_id = COALESCE(${license_id}, license_id),
+        email = COALESCE(${email}, email),
+        phone = COALESCE(${phone}, phone),
+        document = COALESCE(${document}, document),
+        status = COALESCE(${status}, status),
+        password = COALESCE(${hashedPassword}, password),
+        profile_picture_url = COALESCE(${profile_picture_url}, profile_picture_url),
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${id}
+      RETURNING *;
+    `;
+
+    if (updatedProvider.length === 0) {
+      return res.status(404).json({ error: "Provider not found" });
+    }
+
+    res.status(200).json({ success: true, data: updatedProvider[0] });
+  } catch (error) {
+    if (error.code === "23505") {
+      // Unique violation
+      return res.status(400).json({ error: "Email already exists" });
+    }
+    console.error("❌ Failed to update provider:", error);
+    res.status(500).json({ error: "Failed to update provider" });
+  }
+};
+
 export const deleteProvider = async (req, res) => {
     const { id } = req.params;
     try {
@@ -150,3 +185,32 @@ export const getProvidersByServiceType = async (req, res) => {
   }
 };
 
+export const uploadProviderProfilePicture = async (req, res) => {
+  const { providerId } = req.params;
+  const file = req.file;
+
+  if (!file) {
+    return res.status(400).json({ success: false, message: "No file uploaded" });
+  }
+
+  try {
+    // ✅ Upload to Vercel Blob folder
+    const fileName = `Provider-Profile/${Date.now()}-${file.originalname}`;
+    const blob = await put(fileName, file.buffer, {
+      access: "public",
+      contentType: file.mimetype,
+    });
+
+    // ✅ Update database
+    await sql`
+      UPDATE providers
+      SET profile_picture_url = ${blob.url}
+      WHERE id = ${providerId};
+    `;
+
+    return res.json({ success: true, blobUrl: blob.url });
+  } catch (error) {
+    console.error("❌ Upload failed:", error);
+    return res.status(500).json({ success: false, message: "Upload failed" });
+  }
+};

@@ -327,8 +327,49 @@ useEffect(() => {
     <div className="flex h-screen bg-gray-50">
     {/* LEFT PANEL - Adaptive Profile Info */}
     <div className="w-80 bg-white border-r border-gray-200 p-6 flex flex-col justify-between">
+      {/* ✅ Back to Profile — smart role-based routing */}
       <button
-        onClick={() => navigate(`/profile/${bookingDetails.client_id}`)}
+        onClick={() => {
+          try {
+            const currentRole = localStorage.getItem("userRole");
+            const providerId = localStorage.getItem("providerId");
+            const userId = localStorage.getItem("userId");
+
+            if (!currentRole) {
+              console.error("❌ No user role found — session expired or invalid.");
+              navigate("/login");
+              return;
+            }
+
+            if (currentRole === "provider") {
+              // ✅ Use localStorage providerId (authoritative)
+              if (providerId) {
+                navigate(`/profileProvider/${providerId}`);
+              } else if (bookingDetails?.provider_id) {
+                // ✅ Safe fallback
+                navigate(`/profileProvider/${bookingDetails.provider_id}`);
+              } else {
+                console.error("❌ Missing providerId — redirecting to dashboard fallback.");
+                navigate("/provider-dashboard");
+              }
+            } else if (currentRole === "user") {
+              // ✅ Use booking details to link to the user’s own profile
+              const clientId = bookingDetails?.client_id || userId;
+              if (clientId) {
+                navigate(`/profile/${clientId}`);
+              } else {
+                console.error("❌ Missing clientId — redirecting to home fallback.");
+                navigate("/");
+              }
+            } else {
+              console.error("❌ Unknown user role.");
+              navigate("/");
+            }
+          } catch (error) {
+            console.error("❌ Navigation error:", error);
+            navigate("/");
+          }
+        }}
         className="inline-flex items-center justify-center gap-2 w-full 
                   px-4 py-2 rounded-lg 
                   bg-white border border-gray-300 
@@ -348,6 +389,8 @@ useEffect(() => {
         </svg>
         Back to Profile
       </button>
+
+
 
       {providerDetails ? (
         <>

@@ -23,7 +23,7 @@ const RegisterProvider = ({ onSuccess }) => {
   const [formData, setFormData] = useState({
     name: "",
     provider_type: "individual",
-    service_type: "cleaning",
+    service_type: "Cleaning",
     license_id: "",
     email: "",
     phone: "",
@@ -178,9 +178,9 @@ const RegisterProvider = ({ onSuccess }) => {
                 required
                 className="w-full p-3 border border-gray-300 rounded-xl bg-white focus:ring-4 focus:ring-sky-200 focus:border-sky-500 shadow-inner text-gray-800"
               >
-                <option value="moving">Moving</option>
-                <option value="cleaning">Cleaning</option>
-                <option value="gardening">Gardening</option>
+                <option value="Moving">Moving</option>
+                <option value="Cleaning">Cleaning</option>
+                <option value="Gardening">Gardening</option>
               </select>
             </div>
 

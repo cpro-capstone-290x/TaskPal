@@ -55,8 +55,8 @@ export const protect = async (req, res, next) => {
 
 // 2. Admin Middleware (Checks if the user is an admin)
 export const admin = (req, res, next) => {
-    // This runs AFTER 'protect', so req.adminUser should exist
-    if (req.adminUser && req.adminUser.role === 'admin') { // Assuming the role value is 'admin'
+    // This runs AFTER 'protect', so req.user should exist
+    if (req.user && req.user.role === 'admin') { // Assuming the role value is 'admin'
         next();
     } else {
         res.status(403).json({ error: 'Not authorized as an admin' });
@@ -65,7 +65,7 @@ export const admin = (req, res, next) => {
 
 export const provider = (req, res, next) => {
     // This runs AFTER 'protect', so req.providerUser should exist
-    if (req.providerUser && req.providerUser.status === 'Approved') { // Assuming the status value is 'Approved'
+    if (req.user && req.user.status === 'Approved') { // Assuming the status value is 'Approved'
         next();
     } else {
         res.status(403).json({ error: 'Not authorized as a provider' });
@@ -74,7 +74,7 @@ export const provider = (req, res, next) => {
 export const providerAuth = (req, res, next) => {
     // This runs AFTER 'protect', so req.providerUser should exist
     const { id } = req.params;
-if (req.providerUser && String(req.providerUser.id) === String(id)) {
+if (req.user && String(req.user.id) === String(id)) {
         next();
     } else {
         res.status(403).json({ error: 'Not authorized as this provider' });

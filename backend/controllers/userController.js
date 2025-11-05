@@ -175,3 +175,36 @@ export const uploadProfilePicture = async (req, res) => {
     });
   }
 };
+
+export const getPublicUserById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await sql`
+      SELECT 
+        id, 
+        CONCAT(first_name, ' ', last_name) AS name,
+        email, 
+        city, 
+        province, 
+        profile_picture,
+        created_at
+      FROM users 
+      WHERE id = ${id};
+    `;
+
+    if (result.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const user = result[0];
+    user.profile_picture =
+      user.profile_picture ||
+      "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+
+    res.status(200).json({ data: user });
+  } catch (err) {
+    console.error("❌ Error fetching public user:", err);
+    res.status(500).json({ message: "Server error fetching user profile" });
+  }
+};

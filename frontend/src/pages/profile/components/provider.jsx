@@ -205,83 +205,128 @@ const Provider = () => {
     return parts;
   };
 
-  // 🚨 NEW: Picture Upload Handler
-  const handlePictureUpload = async (file) => {
-    if (!file) return;
+// 🚨 FIXED: Include Authorization token for secured upload route
+const handlePictureUpload = async (file) => {
+  if (!file) return;
 
-    const data = new FormData();
-    data.append('profilePicture', file);
-    data.append('providerId', id); // Pass ID for backend lookup
+  const data = new FormData();
+  data.append("file", file);
 
-    setIsUploading(true);
-    setSaveMessage({ type: '', message: 'Uploading picture...' });
-    
-    try {
-      // 🚨 REPLACE WITH ACTUAL IMAGE UPLOAD API ENDPOINT
-      const uploadRes = await api.post(
-        `/providers/upload-picture/${id}`, 
-        data, 
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        }
-      );
-
-      // Assuming the backend returns the new picture URL
-      const newUrl = uploadRes.data.url;
-      
-      setFormData(prevData => ({
-        ...prevData,
-        profile_picture_url: newUrl
-      }));
-      setNewProfilePicture(null); // Clear file input
-      setSaveMessage({ type: 'success', message: 'Picture uploaded successfully. Click Save Changes to finalize profile.' });
-      
-    } catch (err) {
-      console.error("Error uploading picture:", err);
-      setSaveMessage({ type: 'error', message: 'Failed to upload picture. Max size 2MB allowed.' });
-    } finally {
-      setIsUploading(false);
-      setTimeout(() => setSaveMessage({ type: '', message: '' }), 7000);
-    }
+  const token = localStorage.getItem("authToken"); // ✅ Get token
+  const headers = {
+    "Content-Type": "multipart/form-data",
   };
+
+  if (token) headers["Authorization"] = `Bearer ${token}`; // ✅ Add token if available
+
+  setIsUploading(true);
+  setSaveMessage({ type: "", message: "Uploading picture..." });
+
+  try {
+    const uploadRes = await api.post(
+      `/providers/${id}/profile-picture`, // Backend endpoint
+      data,
+      { headers }
+    );
+
+    if (uploadRes.data && uploadRes.data.success) {
+      const newUrl = uploadRes.data.blobUrl;
+
+      setFormData((prevData) => ({
+        ...prevData,
+        profile_picture_url: newUrl,
+      }));
+
+      setNewProfilePicture(null);
+      setSaveMessage({
+        type: "success",
+        message: "Picture uploaded successfully. Click Save Changes to finalize profile.",
+      });
+    } else {
+      setSaveMessage({
+        type: "error",
+        message: "Upload failed. Please try again.",
+      });
+    }
+  } catch (err) {
+    console.error("❌ Error uploading picture:", err);
+    setSaveMessage({
+      type: "error",
+      message:
+        err.response?.data?.error === "No token, authorization denied"
+          ? "Session expired or unauthorized. Please log in again."
+          : "Failed to upload picture. Try again later.",
+    });
+  } finally {
+    setIsUploading(false);
+    setTimeout(() => setSaveMessage({ type: "", message: "" }), 7000);
+  }
+};
+
 
   // --- Save/Update Function ---
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setIsSaving(true);
-    setSaveMessage({ type: '', message: 'Saving profile...' });
+const handleSave = async (e) => {
+  e.preventDefault();
+  setIsSaving(true);
+  setSaveMessage({ type: "", message: "Saving profile..." });
 
-    const token = localStorage.getItem('authToken');
+  const token = localStorage.getItem("authToken");
+  const providerId = localStorage.getItem("providerId");
 
-    const config = {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    };
+  if (!token) {
+    setSaveMessage({ type: "error", message: "Session expired. Please log in again." });
+    setIsSaving(false);
+    return;
+  }
 
-    try {
-      // Send the entire formData, which includes the potentially new profile_picture_url
-      const res = await api.put(`/providers/${id}`, formData, config);
-
-      if (res.data && res.data.data) {
-        setProvider(res.data.data); 
-        setFormData(res.data.data);
-        setIsEditing(false); // Exit edit mode on successful save
-        setSaveMessage({ type: 'success', message: 'Profile updated successfully! ✅' });
-      } else {
-        setSaveMessage({ type: 'error', message: 'Update failed: ' + (res.data.message || 'Server error.') });
-      }
-    } catch (err) {
-      console.error("Error saving provider:", err);
-      setSaveMessage({ type: 'error', message: 'Failed to save profile. Check console for details.' });
-    } finally {
-      setIsSaving(false);
-      setTimeout(() => setSaveMessage({ type: '', message: '' }), 5000);
-    }
+  // ✅ 1️⃣ Define config first
+  const config = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
   };
+
+  // ✅ 2️⃣ Prepare payload safely
+  const payload = { ...formData };
+  if (!payload.password || payload.password.trim() === "") {
+    delete payload.password; // prevent overwriting hash
+  }
+
+  try {
+    // ✅ 3️⃣ Then use config here
+    const res = await api.put(`/providers/${id}`, payload, config);
+
+    if (res.data?.success) {
+      setProvider(res.data.data);
+      setFormData(res.data.data);
+      setIsEditing(false);
+      setSaveMessage({ type: "success", message: "Profile updated successfully! ✅" });
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } else {
+      setSaveMessage({
+        type: "error",
+        message: res.data?.error || "Update failed. Try again later.",
+      });
+    }
+  } catch (err) {
+    console.error("❌ Error saving provider:", err.response?.data || err.message);
+    setSaveMessage({
+      type: "error",
+      message:
+        err.response?.status === 403
+          ? "You are not authorized to edit this profile."
+          : "Failed to save profile. Please try again.",
+    });
+  } finally {
+    setIsSaving(false);
+    setTimeout(() => setSaveMessage({ type: "", message: "" }), 5000);
+  }
+};
+
 
   // --- Cancel Function ---
   const handleCancel = () => {

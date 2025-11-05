@@ -44,38 +44,52 @@ const ChatRoom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // ✅ Fetch booking info + provider info
-  useEffect(() => {
-    const fetchBooking = async () => {
-      try {
-        if (!token) {
-          alert("Please log in to access the chat.");
-          navigate("/login");
-          return;
-        }
-
-        const res = await api.get(`/bookings/${bookingId}`, axiosConfig);
-        const booking = res.data;
-        setBookingDetails(booking);
-
-        // ✅ Fetch provider details
-        if (booking.provider_id) {
-          const providerRes = await api.get(
-            `/providers/public/${booking.provider_id}`
-          );
-          setProviderDetails(providerRes.data.data);
-        }
-      } catch (err) {
-        console.error("❌ Booking not found:", err);
-        alert("This booking no longer exists or is unauthorized.");
-        navigate("/");
-      } finally {
-        setLoading(false);
+// ✅ Fetch booking info + counterpart info (client ↔ provider)
+useEffect(() => {
+  const fetchBooking = async () => {
+    try {
+      if (!token) {
+        alert("Please log in to access the chat.");
+        navigate("/login");
+        return;
       }
-    };
 
-    fetchBooking();
-  }, [bookingId, navigate]);
+      const res = await api.get(`/bookings/${bookingId}`, axiosConfig);
+      const booking = res.data;
+      setBookingDetails(booking);
+
+      // ✅ If user is a client → fetch provider + reviews
+      if (role === "user" && booking.provider_id) {
+        const [providerRes, reviewsRes] = await Promise.all([
+          api.get(`/providers/public/${booking.provider_id}`),
+          api.get(`/reviews/provider/${booking.provider_id}`),
+        ]);
+        setProviderDetails(providerRes.data.data);
+        setReviews(reviewsRes.data.data);
+      }
+
+
+      // ✅ If user is a provider → fetch client info (new logic)
+      else if (role === "provider" && booking.client_id) {
+        try {
+          const clientRes = await api.get(`/users/public/${booking.client_id}`);
+          setProviderDetails(clientRes.data.data);
+        } catch (innerErr) {
+          console.warn("⚠️ Client public info not available, skipping:", innerErr);
+        }
+      }
+    } catch (err) {
+      console.error("❌ Booking not found:", err);
+      alert("This booking no longer exists or is unauthorized.");
+      navigate("/");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchBooking();
+}, [bookingId, navigate]);
+
 
   // ✅ Setup socket connection
   useEffect(() => {
@@ -311,77 +325,176 @@ const ChatRoom = () => {
   // ✅ UI
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* LEFT PANEL - Provider Info */}
-      
-      <div className="w-80 bg-white border-r border-gray-200 p-6 flex flex-col justify-between">
-          <button
-            onClick={() => navigate(`/profile/${bookingDetails.client_id}`)}
-            className="inline-flex items-center justify-center gap-2 w-full 
-                      px-4 py-2 rounded-lg 
-                      bg-white border border-gray-300 
-                      text-gray-700 font-medium
-                      hover:bg-gray-100 hover:border-gray-400
-                      transition-all duration-200 active:scale-[0.98] shadow-sm"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-              stroke="currentColor"
-              className="w-4 h-4"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to Profile
-          </button>
+    {/* LEFT PANEL - Adaptive Profile Info */}
+    <div className="w-80 bg-white border-r border-gray-200 p-6 flex flex-col justify-between">
+      {/* ✅ Back to Profile — smart role-based routing */}
+      <button
+        onClick={() => {
+          try {
+            const currentRole = localStorage.getItem("userRole");
+            const providerId = localStorage.getItem("providerId");
+            const userId = localStorage.getItem("userId");
 
-        {providerDetails ? (
-          <>
-            <div className="flex flex-col items-center text-center">
-              <div className="w-28 h-28 rounded-full border-4 border-gray-100 bg-gray-100 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-800">
-                {providerDetails.name || "Task Provider"}
-              </h3>
-              <div className="flex items-center gap-1 mt-1 text-yellow-500 text-sm">
-                ⭐ <span className="text-gray-600">5.0</span>
-                <span className="text-gray-400">(0 reviews)</span>
-              </div>
-              <button
-                onClick={async () => {
-                  await handleViewProfile(); // fetch provider + reviews
-                  setIsProfileModalOpen(true); // open modal
-                }}
-                className="mt-4 px-5 py-2 rounded-full text-sm font-medium bg-sky-600 text-white hover:bg-sky-700 transition"
-              >
-                View Profile
-              </button>
+            if (!currentRole) {
+              console.error("❌ No user role found — session expired or invalid.");
+              navigate("/login");
+              return;
+            }
 
-            </div>
+            if (currentRole === "provider") {
+              // ✅ Use localStorage providerId (authoritative)
+              if (providerId) {
+                navigate(`/profileProvider/${providerId}`);
+              } else if (bookingDetails?.provider_id) {
+                // ✅ Safe fallback
+                navigate(`/profileProvider/${bookingDetails.provider_id}`);
+              } else {
+                console.error("❌ Missing providerId — redirecting to dashboard fallback.");
+                navigate("/provider-dashboard");
+              }
+            } else if (currentRole === "user") {
+              // ✅ Use booking details to link to the user’s own profile
+              const clientId = bookingDetails?.client_id || userId;
+              if (clientId) {
+                navigate(`/profile/${clientId}`);
+              } else {
+                console.error("❌ Missing clientId — redirecting to home fallback.");
+                navigate("/");
+              }
+            } else {
+              console.error("❌ Unknown user role.");
+              navigate("/");
+            }
+          } catch (error) {
+            console.error("❌ Navigation error:", error);
+            navigate("/");
+          }
+        }}
+        className="inline-flex items-center justify-center gap-2 w-full 
+                  px-4 py-2 rounded-lg 
+                  bg-white border border-gray-300 
+                  text-gray-700 font-medium
+                  hover:bg-gray-100 hover:border-gray-400
+                  transition-all duration-200 active:scale-[0.98] shadow-sm"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth="2"
+          stroke="currentColor"
+          className="w-4 h-4"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to Profile
+      </button>
 
-            <div className="mt-6 border-t border-gray-200 pt-4 text-sm text-gray-700 space-y-1">
-              <p>
-                <span className="font-semibold">Service:</span>{" "}
-                {providerDetails.service_type || "General Task"}
-              </p>
-              <p>
-                <span className="font-semibold">Provider Type:</span>{" "}
-                {providerDetails.provider_type || "Independent"}
-              </p>
-              <p>
-                <span className="font-semibold">Location:</span>{" "}
-                {providerDetails.city || "Red Deer, AB"}
-              </p>
-            </div>
-          </>
-        ) : (
-          <p className="text-center text-gray-500 mt-10">Loading provider...</p>
-        )}
 
-        <div className="text-xs text-gray-400 mt-6 border-t border-gray-200 pt-4">
-          All TaskPals are background-checked and verified.
-        </div>
+
+      {providerDetails ? (
+        <>
+          <div className="flex flex-col items-center text-center">
+            <img
+              src={
+                providerDetails.photo_url ||
+                "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+              }
+              alt={role === "provider" ? "Client" : "Provider"}
+              className="w-28 h-28 rounded-full border-4 border-gray-100 bg-gray-100 mb-4 object-cover"
+            />
+            <h3 className="text-lg font-semibold text-gray-800">
+              {providerDetails.name || (role === "provider" ? "Client" : "Task Provider")}
+            </h3>
+
+            {/* ⭐ Rating and View Profile (only for client side) */}
+            {role === "provider" ? (
+              <p className="text-sm text-gray-500 mt-1">Verified Client</p>
+            ) : (
+              <>
+                <div className="flex items-center gap-1 mt-1 text-yellow-500 text-sm">
+                  ⭐{" "}
+                  <span className="text-gray-600">
+                    {reviews.length > 0
+                      ? (
+                          reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+                        ).toFixed(1)
+                      : "5.0"}
+                  </span>
+                  <span className="text-gray-400">
+                    ({reviews.length} review{reviews.length !== 1 ? "s" : ""})
+                  </span>
+                </div>
+
+                {/* ✅ “View Profile” button */}
+                <button
+                  onClick={async () => {
+                    await handleViewProfile(); // fetch provider & reviews
+                    setIsProfileModalOpen(true);
+                  }}
+                  className="mt-4 px-5 py-2 rounded-full text-sm font-medium bg-sky-600 text-white hover:bg-sky-700 transition"
+                >
+                  View Profile
+                </button>
+              </>
+            )}
+
+          </div>
+
+          {/* Dynamic Info Section */}
+          <div className="mt-6 border-t border-gray-200 pt-4 text-sm text-gray-700 space-y-1">
+            {role === "provider" ? (
+              <>
+                <p>
+                  <span className="font-semibold">Email:</span>{" "}
+                  {providerDetails.email || "N/A"}
+                </p>
+                <p>
+                  <span className="font-semibold">City:</span>{" "}
+                  {providerDetails.city || "Unknown"}
+                </p>
+                <p>
+                  <span className="font-semibold">Province:</span>{" "}
+                  {providerDetails.province || "N/A"}
+                </p>
+                <p>
+                  <span className="font-semibold">Joined:</span>{" "}
+                  {providerDetails.created_at
+                    ? new Date(providerDetails.created_at).toLocaleDateString()
+                    : "N/A"}
+                </p>
+              </>
+            ) : (
+              <>
+                <p>
+                  <span className="font-semibold">Service:</span>{" "}
+                  {providerDetails.service_type || "General Task"}
+                </p>
+                <p>
+                  <span className="font-semibold">Provider Type:</span>{" "}
+                  {providerDetails.provider_type || "Independent"}
+                </p>
+                <p>
+                  <span className="font-semibold">Location:</span>{" "}
+                  {providerDetails.city || "Red Deer, AB"}
+                </p>
+              </>
+            )}
+          </div>
+        </>
+      ) : (
+        <p className="text-center text-gray-500 mt-10">
+          {role === "provider" ? "Loading client info..." : "Loading provider info..."}
+        </p>
+      )}
+
+      <div className="text-xs text-gray-400 mt-6 border-t border-gray-200 pt-4">
+        {role === "provider"
+          ? "All clients are verified and validated by TaskPal."
+          : "All TaskPals are background-checked and verified."}
       </div>
+    </div>
+
 
       {/* CENTER - Chat Section */}
       <div className="flex flex-col flex-1 bg-gray-100 border-r border-gray-200">

@@ -87,6 +87,7 @@ const LoginProvider = ({ onSuccess }) => {
       // ✅ Store session data
       localStorage.setItem('authToken', token);
       localStorage.setItem('userRole', 'provider');
+      localStorage.setItem("userId", providerId);
 
       setStatus({ loading: false, error: null, success: true });
       console.log('✅ Provider logged in successfully:', result.data);

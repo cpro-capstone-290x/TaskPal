@@ -38,7 +38,7 @@ const ProviderProfile = () => {
     fetchData();
   }, [id]);
 
-  // ⭐ Average rating calculation
+  // ⭐ Calculate average rating
   const avgRating =
     reviews.length > 0
       ? (
@@ -93,24 +93,23 @@ const ProviderProfile = () => {
         {/* Provider Overview */}
         <section className="bg-white shadow-sm border rounded-2xl p-8 mb-10">
           <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
-
-            {/* Photo */}
+            {/* ✅ Profile Picture */}
             <img
               src={
-                provider.photo_url ||
+                provider.profile_picture_url ||
                 "https://cdn-icons-png.flaticon.com/512/149/149071.png"
               }
-              alt="Provider"
+              alt={provider.name || "Provider"}
               className="w-32 h-32 rounded-full object-cover border bg-gray-50"
             />
 
-            {/* Info */}
+            {/* Info Section */}
             <div className="flex-1 space-y-2">
               <h2 className="text-2xl font-semibold text-gray-800">
                 {provider.name}
               </h2>
               <p className="text-gray-600 capitalize">
-                {provider.service_type} Services
+                {provider.service_type || "General"} Services
               </p>
               <p className="text-gray-600">
                 {provider.city || "Somewhere"}, {provider.province || "Unknown"}
@@ -130,7 +129,7 @@ const ProviderProfile = () => {
               </p>
             </div>
 
-            {/* Rating card */}
+            {/* Rating + Booking */}
             <div className="text-center bg-green-50 border border-green-300 rounded-xl p-5 w-full md:w-60">
               <h3 className="text-3xl font-bold text-green-700">
                 ⭐ {avgRating}
@@ -146,7 +145,6 @@ const ProviderProfile = () => {
                 Book Now
               </button>
             </div>
-
           </div>
         </section>
 

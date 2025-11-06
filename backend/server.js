@@ -8,6 +8,7 @@ import { Server } from "socket.io";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import { put } from "@vercel/blob";
 
 import userRoutes from "./routes/userRoutes.js";
 import providerRoutes from "./routes/providerRoutes.js";
@@ -98,9 +99,29 @@ app.use("/api/execution", executionRoutes);
 app.use("/api/reviews",  reviewRoutes);
 app.use("/api/contact", contactRoutes);
 
+app.get("/test-upload", async (req, res) => {
+  try {
+    const { url } = await put("Client-Provider-Agreement/test.txt", "Hello Blob!", {
+      access: "public",
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+    });
+    console.log("✅ Uploaded to Blob:", url);
+    res.json({ success: true, url });
+  } catch (err) {
+    console.error("❌ Upload test failed:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ✅ SOCKET.IO Logic
 io.on("connection", (socket) => {
   console.log("🟢 User connected:", socket.id);
+
+  socket.on("join_notification_room", ({ userId }) => {
+    const room = `user-${userId}`;
+    socket.join(room);
+    console.log(`📩 Joined notification room: ${room}`);
+  });
 
   socket.on("join_room", async ({ bookingId }) => {
     const room = `chat-${bookingId}`;
@@ -138,7 +159,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("send_message", async (data) => {
-    const { bookingId, sender_id, sender_role, message } = data;
+    const { bookingId, sender_id, sender_role, message, recipientId } = data;
 
     const fullMessage = {
       bookingId,
@@ -161,7 +182,17 @@ io.on("connection", (socket) => {
     }
 
     socket.to(`chat-${bookingId}`).emit("receive_message", fullMessage);
-  });
+
+  if (recipientId) {
+    const notificationData = {
+      type: 'message',
+      title: 'New Message',
+      message: message.substring(0, 50) + '...'
+    };
+    io.to(`user-${recipientId}`).emit('new_message', notificationData);
+    console.log(`🔔 Sent 'new_message' notification to user ${recipientId}`);
+  }
+});
 
   socket.on("disconnect", () => {
     console.log("❌ User disconnected:", socket.id);

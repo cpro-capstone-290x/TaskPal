@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../../api";
+import ProfilePictureUploader from "../../components/ProfilePictureUploader";
 
 const User = () => {
   const { id } = useParams();
@@ -216,11 +217,11 @@ const User = () => {
         <aside className="w-64 bg-white border-r border-gray-200 shadow-sm p-6 flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-3 mb-8">
-              <img
-                src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
-                alt="Profile Avatar"
-                className="w-12 h-12 rounded-full"
+              <ProfilePictureUploader
+                user={user}
+                onUpdate={(newPhoto) => setUser((prev) => ({ ...prev, profile_picture: newPhoto }))}
               />
+
               <div>
                 <h2 className="text-lg font-semibold text-gray-800">
                   {user.first_name} {user.last_name}
@@ -405,17 +406,25 @@ const User = () => {
                               : "N/A"}
                           </td>
                           <td className="px-4 py-2">
-                            <span
-                              className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                b.status === "Paid"
-                                  ? "bg-green-100 text-green-700"
-                                  : b.status === "Pending"
-                                  ? "bg-yellow-100 text-yellow-700"
-                                  : "bg-blue-100 text-blue-700"
-                              }`}
-                            >
-                              {b.status}
-                            </span>
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              b.status === "Paid"
+                                ? "bg-emerald-100 text-emerald-700"
+                                : b.status === "Confirmed"
+                                ? "bg-green-100 text-green-700"
+                                : b.status === "Negotiating"
+                                ? "bg-orange-100 text-orange-700"
+                                : b.status === "Pending"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : b.status === "Completed"
+                                ? "bg-blue-100 text-blue-700"
+                                : b.status === "Cancelled"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-gray-100 text-gray-700"
+                            }`}
+                          >
+                            {b.status}
+                          </span>
                           </td>
                         </tr>
                       ))}

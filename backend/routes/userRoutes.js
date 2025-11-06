@@ -1,14 +1,27 @@
-// backend/routes/userRoutes.js
+// ✅ backend/routes/userRoutes.js
 import express from "express";
-import { getUsers, getUser, updateUsers, deleteUsers } from "../controllers/userController.js";
+import multer from "multer";
+import {
+  getUsers,
+  getUser,
+  updateUsers,
+  deleteUsers,
+  uploadProfilePicture,
+  getPublicUserById,
+} from "../controllers/userController.js";
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
+
+// ✅ Correct order: public route FIRST
+router.get("/public/:id", getPublicUserById);
 
 router.get("/", getUsers);
 router.get("/:id", getUser);
 router.put("/:id", updateUsers);
 router.delete("/:id", deleteUsers);
-router.put("/:id", updateUsers);
 
+// ✅ Profile picture routes
+router.post("/:id/profile-picture", upload.single("file"), uploadProfilePicture);
 
 export default router;

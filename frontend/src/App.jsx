@@ -13,7 +13,7 @@ import PaymentSuccess from "./pages/payment/paymentSuccess";
 import Execution from "./pages/execution/execution";
 import ServicesPage from "./pages/services/ServicesPage";
 import ForgotPasswordUser from "./pages/LoginPage/components/forgotPassword";
-import ContactPage from "./pages/contact/ContactPage"; // 👈 New Contact Page
+import ContactPage from "./pages/contact/ContactPage";
 import AdminLoginPage from "./pages/admin/adminLoginPage";
 import AdminHome from "./pages/admin/adminHome";
 import ProtectedRoute from "./pages/components/ProtectedRoute";
@@ -23,6 +23,7 @@ import ProviderProfile from "./pages/bookingpage/components/ProviderProfile";
 import AboutPage from "./pages/AboutPage/AboutPage";
 import OTPUser from "./pages/RegisterPage/components/OTPUser";
 import OTPProvider from "./pages/RegisterPage/components/OTPProvider";
+import AccessibilityToggle from "./pages/components/AccessibilityToggle";
 
 function App() {
   return (
@@ -37,36 +38,36 @@ function App() {
           path="/profile/:id"
           element={
             <ProtectedRoute>
-              {" "}
               <Profile />
             </ProtectedRoute>
           }
         />
         <Route path="/profileProvider/:id" element={<ProfileProvider />} />
-        <Route path="/booking" element={<BookingPage />} /> {/* ✅ ADD THIS */}
+        <Route path="/booking" element={<BookingPage />} />
         <Route
           path="/booking/initiate/:providerId"
           element={<BookingInitializePage />}
-        />{" "}
+        />
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/execution/:bookingId" element={<Execution />} />
         <Route path="/provider/execution/:bookingId" element={<Execution />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordUser />} />
-        <Route path="/contact" element={<ContactPage />} />{" "}
-        {/* 👈 New Contact Page */}
-        {/* Admin Routes */}
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/about" element={<AboutPage />} />
+
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/admin/*" element={<AdminHome />} />
         <Route path="/otp-reset" element={<OTPResetPage />} />
         <Route path="/verify-authorized" element={<VerifyAuthorizedOTP />} />
-        <Route path="/provider/:id" element={<ProviderProfile />} />{" "}
-        <Route path="/about" element={<AboutPage />} />
+        <Route path="/provider/:id" element={<ProviderProfile />} />
         <Route path="/providers/public/:id" element={<ProviderProfile />} />
         <Route path="/verify-otp" element={<OTPUser />} />
         <Route path="/verify-otp-provider" element={<OTPProvider />} />
-
       </Routes>
+
+      {/* Global Accessibility Toggle */}
+      <AccessibilityToggle />
     </div>
   );
 }

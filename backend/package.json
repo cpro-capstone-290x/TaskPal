@@ -12,8 +12,12 @@
     "test-db": "node testDB.js",
     "test-stream": "node testStream.js",
     "testEmail": "node testEmail.js",
-    "test-blob": "node testVercelBlob.js"
-  },
+    "test-blob": "node testVercelBlob.js",
+    "UnitTest": "cross-env NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
+    "UnitOnly": "cross-env NODE_ENV=test jest --runInBand test/__tests__/*.unit.test.js",
+    "IntOnly": "cross-env NODE_ENV=test jest --runInBand test/__tests__/*.int.test.js"
+
+},
   "dependencies": {
     "@arcjet/node": "^1.0.0-beta.12",
     "@getbrevo/brevo": "^3.0.1",
@@ -34,6 +38,11 @@
     "stripe": "^14.22.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "@types/jest": "^30.0.0",
+    "cross-env": "^10.1.0",
+    "jest": "^30.2.0",
+    "jest-environment-node": "^30.2.0",
+    "nodemon": "^3.1.10",
+    "supertest": "^7.1.4"
   }
 }

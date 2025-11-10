@@ -125,7 +125,7 @@ const ProviderProfile = () => {
 
               {/* Bio */}
               <p className="mt-4 text-gray-700 leading-relaxed">
-                {provider.bio || "This provider hasn’t written a bio yet."}
+                {provider.note || "This provider hasn’t written a bio yet."}
               </p>
             </div>
 

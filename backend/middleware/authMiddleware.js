@@ -87,6 +87,15 @@ export const provider = (req, res, next) => {
   return res.status(403).json({ error: "Not authorized as a provider" });
 };
 
+export const user = (req, res, next) => {
+    // This runs AFTER 'protect', so req.user should exist
+    if (req.user && req.user.role === 'user') {
+        next();
+    } else {
+        res.status(403).json({ error: 'Not authorized as a client' });
+    }
+};
+
 // ✅ 4. ProviderAuth (self-access only)
 export const providerAuth = (req, res, next) => {
   const { id } = req.params;

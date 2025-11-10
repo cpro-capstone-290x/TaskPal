@@ -31,15 +31,15 @@ const ProfileField = ({ label, name, value, onChange, readOnly = false, type = '
 
 // Helper to format currency
 const formatCurrency = (amount) => {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("en-CA", {
     style: "currency",
-    currency: "USD",
+    currency: "CAD",
   }).format(amount);
 };
 
 // Helper to format dates
 const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleDateString("en-US", {
+  return new Date(dateString).toLocaleDateString("en-CA", {
     year: "numeric",
     month: "long",
     day: "numeric",

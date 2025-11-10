@@ -133,7 +133,7 @@ export const getProviderPaymentHistory = async (req, res) => {
       JOIN 
         users u ON b.client_id = u.id
       WHERE 
-        b.provider_id = ${providerId} AND b.status = 'paid'
+        b.provider_id = ${providerId} AND b.status = 'Paid'
       ORDER BY 
         b.created_at DESC;
     `;

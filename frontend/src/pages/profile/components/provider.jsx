@@ -451,7 +451,9 @@ const handleSave = async (e) => {
     // ✅ 3️⃣ Then use config here
     const res = await api.put(`/providers/${id}`, payload, config);
 
-    if (res.data?.success) {
+    console.log("SERVER RESPONSE:", res.data);
+
+    if (res.data?.success && res.data.data) {
       setProvider(res.data.data);
       setFormData(res.data.data);
       setIsEditing(false);
@@ -594,6 +596,7 @@ const handleSave = async (e) => {
                 ) : (
                   <div className="flex gap-3">
                     <button
+                      type="button"
                       onClick={handleCancel}
                       className="flex items-center gap-2 px-4 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400 transition duration-150"
                       disabled={isSaving || isUploading}
@@ -601,6 +604,8 @@ const handleSave = async (e) => {
                       <X size={18} /> Cancel
                     </button>
                     <button
+                      type="submit"
+                      form="provider-profile-form"
                       onClick={handleSave}
                       className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition duration-150 shadow-md disabled:opacity-50"
                       disabled={isSaving || isUploading}
@@ -690,7 +695,7 @@ const handleSave = async (e) => {
               </div>
 
               {/* Profile Form/View */}
-              <form onSubmit={handleSave}>
+              <form id="provider-profile-form" onSubmit={handleSave}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                   {/* Business Name */}
@@ -741,6 +746,38 @@ const handleSave = async (e) => {
                     />
                   </div>
 
+                  {/* ✅ NEW: Personal Note / Bio (Full Width) */}
+                  <div className="md:col-span-2">
+                    <label className="block text-gray-600 text-sm font-medium mb-1">
+                      Personal Note / Bio
+                    </label>
+                    <textarea
+                      name="note" // This must match the database column and formData key
+                      value={isEditing ? formData.note || "" : provider.note || ""}
+                      onChange={handleInputChange}
+                      readOnly={!isEditing}
+                      rows="5"
+                      className={`
+                        w-full px-4 py-2 border text-gray-800 rounded-lg 
+                        focus:ring-2 focus:ring-indigo-500 focus:outline-none 
+                        ${isEditing 
+                          ? 'bg-white border-gray-300 shadow-sm' 
+                          : 'bg-gray-50 text-gray-600 border-gray-200 resize-none'
+                        }
+                      `}
+                      placeholder={
+                        isEditing 
+                          ? "Write a short introduction... (e.g., years of experience, what you love about your job, etc.)" 
+                          : "No personal note provided."
+                      }
+                    />
+                    {isEditing && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        This will be shown on your public profile to help build trust.
+                      </p>
+                    )}
+                  </div>
+
                   {/* Phone Number */}
                   <ProfileField 
                     label="Phone Number"
@@ -763,12 +800,12 @@ const handleSave = async (e) => {
                   </div>
 
                   {/* Address (Full Width) */}
-                  <div className="md:col-span-2">
+                  {/* <div className="md:col-span-2">
                     <label className="block text-gray-600 text-sm font-medium mb-1">Address</label>
                     {isEditing ? (
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 gap-3"> */}
                         {/* Note: In a real app, you might want to combine these into one field for simple forms */}
-                        <ProfileField label="Unit/Apt #" name="unit_no" value={formData.unit_no} onChange={handleAddressChange} />
+                        {/* <ProfileField label="Unit/Apt #" name="unit_no" value={formData.unit_no} onChange={handleAddressChange} />
                         <ProfileField label="Street" name="street" value={formData.street} onChange={handleAddressChange} />
                         <ProfileField label="City" name="city" value={formData.city} onChange={handleAddressChange} />
                         <ProfileField label="Province/State" name="province" value={formData.province} onChange={handleAddressChange} />
@@ -784,7 +821,7 @@ const handleSave = async (e) => {
                         className="w-full px-4 py-2 bg-gray-50 border text-gray-600 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
                       ></textarea>
                     )}
-                  </div>
+                  </div> */}
                   
                   {/* Verification Status & Join Date */}
                   <div className="flex items-center gap-3 md:col-span-2 mt-2 pt-4 border-t">
@@ -821,6 +858,7 @@ const handleSave = async (e) => {
               {isEditing && (
                 <div className="flex justify-end gap-3 mt-8 pt-4 border-t">
                   <button
+                    type="button"
                     onClick={handleCancel}
                     className="flex items-center gap-2 px-4 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400 transition duration-150"
                     disabled={isSaving || isUploading}
@@ -828,6 +866,8 @@ const handleSave = async (e) => {
                     <X size={18} /> Cancel
                   </button>
                   <button
+                    type="submit"
+                    form="provider-profile-form"
                     onClick={handleSave}
                     className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition duration-150 shadow-md disabled:opacity-50"
                     disabled={isSaving || isUploading}

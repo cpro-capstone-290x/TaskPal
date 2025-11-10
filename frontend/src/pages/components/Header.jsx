@@ -277,12 +277,19 @@ const Header = () => {
     // fetch(`/api/notifications/${notification.id}/read`, { method: 'POST', ... });
 
     // 3. Navigate if a booking_id exists
-    if (notification.booking_id) {
-      navigate(`/chat/${notification.booking_id}`);
+    if (notification.booking_id && userRole) {
+      const pathRole = userRole === 'provider' ? 'provider' : 'user';
+      navigate(`/chat/${notification.booking_id}/${pathRole}`);
     } else {
-      console.warn("Notification clicked, but no booking_id found.", notification);
+      if (!notification.booking_id) {
+      console.warn("Navigation failed: notification.booking_id is missing.", notification);
+    } else if (!userRole) {
+      console.warn("Navigation failed: userRole is not set. Check localStorage!", { role: userRole });
+    } else {
+      console.warn("Navigation failed for an unknown reason.", { notification, userRole });
     }
-  }, [navigate]); // Dependency on navigate
+    }
+  }, [navigate, userRole]); // Dependency on navigate
 
   // Function to mark all notifications as read
   const markAllAsRead = () => {

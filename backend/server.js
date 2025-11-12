@@ -113,6 +113,7 @@ app.get("/test-upload", async (req, res) => {
   }
 });
 
+
 // ✅ SOCKET.IO Logic
 io.on("connection", (socket) => {
   console.log("🟢 User connected:", socket.id);
@@ -187,7 +188,8 @@ io.on("connection", (socket) => {
     const notificationData = {
       type: 'message',
       title: 'New Message',
-      message: message.substring(0, 50) + '...'
+      message: message.substring(0, 50) + '...',
+      booking_id: bookingId
     };
     io.to(`user-${recipientId}`).emit('new_message', notificationData);
     console.log(`🔔 Sent 'new_message' notification to user ${recipientId}`);

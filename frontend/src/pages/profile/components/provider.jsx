@@ -29,6 +29,167 @@ const ProfileField = ({ label, name, value, onChange, readOnly = false, type = '
   );
 };
 
+// Helper to format currency
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat("en-CA", {
+    style: "currency",
+    currency: "CAD",
+  }).format(amount);
+};
+
+// Helper to format dates
+const formatDate = (dateString) => {
+  return new Date(dateString).toLocaleDateString("en-CA", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
+
+const ProviderPayouts = () => {
+  const [payouts, setPayouts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchPayouts = async () => {
+      try {
+        setLoading(true);
+        // ✅ FIX 1: Use 'authToken' to match your other code
+        const token = localStorage.getItem("authToken");
+
+        if (!token) {
+          throw new Error("Authorization token not found. Please log in.");
+        }
+
+        // ✅ FIX 2: Use your 'api' (axios) instance for the request
+        const response = await api.get("/payments/my-history", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        // ✅ FIX 3: Axios puts the data in 'response.data'
+        setPayouts(response.data);
+      } catch (err) {
+        console.error("Payout fetch error:", err);
+        setError(err.message || "Failed to fetch payout history.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPayouts();
+  }, []); // Runs once on component mount
+
+  // Calculate total earnings
+  const totalEarned = payouts.reduce(
+    (acc, payout) => acc + Number(payout.price),
+    0
+  );
+
+  if (loading) {
+    return <p className="text-gray-600">Loading payout history...</p>;
+  }
+
+  if (error) {
+    return (
+      <p className="text-red-600">Error: {error} Please try again later.</p>
+    );
+  }
+
+  // ✅ FIX 4: The component now returns all the JSX
+  return (
+    <div className="max-w-4xl w-full">
+      {/* --- Summary Cards --- */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="bg-green-50 border border-green-200 p-6 rounded-xl">
+          <h3 className="text-lg font-medium text-green-700">Total Earned</h3>
+          <p className="text-4xl font-bold text-green-900 mt-2">
+            {formatCurrency(totalEarned)}
+          </p>
+        </div>
+        <div className="bg-blue-50 border border-blue-200 p-6 rounded-xl">
+          <h3 className="text-lg font-medium text-blue-700">
+            Total Completed Bookings
+          </h3>
+          <p className="text-4xl font-bold text-blue-900 mt-2">
+            {payouts.length}
+          </p>
+        </div>
+      </div>
+
+      {/* --- Payout History Table --- */}
+      <h3 className="text-xl font-semibold text-gray-800 mb-4">
+        Transaction History
+      </h3>
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Date
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Customer
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Description
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Amount
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {payouts.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan="4"
+                    className="px-6 py-12 text-center text-gray-500"
+                  >
+                    No completed payments found.
+                  </td>
+                </tr>
+              ) : (
+                payouts.map((payout) => (
+                  <tr key={payout.booking_id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      {formatDate(payout.created_at)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                      {payout.customer_first_name} {payout.customer_last_name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 truncate max-w-xs">
+                      {payout.notes || `Booking #${payout.booking_id}`}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-semibold text-right">
+                      + {formatCurrency(payout.price)}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Provider = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -169,13 +330,6 @@ const Provider = () => {
     fetchBookingsAndClients();
   }, [activeTab, id]); // This effect re-runs if the tab or provider ID changes
 
-  useEffect(() => {
-    if (activeTab !== "payout") return;
-    // TODO: Implement payout fetching logic
-    console.log("Fetching payout data (to be implemented)...");
-    // e.g., fetchPayouts();
-  }, [activeTab, id]);
-
   // --- Form Handlers ---
 
   const handleInputChange = (e) => {
@@ -297,7 +451,9 @@ const handleSave = async (e) => {
     // ✅ 3️⃣ Then use config here
     const res = await api.put(`/providers/${id}`, payload, config);
 
-    if (res.data?.success) {
+    console.log("SERVER RESPONSE:", res.data);
+
+    if (res.data?.success && res.data.data) {
       setProvider(res.data.data);
       setFormData(res.data.data);
       setIsEditing(false);
@@ -440,6 +596,7 @@ const handleSave = async (e) => {
                 ) : (
                   <div className="flex gap-3">
                     <button
+                      type="button"
                       onClick={handleCancel}
                       className="flex items-center gap-2 px-4 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400 transition duration-150"
                       disabled={isSaving || isUploading}
@@ -447,6 +604,8 @@ const handleSave = async (e) => {
                       <X size={18} /> Cancel
                     </button>
                     <button
+                      type="submit"
+                      form="provider-profile-form"
                       onClick={handleSave}
                       className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition duration-150 shadow-md disabled:opacity-50"
                       disabled={isSaving || isUploading}
@@ -536,7 +695,7 @@ const handleSave = async (e) => {
               </div>
 
               {/* Profile Form/View */}
-              <form onSubmit={handleSave}>
+              <form id="provider-profile-form" onSubmit={handleSave}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                   {/* Business Name */}
@@ -587,6 +746,38 @@ const handleSave = async (e) => {
                     />
                   </div>
 
+                  {/* ✅ NEW: Personal Note / Bio (Full Width) */}
+                  <div className="md:col-span-2">
+                    <label className="block text-gray-600 text-sm font-medium mb-1">
+                      Personal Note / Bio
+                    </label>
+                    <textarea
+                      name="note" // This must match the database column and formData key
+                      value={isEditing ? formData.note || "" : provider.note || ""}
+                      onChange={handleInputChange}
+                      readOnly={!isEditing}
+                      rows="5"
+                      className={`
+                        w-full px-4 py-2 border text-gray-800 rounded-lg 
+                        focus:ring-2 focus:ring-indigo-500 focus:outline-none 
+                        ${isEditing 
+                          ? 'bg-white border-gray-300 shadow-sm' 
+                          : 'bg-gray-50 text-gray-600 border-gray-200 resize-none'
+                        }
+                      `}
+                      placeholder={
+                        isEditing 
+                          ? "Write a short introduction... (e.g., years of experience, what you love about your job, etc.)" 
+                          : "No personal note provided."
+                      }
+                    />
+                    {isEditing && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        This will be shown on your public profile to help build trust.
+                      </p>
+                    )}
+                  </div>
+
                   {/* Phone Number */}
                   <ProfileField 
                     label="Phone Number"
@@ -609,12 +800,12 @@ const handleSave = async (e) => {
                   </div>
 
                   {/* Address (Full Width) */}
-                  <div className="md:col-span-2">
+                  {/* <div className="md:col-span-2">
                     <label className="block text-gray-600 text-sm font-medium mb-1">Address</label>
                     {isEditing ? (
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 gap-3"> */}
                         {/* Note: In a real app, you might want to combine these into one field for simple forms */}
-                        <ProfileField label="Unit/Apt #" name="unit_no" value={formData.unit_no} onChange={handleAddressChange} />
+                        {/* <ProfileField label="Unit/Apt #" name="unit_no" value={formData.unit_no} onChange={handleAddressChange} />
                         <ProfileField label="Street" name="street" value={formData.street} onChange={handleAddressChange} />
                         <ProfileField label="City" name="city" value={formData.city} onChange={handleAddressChange} />
                         <ProfileField label="Province/State" name="province" value={formData.province} onChange={handleAddressChange} />
@@ -630,7 +821,7 @@ const handleSave = async (e) => {
                         className="w-full px-4 py-2 bg-gray-50 border text-gray-600 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
                       ></textarea>
                     )}
-                  </div>
+                  </div> */}
                   
                   {/* Verification Status & Join Date */}
                   <div className="flex items-center gap-3 md:col-span-2 mt-2 pt-4 border-t">
@@ -667,6 +858,7 @@ const handleSave = async (e) => {
               {isEditing && (
                 <div className="flex justify-end gap-3 mt-8 pt-4 border-t">
                   <button
+                    type="button"
                     onClick={handleCancel}
                     className="flex items-center gap-2 px-4 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400 transition duration-150"
                     disabled={isSaving || isUploading}
@@ -674,6 +866,8 @@ const handleSave = async (e) => {
                     <X size={18} /> Cancel
                   </button>
                   <button
+                    type="submit"
+                    form="provider-profile-form"
                     onClick={handleSave}
                     className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition duration-150 shadow-md disabled:opacity-50"
                     disabled={isSaving || isUploading}
@@ -843,20 +1037,14 @@ const handleSave = async (e) => {
 
           {/* ✅ NEW: Total Payout Tab (Placeholder) */}
           {activeTab === "payout" && (
-            <div className="max-w-3xl bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+            <div className="max-w-4xl w-full">
               <h2 className="text-2xl font-semibold text-gray-800 mb-6">
                 Total Payout
               </h2>
-              <p className="text-gray-600">
-                Payout information, history, and bank details will be managed here.
-              </p>
-              {/*                 TODO: Add Payout component/logic here. 
-                You would fetch payout data and display it, 
-                perhaps with a button to "Withdraw" or "Update Bank Info".
-              {/* TODO: Add Payout component/logic here. 
-                You would fetch payout data and display it, 
-                perhaps with a button to "Withdraw" or "Update Bank Info".
-              */}
+
+              {/* ✨ Just render your new component! ✨ */}
+              <ProviderPayouts /> 
+
             </div>
     	    )}
         </main>

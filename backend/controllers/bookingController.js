@@ -29,7 +29,8 @@ export const bookTask = async (req, res) => {
         const notificationData = {
       type: 'booking', // This will use the CalendarIcon in the header
       title: 'New Booking Request',
-      message: `You have a new request. Notes: ${booking.notes ? booking.notes.substring(0, 30) : 'N/A'}...`
+      message: `You have a new request. Notes: ${booking.notes ? booking.notes.substring(0, 30) : 'N/A'}...`,
+      booking_id: booking.id
     };
     // Emit to the provider's private notification room
     req.io.to(`user-${booking.provider_id}`).emit('new_booking', notificationData);
@@ -98,7 +99,8 @@ export const updateBookingPrice = async (req, res) => {
         const notificationData = {
       type: 'payment', // This will use the DollarIcon
       title: 'Price Updated',
-      message: `The provider proposed a new price: $${booking.price}`
+      message: `The provider proposed a new price: $${booking.price}`,
+      booking_id: id
     };
     // Emit to the client's private notification room
     req.io.to(`user-${booking.client_id}`).emit('payment_agreed', notificationData);
@@ -137,7 +139,8 @@ export const agreeToPrice = async (req, res) => {
       notificationData = {
         type: 'payment',
         title: 'Client Agreed',
-        message: 'The client has agreed to the price.'
+        message: 'The client has agreed to the price.',
+        booking_id: updated[0].id
       };
 
     } else if (role === "provider") {
@@ -152,7 +155,8 @@ export const agreeToPrice = async (req, res) => {
       notificationData = {
         type: 'payment',
         title: 'Provider Agreed',
-        message: 'The provider has agreed to the price.'
+        message: 'The provider has agreed to the price.',
+        booking_id: updated[0].id
       };
 
     } else {
@@ -184,14 +188,16 @@ export const agreeToPrice = async (req, res) => {
       const clientNotification = {
         type: 'booking', // Use CalendarIcon
         title: 'Booking Confirmed!',
-        message: `Your booking (ID: ${confirmedBooking.id}) is confirmed.`
+        message: `Your booking (ID: ${confirmedBooking.id}) is confirmed.`,
+        booking_id: confirmedBooking.id
       };
       req.io.to(`user-${confirmedBooking.client_id}`).emit('new_booking', clientNotification);
 
       const providerNotification = {
         type: 'booking',
         title: 'Booking Confirmed!',
-        message: `Your booking (ID: ${confirmedBooking.id}) is confirmed.`
+        message: `Your booking (ID: ${confirmedBooking.id}) is confirmed.`,
+        booking_id: confirmedBooking.id
       };
       req.io.to(`user-${confirmedBooking.provider_id}`).emit('new_booking', providerNotification);
       console.log(`🔔 Sent 'new_booking' (Confirmed) to client ${confirmedBooking.client_id} and provider ${confirmedBooking.provider_id}`);
@@ -374,6 +380,7 @@ export const cancelBooking = async (req, res) => {
       type: "booking",
       title: "Booking Cancelled",
       message: `Booking (ID: ${id}) has been cancelled by the ${user.role}.`,
+      booking_id: id
     };
 
     req.io.to(notifyTo).emit("booking_cancelled", notificationData);

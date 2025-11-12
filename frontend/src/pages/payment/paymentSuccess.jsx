@@ -4,6 +4,9 @@ import axios from "axios";
 import { useLocation } from "react-router-dom";
 import api from "../../api.js"; 
 
+  const token = localStorage.getItem("authToken");
+  const axiosConfig = { headers: { Authorization: `Bearer ${token}` } };
+
 const PaymentSuccess = () => {
   const location = useLocation();
   const sessionId = new URLSearchParams(location.search).get("session_id");

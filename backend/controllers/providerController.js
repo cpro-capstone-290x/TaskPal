@@ -49,6 +49,7 @@ export const updateProvider = async (req, res) => {
     status,
     password, // only update if changed
     profile_picture_url,
+    note,
   } = req.body;
 
   try {
@@ -63,15 +64,16 @@ export const updateProvider = async (req, res) => {
     const updates = [];
     const params = [];
 
-    if (name) updates.push(`name = $${params.push(name)}`);
-    if (provider_type) updates.push(`provider_type = $${params.push(provider_type)}`);
-    if (service_type) updates.push(`service_type = $${params.push(service_type)}`);
-    if (license_id) updates.push(`license_id = $${params.push(license_id)}`);
-    if (email) updates.push(`email = $${params.push(email)}`);
-    if (phone) updates.push(`phone = $${params.push(phone)}`);
-    if (document) updates.push(`document = $${params.push(document)}`);
-    if (status) updates.push(`status = $${params.push(status)}`);
-    if (profile_picture_url) updates.push(`profile_picture_url = $${params.push(profile_picture_url)}`);
+    if (name !== undefined) updates.push(`name = $${params.push(name)}`);
+    if (provider_type !== undefined) updates.push(`provider_type = $${params.push(provider_type)}`);
+    if (service_type !== undefined) updates.push(`service_type = $${params.push(service_type)}`);
+    if (license_id !== undefined) updates.push(`license_id = $${params.push(license_id)}`);
+    if (email !== undefined) updates.push(`email = $${params.push(email)}`);
+    if (phone !== undefined) updates.push(`phone = $${params.push(phone)}`);
+    if (document !== undefined) updates.push(`document = $${params.push(document)}`);
+    if (status !== undefined) updates.push(`status = $${params.push(status)}`);
+    if (profile_picture_url !== undefined) updates.push(`profile_picture_url = $${params.push(profile_picture_url)}`);
+    if (note !== undefined) updates.push(`note = $${params.push(note)}`);
 
     // ✅ Hash password only if provided and non-empty
     if (password && password.trim() !== "") {

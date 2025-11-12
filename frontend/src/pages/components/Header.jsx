@@ -111,7 +111,7 @@ function NotificationIcon({ type }) {
   }
 }
 
-function NotificationItem({ notification, onMarkAsRead }) {
+function NotificationItem({ notification, onNotificationClick }) {
   const isRead = notification.read;
   return (
     <li
@@ -120,7 +120,7 @@ function NotificationItem({ notification, onMarkAsRead }) {
           ? 'bg-white hover:bg-gray-50'
           : 'bg-blue-50 hover:bg-blue-100'
       }`}
-      onClick={() => onMarkAsRead(notification.id)}
+      onClick={() => onNotificationClick(notification)}
     >
       <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
         <NotificationIcon type={notification.type} />
@@ -147,7 +147,7 @@ function NotificationItem({ notification, onMarkAsRead }) {
 
 function NotificationBell({
   notifications,
-  onMarkAsRead,
+  onNotificationClick,
   onMarkAllAsRead,
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -214,7 +214,10 @@ function NotificationBell({
                 <NotificationItem
                   key={notification.id}
                   notification={notification}
-                  onMarkAsRead={onMarkAsRead}
+                  onNotificationClick={(notif) => {
+                    onNotificationClick(notif);
+                    setIsOpen(false);
+                  }}
                 />
               ))}
           </ul>
@@ -263,14 +266,30 @@ const Header = () => {
     setNotifications((prev) => [newNotification, ...prev]);
   }, []);
 
-  // Function to mark a single notification as read
-  const markAsRead = (id) => {
+// ✅ NEW Function to mark as read AND navigate
+  const handleNotificationClick = useCallback((notification) => {
+    // 1. Mark as read in state
     setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+      prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n))
     );
-    // You should also tell your backend to mark it as read
-    // fetch(`/api/notifications/${id}/read`, { method: 'POST', ... });
-  };
+
+    // 2. (Optional) Tell backend to mark as read
+    // fetch(`/api/notifications/${notification.id}/read`, { method: 'POST', ... });
+
+    // 3. Navigate if a booking_id exists
+    if (notification.booking_id && userRole) {
+      const pathRole = userRole === 'provider' ? 'provider' : 'user';
+      navigate(`/chat/${notification.booking_id}/${pathRole}`);
+    } else {
+      if (!notification.booking_id) {
+      console.warn("Navigation failed: notification.booking_id is missing.", notification);
+    } else if (!userRole) {
+      console.warn("Navigation failed: userRole is not set. Check localStorage!", { role: userRole });
+    } else {
+      console.warn("Navigation failed for an unknown reason.", { notification, userRole });
+    }
+    }
+  }, [navigate, userRole]); // Dependency on navigate
 
   // Function to mark all notifications as read
   const markAllAsRead = () => {
@@ -338,10 +357,17 @@ const Header = () => {
       socket.on('payment_agreed', (data) => {
         addNotification(data);
       });
+      socket.on('booking_cancelled', (data) => { // <-- ADDED LISTENER
+        addNotification(data);
+      });
 
       // Clean up the listener when the component unmounts or user logs out
       return () => {
         console.log("Disconnecting notif socket...")
+        socket.off('new_message');
+        socket.off('new_booking');
+        socket.off('payment_agreed');
+        socket.off('booking_cancelled'); // <-- ADDED CLEANUP
         socket.disconnect();
       };
 
@@ -409,7 +435,7 @@ const Header = () => {
                   {/* --- NOTIFICATION BELL ADDED HERE --- */}
                   <NotificationBell
                     notifications={notifications}
-                    onMarkAsRead={markAsRead}
+                    onNotificationClick={handleNotificationClick}
                     onMarkAllAsRead={markAllAsRead}
                   />
 

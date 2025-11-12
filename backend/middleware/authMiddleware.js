@@ -57,8 +57,8 @@ export const protect = async (req, res, next) => {
 };
 
 export const admin = (req, res, next) => {
-    // This runs AFTER 'protect', so req.adminUser should exist
-    if (req.adminUser && req.adminUser.role === 'admin') { // Assuming the role value is 'admin'
+    // This runs AFTER 'protect', so req.user should exist
+    if (req.user && req.user.role === 'admin') { // Assuming the role value is 'admin'
         next();
     } else {
         res.status(403).json({ error: 'Not authorized as an admin' });
@@ -85,6 +85,15 @@ export const provider = (req, res, next) => {
     return next();
   }
   return res.status(403).json({ error: "Not authorized as a provider" });
+};
+
+export const user = (req, res, next) => {
+    // This runs AFTER 'protect', so req.user should exist
+    if (req.user && req.user.role === 'user') {
+        next();
+    } else {
+        res.status(403).json({ error: 'Not authorized as a client' });
+    }
 };
 
 // ✅ 4. ProviderAuth (self-access only)

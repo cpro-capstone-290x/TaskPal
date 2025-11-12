@@ -16,8 +16,7 @@
     "UnitTest": "cross-env NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
     "UnitOnly": "cross-env NODE_ENV=test jest --runInBand test/__tests__/*.unit.test.js",
     "IntOnly": "cross-env NODE_ENV=test jest --runInBand test/__tests__/*.int.test.js"
-
-},
+  },
   "dependencies": {
     "@arcjet/node": "^1.0.0-beta.12",
     "@getbrevo/brevo": "^3.0.1",

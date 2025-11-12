@@ -3,12 +3,19 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
+ "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "reset-db": "node resetDB.js",
+    "test-db": "node testDB.js",
+    "test-stream": "node testStream.js",
+    "testEmail": "node testEmail.js",
+    "test-blob": "node testVercelBlob.js",
+    "UnitTest": "cross-env NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
+    "UnitOnly": "cross-env NODE_ENV=test jest --runInBand test/tests/.unit.test.js",
+    "IntOnly": "cross-env NODE_ENV=test jest --runInBand test/tests/.int.test.js"
+
+},  
   "dependencies": {
     "axios": "^1.12.2",
     "lucide-react": "^0.544.0",

@@ -181,7 +181,7 @@ const SearchBooking = () => {
                 <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 text-sm text-gray-700">
                   <strong>How I can help:</strong>
                   <p className="mt-1 line-clamp-3">
-                    {p.bio ||
+                    {p.note ||
                       "I’m an experienced service provider ready to help with your project efficiently and professionally."}
                   </p>
                 </div>

@@ -86,21 +86,34 @@ const LoginProvider = ({ onSuccess }) => {
 
       // ✅ Store session data
       localStorage.setItem('authToken', token);
-      localStorage.setItem('userRole', 'provider');
       localStorage.setItem("userId", providerId);
+      localStorage.setItem('userRole', 'provider');
 
       setStatus({ loading: false, error: null, success: true });
       console.log('✅ Provider logged in successfully:', result.data);
 
-      // ✅ Notify parent (if needed)
-      if (onSuccess) {
-        onSuccess({ email: formData.email, token, id: providerId });
+      // ✅ Check if there’s a redirect URL saved before login
+      const pendingRedirect = localStorage.getItem("pendingRedirect");
+
+      // ✅ Clear it immediately after using it
+      if (pendingRedirect) {
+        localStorage.removeItem("pendingRedirect");
       }
 
-      // ✅ Delay redirect for visual feedback
+      // ✅ Success state
+      setStatus({ loading: false, error: null, success: true });
+      console.log("✅ User logged in successfully:", result.data);
+
+      // ✅ Redirect logic
       setTimeout(() => {
-        navigate(`/profileProvider/${providerId}`);
-      }, 1500);
+        if (pendingRedirect) {
+          // Redirect back to booking flow
+          navigate(pendingRedirect);
+        } else {
+          // Default redirect
+          navigate(`/profileProvider/${providerId}`);
+        }
+      }, 1000);
 
     } catch (error) {
       console.error('Network or unexpected error:', error);

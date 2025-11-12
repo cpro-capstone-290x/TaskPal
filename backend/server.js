@@ -1,3 +1,4 @@
+// backend/server.js
 import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
@@ -20,6 +21,8 @@ import paymentRoutes from "./routes/paymentRoute.js";
 import executionRoutes from "./routes/executionRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
+import accessibilityRoutes from "./routes/accessibilityRoutes.js";
+
 import { protect } from "./middleware/authMiddleware.js";
 import { sql } from "./config/db.js";
 
@@ -33,7 +36,6 @@ const __dirname = dirname(__filename);
 
 console.log("🧭 Current working dir:", process.cwd());
 console.log("📂 server.js location:", __dirname);
-
 try {
   console.log("📂 Folder contents:", fs.readdirSync(__dirname));
 } catch (e) {
@@ -43,35 +45,43 @@ try {
 // ✅ Allowed Origins (Local + Production)
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://task-pal-zeta.vercel.app", // your Vercel frontend domain
+  "https://task-pal-zeta.vercel.app",
   "https://taskpal-14oy.onrender.com",
 ];
 
-// ✅ Middlewares
+// ✅ Core middlewares
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
     origin: allowedOrigins,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // ← include PATCH
     credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "Cache-Control", "X-Requested-With", "Accept"],
   })
 );
 app.use(helmet());
 app.use(morgan("dev"));
-app.use(express.urlencoded({ extended: true }));
+
+// ✅ Ensure dynamic API JSON isn’t cached (prevents 304/empty body issues)
+app.set("etag", false); // disable etag generation
+app.use("/api", (req, res, next) => {
+  res.set("Cache-Control", "no-store");
+  next();
+});
 
 // ✅ Create HTTP + Socket.IO server
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // ← include PATCH
     credentials: true,
   },
-  transports: ["websocket", "polling"], // ✅ ensure fallback support
-  allowEIO3: true, // ✅ compatibility for older clients
+  transports: ["websocket", "polling"],
+  allowEIO3: true,
 });
-
 
 // ✅ Attach io to all requests
 app.set("io", io);
@@ -80,9 +90,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.urlencoded({ extended: true }));
-
-// ✅ Add this health check route
+// ✅ Health check
 app.get("/", (req, res) => {
   res.send("🚀 TaskPal backend is live and running successfully!");
 });
@@ -96,9 +104,11 @@ app.use("/api/auth", authRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/execution", executionRoutes);
-app.use("/api/reviews",  reviewRoutes);
+app.use("/api/reviews", reviewRoutes);
 app.use("/api/contact", contactRoutes);
+app.use("/api/accessibility", accessibilityRoutes); // ← keep only this (no pp.use duplicate)
 
+// ✅ Blob test route (unchanged)
 app.get("/test-upload", async (req, res) => {
   try {
     const { url } = await put("Client-Provider-Agreement/test.txt", "Hello Blob!", {
@@ -113,7 +123,7 @@ app.get("/test-upload", async (req, res) => {
   }
 });
 
-// ✅ SOCKET.IO Logic
+// ✅ SOCKET.IO logic
 io.on("connection", (socket) => {
   console.log("🟢 User connected:", socket.id);
 
@@ -183,22 +193,21 @@ io.on("connection", (socket) => {
 
     socket.to(`chat-${bookingId}`).emit("receive_message", fullMessage);
 
-  if (recipientId) {
-    const notificationData = {
-      type: 'message',
-      title: 'New Message',
-      message: message.substring(0, 50) + '...'
-    };
-    io.to(`user-${recipientId}`).emit('new_message', notificationData);
-    console.log(`🔔 Sent 'new_message' notification to user ${recipientId}`);
-  }
-});
+    if (recipientId) {
+      const notificationData = {
+        type: "message",
+        title: "New Message",
+        message: message.substring(0, 50) + "...",
+      };
+      io.to(`user-${recipientId}`).emit("new_message", notificationData);
+      console.log(`🔔 Sent 'new_message' notification to user ${recipientId}`);
+    }
+  });
 
   socket.on("disconnect", () => {
     console.log("❌ User disconnected:", socket.id);
   });
 });
-
 
 // ✅ Initialize Database Tables
 async function initDB() {
@@ -230,12 +239,14 @@ async function initDB() {
         license_id VARCHAR(100),
         email VARCHAR(100) UNIQUE NOT NULL,
         phone VARCHAR(20),
-        document TEXT,                        
-        status VARCHAR(20) DEFAULT 'Pending', 
-        password VARCHAR(255) NOT NULL,       
+        document TEXT,
+        status VARCHAR(20) DEFAULT 'Pending',
+        password VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )`;
+      );
+    `;
+
     await sql`
       CREATE TABLE IF NOT EXISTS authorized_users (
         id SERIAL PRIMARY KEY,

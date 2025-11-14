@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import ProviderTerms from "./ProviderTerms";
 
 const InputField = ({ label, id, type = "text", value, onChange, required = false, placeholder = "" }) => (
   <div className="flex flex-col">
@@ -32,6 +33,10 @@ const RegisterProvider = ({ onSuccess }) => {
     document: null,
   });
 
+  // NEW → Terms & Conditions
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+
   const [status, setStatus] = useState({
     loading: false,
     error: null,
@@ -56,6 +61,12 @@ const RegisterProvider = ({ onSuccess }) => {
     e.preventDefault();
     setStatus({ loading: true, error: null, success: false });
 
+    // Require terms acceptance
+    if (!termsAccepted) {
+      setStatus({ loading: false, error: "You must agree to the Terms & Conditions.", success: false });
+      return;
+    }
+
     // client-side validation
     const requiredFields = ["name", "email", "password", "confirm_password", "provider_type", "service_type", "license_id", "phone"];
     const missing = requiredFields.filter((field) => !formData[field]);
@@ -63,12 +74,20 @@ const RegisterProvider = ({ onSuccess }) => {
       setStatus({ loading: false, error: `Please fill out all required fields: ${missing.join(", ")}`, success: false });
       return;
     }
+
     if (formData.password !== formData.confirm_password) {
       setStatus({ loading: false, error: "Password and Confirm Password must match.", success: false });
       return;
     }
 
-    const { confirm_password, ...payload } = formData;
+    // Include terms_accepted in payload
+    const { confirm_password, ...payload } = {
+      ...formData,
+      terms_accepted: true,
+      terms_accepted_at: new Date().toISOString(),
+    };
+
+
     const API_ENDPOINT = import.meta.env.VITE_API_URL
       ? `${import.meta.env.VITE_API_URL}/auth/registerProvider`
       : "https://taskpal-14oy.onrender.com/api/auth/registerProvider";
@@ -87,11 +106,9 @@ const RegisterProvider = ({ onSuccess }) => {
         return;
       }
 
-      // success handling
       setStatus({ loading: false, error: null, success: true });
       console.log("✅ Provider registered successfully:", result.data);
 
-      // clear form
       setFormData({
         name: "",
         provider_type: "individual",
@@ -104,7 +121,6 @@ const RegisterProvider = ({ onSuccess }) => {
         document: null,
       });
 
-      // ✅ redirect to OTP (same behavior as RegisterUser)
       onSuccess({ email: formData.email });
 
     } catch (error) {
@@ -147,6 +163,7 @@ const RegisterProvider = ({ onSuccess }) => {
               required
               placeholder="Jane Smith or ABC Cleaning Services"
             />
+
             <div className="flex flex-col">
               <label htmlFor="provider_type" className="text-sm font-semibold text-gray-600 mb-1">
                 Provider Type <span className="text-red-500">*</span>
@@ -249,6 +266,24 @@ const RegisterProvider = ({ onSuccess }) => {
             />
           </div>
 
+          {/* ===================================================== */}
+          {/* TERMS & CONDITIONS CHECKBOX - INTERCEPTS USER CLICK */}
+          {/* ===================================================== */}
+          <div className="flex items-center gap-3 pt-4">
+            <input
+              type="checkbox"
+              className="w-5 h-5 cursor-pointer"
+              checked={termsAccepted}
+              onChange={() => {
+              if (!termsAccepted) setShowTermsModal(true);
+            }}
+
+            />
+            <span className="text-gray-700 text-sm cursor-pointer" onClick={() => setShowTermsModal(true)}>
+              I agree to the <span className="text-sky-600 underline">Terms & Conditions</span>
+            </span>
+          </div>
+
           <button
             type="submit"
             disabled={status.loading}
@@ -268,6 +303,18 @@ const RegisterProvider = ({ onSuccess }) => {
           </button>
         </form>
       </div>
+
+      {/* ===================================================== */}
+      {/* TERMS MODAL — MUST SCROLL TO BOTTOM BEFORE AGREEING */}
+      {/* ===================================================== */}
+      <ProviderTerms
+        open={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        onAgree={() => {
+          setTermsAccepted(true);
+          setShowTermsModal(false);
+        }}
+      />
     </div>
   );
 };

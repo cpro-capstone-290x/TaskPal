@@ -606,7 +606,7 @@ const handleSave = async (e) => {
                     <button
                       type="submit"
                       form="provider-profile-form"
-                      onClick={handleSave}
+                      // onClick={handleSave}
                       className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition duration-150 shadow-md disabled:opacity-50"
                       disabled={isSaving || isUploading}
                     >
@@ -868,7 +868,7 @@ const handleSave = async (e) => {
                   <button
                     type="submit"
                     form="provider-profile-form"
-                    onClick={handleSave}
+                    // onClick={handleSave}
                     className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition duration-150 shadow-md disabled:opacity-50"
                     disabled={isSaving || isUploading}
                   >

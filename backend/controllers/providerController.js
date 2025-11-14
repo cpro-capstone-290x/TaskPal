@@ -47,63 +47,64 @@ export const updateProvider = async (req, res) => {
     phone,
     document,
     status,
-    password, // only update if changed
     profile_picture_url,
     note,
+    password, // Get the password, if it was sent
   } = req.body;
 
   try {
-    // 🔐 Authorization check
-    if (!req.user || (req.user.role !== "admin" && req.user.id !== parseInt(id))) {
-      return res
-        .status(403)
-        .json({ error: "Forbidden: You are not allowed to edit this provider." });
-    }
-
-    // ✅ Dynamic update fields
-    const updates = [];
-    const params = [];
-
-    if (name !== undefined) updates.push(`name = $${params.push(name)}`);
-    if (provider_type !== undefined) updates.push(`provider_type = $${params.push(provider_type)}`);
-    if (service_type !== undefined) updates.push(`service_type = $${params.push(service_type)}`);
-    if (license_id !== undefined) updates.push(`license_id = $${params.push(license_id)}`);
-    if (email !== undefined) updates.push(`email = $${params.push(email)}`);
-    if (phone !== undefined) updates.push(`phone = $${params.push(phone)}`);
-    if (document !== undefined) updates.push(`document = $${params.push(document)}`);
-    if (status !== undefined) updates.push(`status = $${params.push(status)}`);
-    if (profile_picture_url !== undefined) updates.push(`profile_picture_url = $${params.push(profile_picture_url)}`);
-    if (note !== undefined) updates.push(`note = $${params.push(note)}`);
-
-    // ✅ Hash password only if provided and non-empty
-    if (password && password.trim() !== "") {
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-      updates.push(`password = $${params.push(hashedPassword)}`);
-    }
-
-    if (updates.length === 0) {
-      return res.status(400).json({ error: "No valid fields provided to update" });
-    }
-
-    // ✅ Add updated_at
-    const query = `
-      UPDATE providers
-      SET ${updates.join(", ")}, updated_at = NOW()
-      WHERE id = $${params.push(id)}
-      RETURNING *;
+    // 1. Get the current provider data (for password fallback)
+    const [existingProvider] = await sql`
+      SELECT password FROM providers WHERE id = ${id}
     `;
 
-    // 🧠 With Neon’s tagged client, use parameterized query
-    const result = await sql.unsafe(query, params);
-
-    if (!result || result.length === 0) {
+    if (!existingProvider) {
       return res.status(404).json({ error: "Provider not found" });
     }
 
+    // 2. Handle password update
+    let passwordHash = existingProvider.password; // Default to the old, existing hash
+    
+    // Only if a new, non-empty password was provided, hash it.
+    if (password && password.trim() !== "") {
+      const salt = await bcrypt.genSalt(10);
+      passwordHash = await bcrypt.hash(password, salt);
+      console.log(`Password updated for provider ${id}`);
+    }
+
+    // 3. Run the simple, explicit update query
+    const result = await sql`
+      UPDATE providers
+      SET
+        name = ${name},
+        provider_type = ${provider_type},
+        service_type = ${service_type},
+        license_id = ${license_id},
+        email = ${email},
+        phone = ${phone},
+        document = ${document},
+        status = ${status},
+        profile_picture_url = ${profile_picture_url},
+        note = ${note},
+        password = ${passwordHash}, 
+        updated_at = NOW()
+      WHERE id = ${id}
+      RETURNING *;
+    `;
+
+    if (!result || result.length === 0) {
+      // This shouldn't happen if the first check passed, but it's good practice
+      return res.status(404).json({ error: "Provider not found during update" });
+    }
+
+    // Return 200 OK with the newly updated data
     return res.status(200).json({ success: true, data: result[0] });
+
   } catch (error) {
     console.error("❌ Failed to update provider:", error);
+    if (error.code === '23505') { // Handle unique email constraint
+      return res.status(409).json({ error: `Failed to update: ${error.detail}` });
+    }
     res.status(500).json({ error: "Failed to update provider" });
   }
 };
@@ -196,7 +197,7 @@ export const getProvidersByServiceType = async (req, res) => {
 };
 
 export const uploadProviderProfilePicture = async (req, res) => {
-  const { providerId } = req.params;
+  const { id } = req.params;
   const file = req.file;
 
   if (!file) {
@@ -208,7 +209,7 @@ export const uploadProviderProfilePicture = async (req, res) => {
     const [provider] = await sql`
       SELECT id, name, profile_picture_url
       FROM providers
-      WHERE id = ${providerId};
+      WHERE id = ${id};
     `;
 
     if (!provider) {
@@ -233,7 +234,7 @@ export const uploadProviderProfilePicture = async (req, res) => {
       : "provider";
 
     // ✅ Step 4: Upload new file to Vercel Blob with provider info
-    const fileName = `Provider-Profile/${providerId}-${safeName}-${Date.now()}-${file.originalname}`;
+    const fileName = `Provider-Profile/${id}-${safeName}-${Date.now()}-${file.originalname}`;
     const blob = await put(fileName, file.buffer, {
       access: "public",
       contentType: file.mimetype,
@@ -243,10 +244,10 @@ export const uploadProviderProfilePicture = async (req, res) => {
     await sql`
       UPDATE providers
       SET profile_picture_url = ${blob.url}, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${providerId};
+      WHERE id = ${id};
     `;
 
-    console.log(`✅ Uploaded new profile picture for provider #${providerId}`);
+    console.log(`✅ Uploaded new profile picture for provider #${id}`);
 
     return res.json({
       success: true,

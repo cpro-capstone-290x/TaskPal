@@ -32,8 +32,9 @@ router.route("/:id/status").patch(protect, adminAuth, updateProviderStatus);
 
 // 🖼️ Profile picture upload
 router.post(
-  "/:providerId/profile-picture",
+  "/:id/profile-picture",
   protect,
+  providerAuth,
   upload.single("file"),
   uploadProviderProfilePicture
 );

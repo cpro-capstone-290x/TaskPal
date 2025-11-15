@@ -60,6 +60,7 @@ export const updateProvider = async (req, res) => {
     license_id,
     email,
     phone,
+    postal_code,
     document,
     status,
     profile_picture_url,
@@ -87,6 +88,24 @@ export const updateProvider = async (req, res) => {
       console.log(`Password updated for provider ${id}`);
     }
 
+    // 🔹 Validate Red Deer postal codes
+    if (postal_code) {
+      const cleanPostal = postal_code.toUpperCase().replace(/\s+/g, "");
+
+      if (
+        !(
+          cleanPostal.startsWith("T4N") ||
+          cleanPostal.startsWith("T4P") ||
+          cleanPostal.startsWith("T4R")
+        )
+      ) {
+        return res.status(400).json({
+          error: "TaskPal only supports Red Deer providers. Postal code must start with T4N, T4P, or T4R.",
+        });
+      }
+    }
+
+
     // 3. Run the simple, explicit update query
     const result = await sql`
       UPDATE providers
@@ -97,6 +116,7 @@ export const updateProvider = async (req, res) => {
         license_id = ${license_id},
         email = ${email},
         phone = ${phone},
+        postal_code = ${postal_code},
         document = ${document},
         status = ${status},
         profile_picture_url = ${profile_picture_url},

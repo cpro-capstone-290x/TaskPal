@@ -92,7 +92,7 @@ export const registerUser = async (req, res) => {
 
 
 export const registerProvider = async (req, res) => {
-  const { 
+    const { 
     role = "provider",
     name, 
     provider_type, 
@@ -100,6 +100,7 @@ export const registerProvider = async (req, res) => {
     license_id, 
     email, 
     phone, 
+    postal_code,
     valid_id_url,
     company_documents,
     background_check_url,
@@ -114,6 +115,7 @@ export const registerProvider = async (req, res) => {
     terms_accepted,
     note
   } = req.body;
+
 
   if (!name || !provider_type || !service_type || !email || !password) {
     return res.status(400).json({ error: "Name, provider type, service type, email and password are required" });
@@ -152,6 +154,7 @@ export const registerProvider = async (req, res) => {
       license_id,
       email,
       phone,
+      postal_code,
       valid_id_url,
       company_documents,
       background_check_url,
@@ -425,6 +428,7 @@ export const verifyProviderOTP = async (req, res) => {
           license_id,
           email,
           phone,
+          postal_code,
           company_documents,
           valid_id_url,
           background_check_url,
@@ -450,6 +454,7 @@ export const verifyProviderOTP = async (req, res) => {
           ${data.license_id},
           ${data.email},
           ${data.phone},
+          ${data.postal_code},
           ${JSON.stringify(data.company_documents || [])}::jsonb,
           ${data.valid_id_url},
           ${data.background_check_url},

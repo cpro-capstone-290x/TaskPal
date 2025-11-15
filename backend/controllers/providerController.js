@@ -322,3 +322,42 @@ export const uploadValidId = async (req, res) => {
     return res.status(500).json({ error: "Upload failed" });
   }
 };
+
+export const uploadCompanyDocuments = async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: "No files uploaded" });
+    }
+
+    const { name, email } = req.body;
+
+    const safeName = slugify(name || email || "company");
+    const folder = `Provider-Company-Additional-Documents/${safeName}`;
+
+    const urls = [];
+
+    for (const file of req.files) {
+      const originalName = file.originalname || "document";
+      const ext = originalName.split(".").pop();
+      const fileName = `${folder}/${Date.now()}-${slugify(originalName)}.${ext}`;
+
+      const blob = await put(fileName, file.buffer, {
+        access: "public",
+        contentType: file.mimetype,
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      });
+
+      urls.push(blob.url);
+    }
+
+    return res.json({
+      success: true,
+      urls,
+      message: "Documents uploaded successfully",
+    });
+
+  } catch (err) {
+    console.error("❌ Multi-doc upload failed:", err);
+    return res.status(500).json({ error: "Upload failed" });
+  }
+};

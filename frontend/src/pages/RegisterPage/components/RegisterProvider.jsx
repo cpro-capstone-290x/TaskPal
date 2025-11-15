@@ -37,6 +37,7 @@ const RegisterProvider = ({ onSuccess }) => {
     id_number: "",
     id_expiry: "",
     valid_id_file: null,
+    note: "",
   });
 
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -141,6 +142,7 @@ const handleSubmit = async (e) => {
     "id_type",
     "id_number",
     "id_expiry",
+    "note"
   ];
 
   const missing = requiredFields.filter((field) => !formData[field]);
@@ -195,7 +197,7 @@ const handleSubmit = async (e) => {
   const { confirm_password, valid_id_file, document, ...payload } = {
     ...formData,
     valid_id_url,
-    company_document_url, // <-- Added!!
+    company_documents: company_document_url, // <-- Added!!
     terms_accepted: true,
     terms_accepted_at: new Date().toISOString(),
   };
@@ -399,6 +401,26 @@ const handleSubmit = async (e) => {
             />
           </div>
 
+          <div className="flex flex-col">
+          <label className="text-sm font-semibold text-gray-600 mb-1">
+           Provider Details — help clients learn more about your services <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            id="note"
+            name="note"
+            value={formData.note}
+            onChange={handleChange}
+            required
+            placeholder={`Example:
+        - Services: Residential Cleaning, Deep Cleaning
+        - Experience: 3 years
+        - Certifications: First Aid, CPR, Cleaning Specialist Certification
+        `}
+            className="w-full p-3 border border-gray-300 rounded-xl h-32 focus:ring-4 focus:ring-sky-200 focus:border-sky-500 transition duration-200 ease-in-out shadow-inner placeholder-gray-400 text-black bg-white"
+          />
+        </div>
+
+
           {/* TERMS */}
           <div className="flex items-center gap-3 pt-4">
             <input
@@ -424,6 +446,7 @@ const handleSubmit = async (e) => {
           </button>
         </form>
       </div>
+      
 
       <ProviderTerms
         open={showTermsModal}

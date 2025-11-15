@@ -38,6 +38,11 @@ const RegisterProvider = ({ onSuccess }) => {
     id_expiry: "",
     valid_id_file: null,
     note: "",
+    insurance_provider: "",
+    insurance_policy_number: "",
+    insurance_expiry: "",
+    insurance_document: null,
+
   });
 
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -66,6 +71,12 @@ const RegisterProvider = ({ onSuccess }) => {
   const handleValidIDFile = (e) => {
     setFormData((prev) => ({ ...prev, valid_id_file: e.target.files[0] }));
   };
+
+  // Insurance file
+const handleInsuranceFile = (e) => {
+  setFormData((prev) => ({ ...prev, insurance_document: e.target.files[0] }));
+};
+
 
   // Upload Valid ID through backend
 const uploadValidID = async (file) => {
@@ -118,6 +129,26 @@ const uploadBackgroundCheck = async (file) => {
   return data.url;
 };
 
+const uploadInsuranceDocument = async (file) => {
+  if (!file) return null;
+
+  const API = `${import.meta.env.VITE_API_URL || "https://taskpal-14oy.onrender.com/api"}/providers/insurance`;
+
+  const form = new FormData();
+  form.append("file", file);
+  form.append("name", formData.name);
+  form.append("email", formData.email);
+
+  const res = await fetch(API, { method: "POST", body: form });
+  const data = await res.json();
+
+  if (!res.ok) throw new Error(data.error || "Failed to upload insurance document");
+
+  return data.url;
+};
+
+
+
 
 
 const uploadCompanyDocuments = async (files) => {
@@ -162,7 +193,11 @@ const handleSubmit = async (e) => {
     "id_number",
     "id_expiry",
     "note",
-    "background_check_file"
+    "background_check_file",
+    "insurance_provider",
+    "insurance_policy_number",
+    "insurance_expiry",
+    "insurance_document",
   ];
 
   const missing = requiredFields.filter((field) => !formData[field]);
@@ -231,14 +266,33 @@ const handleSubmit = async (e) => {
     }
   }
 
+    // -------------------------------------------------------
+  // 🔹 STEP — Upload Insurance Document (Required)
+  // -------------------------------------------------------
+  let insurance_document_url = null;
+
+  try {
+    insurance_document_url = await uploadInsuranceDocument(formData.insurance_document);
+  } catch (err) {
+    console.error("❌ Failed to upload insurance document:", err);
+    setStatus({
+      loading: false,
+      error: "Failed to upload insurance document. Please try again.",
+      success: false,
+    });
+    return;
+  }
+
+
   // -------------------------------------------------------
   // 🔹 STEP 3 — Build final payload
   // -------------------------------------------------------
-  const { confirm_password, valid_id_file, document, background_check_file, ...payload } = {
+  const { confirm_password, valid_id_file, document, background_check_file, insurance_document, ...payload } = {
     ...formData,
     valid_id_url,
     background_check_url,
     company_documents: company_document_url, // <-- Added!!
+    insurance_document_url,
     terms_accepted: true,
     terms_accepted_at: new Date().toISOString(),
   };
@@ -462,6 +516,51 @@ const handleSubmit = async (e) => {
               className="w-full p-3 border border-gray-300 rounded-xl bg-white"
             />
           </div>
+
+          {/* INSURANCE SECTION */}
+          <div className="p-4 border border-gray-300 rounded-xl bg-gray-50">
+            <h2 className="text-lg font-semibold mb-3 text-gray-700">
+              Provider Insurance (Required) <span className="text-red-500">*</span>
+            </h2>
+
+            <InputField
+              label="Insurance Provider"
+              id="insurance_provider"
+              value={formData.insurance_provider}
+              onChange={handleChange}
+              required
+            />
+
+            <InputField
+              label="Policy Number"
+              id="insurance_policy_number"
+              value={formData.insurance_policy_number}
+              onChange={handleChange}
+              required
+            />
+
+            <InputField
+              label="Insurance Expiry Date"
+              id="insurance_expiry"
+              type="date"
+              value={formData.insurance_expiry}
+              onChange={handleChange}
+              required
+            />
+
+            <label className="text-sm font-semibold text-gray-600 mt-3 mb-1">
+              Upload Proof of Insurance (PDF or Image) *
+            </label>
+
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={handleInsuranceFile}
+              className="w-full p-3 border border-gray-300 rounded-xl bg-white"
+              required
+            />
+          </div>
+
 
 
           <div className="flex flex-col">

@@ -391,3 +391,31 @@ export const uploadBackgroundCheck = async (req, res) => {
   }
 };
 
+export const uploadInsuranceDocument = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const { name, email } = req.body;
+
+    const safeName = slugify(name || email || "provider");
+    const ext = req.file.originalname.split(".").pop();
+    const fileName = `Provider-Insurance/${safeName}-${Date.now()}.${ext}`;
+
+    const blob = await put(fileName, req.file.buffer, {
+      access: "public",
+      contentType: req.file.mimetype,
+      token: process.env.BLOB_READ_WRITE_TOKEN
+    });
+
+    return res.json({
+      success: true,
+      url: blob.url,
+      message: "Insurance document uploaded successfully."
+    });
+  } catch (err) {
+    console.error("❌ Insurance upload failed:", err);
+    return res.status(500).json({ error: "Upload failed" });
+  }
+};

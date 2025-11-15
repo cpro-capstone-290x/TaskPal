@@ -30,13 +30,13 @@ export const registerUser = async (req, res) => {
   }
 
   try {
-    // check if already exists in live tables
     const [u,p,a,au] = await Promise.all([
       sql`SELECT 1 FROM users WHERE email = ${email}`,
       sql`SELECT 1 FROM providers WHERE email = ${email}`,
       sql`SELECT 1 FROM admins WHERE email = ${email}`,
       sql`SELECT 1 FROM authorized_users WHERE email = ${email}`
     ]);
+
     if (u.length || p.length || a.length || au.length) {
       return res.status(400).json({ error: "Email already exists" });
     }
@@ -45,7 +45,9 @@ export const registerUser = async (req, res) => {
     const otp = generateOTP();
     const hashedOtp = await bcrypt.hash(otp, 6);
 
+    // ✅ THIS is the correct user payload
     const payload = {
+      role,
       first_name,
       last_name,
       type_of_user,
@@ -75,9 +77,7 @@ export const registerUser = async (req, res) => {
         created_at = CURRENT_TIMESTAMP
     `;
 
-    sendOTP(email, otp)
-      .then(() => console.log(`✅ OTP email sent to ${email}`))
-      .catch(err => console.error("❌ OTP send failed:", err.message));
+    sendOTP(email, otp);
 
     return res.status(201).json({
       success: true,
@@ -89,6 +89,7 @@ export const registerUser = async (req, res) => {
     return res.status(500).json({ error: "Registration failed" });
   }
 };
+
 
 export const registerProvider = async (req, res) => {
   const { 
@@ -105,6 +106,10 @@ export const registerProvider = async (req, res) => {
     id_type,
     id_number,
     id_expiry,
+    insurance_provider,
+    insurance_policy_number,
+    insurance_expiry,
+    insurance_document_url,
     password,
     terms_accepted,
     note
@@ -138,6 +143,7 @@ export const registerProvider = async (req, res) => {
     const otp = generateOTP();
     const hashedOtp = await bcrypt.hash(otp, 6);
 
+    // ✅ INCLUDE INSURANCE FIELDS HERE
     const payload = {
       role,
       name,
@@ -152,6 +158,10 @@ export const registerProvider = async (req, res) => {
       id_type,
       id_number,
       id_expiry,
+      insurance_provider,
+      insurance_policy_number,
+      insurance_expiry,
+      insurance_document_url,
       password: hashed,
       terms_accepted: true,
       terms_accepted_at: new Date().toISOString(),
@@ -421,6 +431,10 @@ export const verifyProviderOTP = async (req, res) => {
           id_type,
           id_number,
           id_expiry,
+          insurance_provider,
+          insurance_policy_number,
+          insurance_expiry,
+          insurance_document_url,
           password,
           terms_accepted,
           terms_accepted_at,
@@ -442,6 +456,10 @@ export const verifyProviderOTP = async (req, res) => {
           ${data.id_type},
           ${data.id_number},
           ${data.id_expiry},
+          ${data.insurance_provider},
+          ${data.insurance_policy_number},
+          ${data.insurance_expiry},
+          ${data.insurance_document_url},
           ${data.password},
           ${termsAccepted},
           ${termsAcceptedAt},

@@ -13,6 +13,7 @@ import {
   uploadProviderProfilePicture,
   uploadCompanyDocuments,
   uploadBackgroundCheck,
+  uploadInsuranceDocument
 } from "../controllers/providerController.js";
 
 const router = express.Router();
@@ -26,6 +27,8 @@ router.post(
   uploadCompanyDocuments
 );
 router.post("/background-check", upload.single("file"), uploadBackgroundCheck);
+router.post("/insurance", upload.single("file"), uploadInsuranceDocument);
+
 
 
 

@@ -131,13 +131,19 @@ describe("🔥 AUTH CONTROLLER – FULL TEST SUITE", () => {
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
+  test("❌ registerProvider should require valid ID fields", async () => {
+    const req = { body: { name: "x", provider_type: "ind", service_type: "c", email: "e", password: "p", terms_accepted: true } };
+    await registerProvider(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
   test("✅ registerProvider inserts pending registration", async () => {
     dbMock.sql
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([]);
+      .mockResolvedValueOnce([])     // users
+      .mockResolvedValueOnce([])     // providers
+      .mockResolvedValueOnce([])     // admins
+      .mockResolvedValueOnce([])     // authorized_users
+      .mockResolvedValueOnce([]);    // insert pending
 
     bcryptMock.hash
       .mockResolvedValueOnce("hashed_pw")
@@ -146,13 +152,14 @@ describe("🔥 AUTH CONTROLLER – FULL TEST SUITE", () => {
     const req = {
       body: {
         name: "Provider",
-        provider_type: "ind",
+        provider_type: "company",
         service_type: "cleaning",
         license_id: "LIC",
         id_type: "Passport",
         id_number: "123",
         id_expiry: "2030-01-01",
         valid_id_url: "id.png",
+        company_documents: ["doc1.pdf"],
         email: "p@test.com",
         phone: "123",
         password: "pass",
@@ -258,11 +265,17 @@ describe("🔥 AUTH CONTROLLER – FULL TEST SUITE", () => {
   test("✅ verifyProviderOTP inserts provider", async () => {
     const fakeData = {
       name: "Jane",
-      provider_type: "ind",
+      provider_type: "company",
       service_type: "clean",
       license_id: "LIC",
       email: "p@test.com",
+      phone: "123",
       password: "hashed",
+      valid_id_url: "id.png",
+      company_documents: ["a.pdf", "b.pdf"],
+      id_type: "Passport",
+      id_number: "999",
+      id_expiry: "2030",
       terms_accepted: true,
       terms_accepted_at: new Date().toISOString(),
     };
@@ -276,8 +289,8 @@ describe("🔥 AUTH CONTROLLER – FULL TEST SUITE", () => {
           payload: JSON.stringify(fakeData),
         },
       ])
-      .mockResolvedValueOnce([{ id: 99 }])
-      .mockResolvedValueOnce([]);
+      .mockResolvedValueOnce([{ id: 99 }]) // insert provider
+      .mockResolvedValueOnce([]); // delete pending
 
     bcryptMock.compare.mockResolvedValueOnce(true);
 
@@ -356,10 +369,10 @@ describe("🔥 AUTH CONTROLLER – FULL TEST SUITE", () => {
   ============================================================ */
   test("✔ sendPasswordResetOTP success", async () => {
     dbMock.sql
-      .mockResolvedValueOnce([{ id: 1 }])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([]);
+      .mockResolvedValueOnce([{ id: 1 }]) // user exists
+      .mockResolvedValueOnce([]) // provider
+      .mockResolvedValueOnce([]) // admin
+      .mockResolvedValueOnce([]); // insert pending
 
     bcryptMock.hash.mockResolvedValueOnce("hashedotp");
 

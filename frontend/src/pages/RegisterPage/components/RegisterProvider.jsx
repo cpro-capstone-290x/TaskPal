@@ -99,107 +99,153 @@ const uploadValidID = async (file) => {
   return data.url;
 };
 
+
+const uploadCompanyDocuments = async (files) => {
+  if (!files || files.length === 0) return [];
+
+  const API = `${import.meta.env.VITE_API_URL}/providers/company-docs`;
+
+  const form = new FormData();
+  files.forEach((file) => form.append("files", file));
+  form.append("name", formData.name);
+  form.append("email", formData.email);
+
+  const res = await fetch(API, { method: "POST", body: form });
+  const data = await res.json();
+
+  if (!res.ok) throw new Error(data.error || "Document upload failed");
+
+  return data.urls; // this is an array
+};
+
+
   // submit
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setStatus({ loading: true, error: null, success: false });
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setStatus({ loading: true, error: null, success: false });
 
-    if (!termsAccepted) {
-      setStatus({ loading: false, error: "You must agree to the Terms & Conditions.", success: false });
-      return;
-    }
+  if (!termsAccepted) {
+    setStatus({ loading: false, error: "You must agree to the Terms & Conditions.", success: false });
+    return;
+  }
 
-    const requiredFields = [
-      "name",
-      "email",
-      "password",
-      "confirm_password",
-      "provider_type",
-      "service_type",
-      "license_id",
-      "phone",
-      "id_type",
-      "id_number",
-      "id_expiry",
-    ];
+  const requiredFields = [
+    "name",
+    "email",
+    "password",
+    "confirm_password",
+    "provider_type",
+    "service_type",
+    "license_id",
+    "phone",
+    "id_type",
+    "id_number",
+    "id_expiry",
+  ];
 
-    const missing = requiredFields.filter((field) => !formData[field]);
-    if (missing.length > 0) {
-      setStatus({
-        loading: false,
-        error: `Please fill out all required fields: ${missing.join(", ")}`,
-        success: false,
-      });
-      return;
-    }
+  const missing = requiredFields.filter((field) => !formData[field]);
+  if (missing.length > 0) {
+    setStatus({
+      loading: false,
+      error: `Please fill out all required fields: ${missing.join(", ")}`,
+      success: false,
+    });
+    return;
+  }
 
-    if (formData.password !== formData.confirm_password) {
-      setStatus({ loading: false, error: "Password and Confirm Password must match.", success: false });
-      return;
-    }
+  if (formData.password !== formData.confirm_password) {
+    setStatus({ loading: false, error: "Password and Confirm Password must match.", success: false });
+    return;
+  }
 
-    // Upload valid ID file first
-    let valid_id_url = null;
+  // -------------------------------------------------------
+  // 🔹 STEP 1 — Upload Valid Government ID
+  // -------------------------------------------------------
+  let valid_id_url = null;
+  try {
+    valid_id_url = await uploadValidID(formData.valid_id_file);
+  } catch (err) {
+    console.error("❌ Failed to upload valid ID:", err);
+    setStatus({ loading: false, error: "Failed to upload Valid ID. Please try again.", success: false });
+    return;
+  }
+
+  // -------------------------------------------------------
+  // 🔹 STEP 2 — Upload Company Document (IF provider_type = company)
+  // -------------------------------------------------------
+  let company_document_url = null;
+
+  if (formData.provider_type === "company") {
     try {
-      valid_id_url = await uploadValidID(formData.valid_id_file);
+      company_document_url = await uploadCompanyDocuments(formData.documents);
     } catch (err) {
-      console.error("❌ Failed to upload valid ID:", err);
-      setStatus({ loading: false, error: "Failed to upload Valid ID. Please try again.", success: false });
+      console.error("❌ Failed to upload company document:", err);
+      setStatus({
+        loading: false,
+        error: "Failed to upload Company Supporting Document.",
+        success: false,
+      });
+      return;
+    }
+  }
+
+  // -------------------------------------------------------
+  // 🔹 STEP 3 — Build final payload
+  // -------------------------------------------------------
+  const { confirm_password, valid_id_file, document, ...payload } = {
+    ...formData,
+    valid_id_url,
+    company_document_url, // <-- Added!!
+    terms_accepted: true,
+    terms_accepted_at: new Date().toISOString(),
+  };
+
+  const API_ENDPOINT = import.meta.env.VITE_API_URL
+    ? `${import.meta.env.VITE_API_URL}/auth/registerProvider`
+    : "https://taskpal-14oy.onrender.com/api/auth/registerProvider";
+
+  try {
+    const response = await fetch(API_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      setStatus({ loading: false, error: result.error || "Registration failed.", success: false });
       return;
     }
 
-    const { confirm_password, valid_id_file, ...payload } = {
-      ...formData,
-      valid_id_url,
-      terms_accepted: true,
-      terms_accepted_at: new Date().toISOString(),
-    };
+    setStatus({ loading: false, error: null, success: true });
 
-    const API_ENDPOINT = import.meta.env.VITE_API_URL
-      ? `${import.meta.env.VITE_API_URL}/auth/registerProvider`
-      : "https://taskpal-14oy.onrender.com/api/auth/registerProvider";
+    setFormData({
+      name: "",
+      provider_type: "individual",
+      service_type: "Cleaning",
+      license_id: "",
+      email: "",
+      phone: "",
+      password: "",
+      confirm_password: "",
+      document: null,
+      id_type: "",
+      id_number: "",
+      id_expiry: "",
+      valid_id_file: null,
+    });
 
-    try {
-      const response = await fetch(API_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    onSuccess({ email: formData.email });
+  } catch (error) {
+    console.error("❌ Network error:", error);
+    setStatus({
+      loading: false,
+      error: "Could not connect to server.",
+      success: false,
+    });
+  }
+};
 
-      const result = await response.json();
-      if (!response.ok) {
-        setStatus({ loading: false, error: result.error || "Registration failed.", success: false });
-        return;
-      }
-
-      setStatus({ loading: false, error: null, success: true });
-
-      setFormData({
-        name: "",
-        provider_type: "individual",
-        service_type: "Cleaning",
-        license_id: "",
-        email: "",
-        phone: "",
-        password: "",
-        confirm_password: "",
-        document: null,
-        id_type: "",
-        id_number: "",
-        id_expiry: "",
-        valid_id_file: null,
-      });
-
-      onSuccess({ email: formData.email });
-    } catch (error) {
-      console.error("❌ Network error:", error);
-      setStatus({
-        loading: false,
-        error: "Could not connect to server.",
-        success: false,
-      });
-    }
-  };
 
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 font-sans">
@@ -290,11 +336,25 @@ const uploadValidID = async (file) => {
             <InputField label="Confirm Password" id="confirm_password" type="password" value={formData.confirm_password} onChange={handleChange} required />
           </div>
 
-          {/* supporting document */}
-          <div>
-            <label className="text-sm font-semibold text-gray-600 mb-1">Supporting Document (Optional)</label>
-            <input type="file" onChange={handleFileChange} className="w-full p-3 border rounded-xl bg-white" />
-          </div>
+          {/* supporting document — SHOW ONLY IF COMPANY */}
+          {formData.provider_type === "company" && (
+            <div className="p-4 border border-gray-300 rounded-xl bg-gray-50">
+              <label className="text-sm font-semibold text-gray-600 mb-1">
+                Business Supporting Document (Required for Company Providers)
+              </label>
+
+              <input
+                type="file"
+                multiple
+                onChange={(e) => setFormData({ ...formData, documents: [...e.target.files] })}
+              />
+
+              <p className="text-xs text-gray-500 mt-2">
+                Upload business permit, certification, or related legal documents.
+              </p>
+            </div>
+          )}
+
 
           {/* VALID ID SECTION */}
           <div className="p-4 border border-gray-300 rounded-xl bg-gray-50">

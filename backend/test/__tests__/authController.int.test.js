@@ -31,20 +31,27 @@ describe("🔗 AUTH CONTROLLER — FULL INTEGRATION TESTS", () => {
   });
 
   /* -------------------------------------------------------------------------- */
-  /* 🧪 PROVIDER REGISTRATION                                                  */
+  /* 🧪 PROVIDER REGISTRATION (WITH MULTIPLE DOCUMENTS)                        */
   /* -------------------------------------------------------------------------- */
-  test("POST /api/auth/registerProvider — register a provider", async () => {
+  test("POST /api/auth/registerProvider — register a provider (multi-doc)", async () => {
     const res = await request(app).post("/api/auth/registerProvider").send({
       name: "Jane Provider",
-      provider_type: "individual",
+      provider_type: "company",
       service_type: "Cleaning",
       license_id: "LIC999",
       email: "test_provider@example.com",
       phone: "4035550000",
+
       id_type: "Passport",
       id_number: "A123456",
       id_expiry: "2030-01-01",
       valid_id_url: "https://example.com/id.jpg",
+
+      company_documents: [
+        "https://example.com/doc1.pdf",
+        "https://example.com/doc2.pdf"
+      ],
+
       password: "pass123",
       terms_accepted: true,
     });
@@ -133,7 +140,7 @@ describe("🔗 AUTH CONTROLLER — FULL INTEGRATION TESTS", () => {
   });
 
   /* -------------------------------------------------------------------------- */
-  /* 🧪 PROVIDER OTP VERIFICATION                                              */
+  /* 🧪 PROVIDER OTP VERIFICATION (WITH MULTI-DOC JSONB)                       */
   /* -------------------------------------------------------------------------- */
   test("POST /api/auth/verifyProviderOTP — verify provider OTP", async () => {
     const res = await request(app).post("/api/auth/verifyProviderOTP").send({

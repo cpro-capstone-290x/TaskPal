@@ -10,7 +10,8 @@ import {
   getProvidersByServiceType,
   updateProviderStatus,
   uploadValidId,
-  uploadProviderProfilePicture
+  uploadProviderProfilePicture,
+  uploadCompanyDocuments,
 } from "../controllers/providerController.js";
 
 const router = express.Router();
@@ -18,6 +19,12 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 // ✅ MUST BE AT THE VERY TOP — PUBLIC ROUTE
 router.post("/valid-id", upload.single("file"), uploadValidId);
+router.post(
+  "/company-docs",
+  upload.array("files", 10), // allow up to 10 documents
+  uploadCompanyDocuments
+);
+
 
 // 🌐 Public Routes
 router.get("/public/service_type/:service_type", getProvidersByServiceType);

@@ -12,6 +12,7 @@ import {
   uploadValidId,
   uploadProviderProfilePicture,
   uploadCompanyDocuments,
+  uploadBackgroundCheck,
 } from "../controllers/providerController.js";
 
 const router = express.Router();
@@ -24,6 +25,8 @@ router.post(
   upload.array("files", 10), // allow up to 10 documents
   uploadCompanyDocuments
 );
+router.post("/background-check", upload.single("file"), uploadBackgroundCheck);
+
 
 
 // 🌐 Public Routes

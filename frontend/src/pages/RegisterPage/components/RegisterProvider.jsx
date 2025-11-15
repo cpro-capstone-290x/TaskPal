@@ -100,6 +100,25 @@ const uploadValidID = async (file) => {
   return data.url;
 };
 
+const uploadBackgroundCheck = async (file) => {
+  if (!file) return null;
+
+  const API = `${import.meta.env.VITE_API_URL || "https://taskpal-14oy.onrender.com/api"}/providers/background-check`;
+
+  const form = new FormData();
+  form.append("file", file);
+  form.append("name", formData.name);
+  form.append("email", formData.email);
+
+  const res = await fetch(API, { method: "POST", body: form });
+  const data = await res.json();
+
+  if (!res.ok) throw new Error(data.error || "Failed to upload background check");
+
+  return data.url;
+};
+
+
 
 const uploadCompanyDocuments = async (files) => {
   if (!files || files.length === 0) return [];
@@ -142,7 +161,8 @@ const handleSubmit = async (e) => {
     "id_type",
     "id_number",
     "id_expiry",
-    "note"
+    "note",
+    "background_check_file"
   ];
 
   const missing = requiredFields.filter((field) => !formData[field]);
@@ -159,6 +179,15 @@ const handleSubmit = async (e) => {
     setStatus({ loading: false, error: "Password and Confirm Password must match.", success: false });
     return;
   }
+  if (!formData.background_check_file) {
+  setStatus({
+    loading: false,
+    error: "Please upload your background check document.",
+    success: false,
+  });
+  return;
+}
+
 
   // -------------------------------------------------------
   // 🔹 STEP 1 — Upload Valid Government ID
@@ -171,6 +200,17 @@ const handleSubmit = async (e) => {
     setStatus({ loading: false, error: "Failed to upload Valid ID. Please try again.", success: false });
     return;
   }
+
+  let background_check_url = null;
+
+  try {
+    background_check_url = await uploadBackgroundCheck(formData.background_check_file);
+  } catch (err) {
+    console.error("❌ Failed to upload background check:", err);
+    setStatus({ loading: false, error: "Failed to upload background check document.", success: false });
+    return;
+  }
+
 
   // -------------------------------------------------------
   // 🔹 STEP 2 — Upload Company Document (IF provider_type = company)
@@ -194,9 +234,10 @@ const handleSubmit = async (e) => {
   // -------------------------------------------------------
   // 🔹 STEP 3 — Build final payload
   // -------------------------------------------------------
-  const { confirm_password, valid_id_file, document, ...payload } = {
+  const { confirm_password, valid_id_file, document, background_check_file, ...payload } = {
     ...formData,
     valid_id_url,
+    background_check_url,
     company_documents: company_document_url, // <-- Added!!
     terms_accepted: true,
     terms_accepted_at: new Date().toISOString(),
@@ -400,6 +441,28 @@ const handleSubmit = async (e) => {
               required
             />
           </div>
+
+          {/* BACKGROUND CHECK SECTION */}
+          <div className="p-4 border border-gray-300 rounded-xl bg-gray-50">
+            <h2 className="text-lg font-semibold mb-3 text-gray-700">
+              Background Check Document <span className="text-red-500">*</span>
+            </h2>
+
+            <p className="text-xs text-gray-500 mb-2">
+              Accepted: Police clearance, vulnerable sector check, or any official background verification.
+            </p>
+
+            <input
+              type="file"
+              required
+              accept="image/*,application/pdf"
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, background_check_file: e.target.files[0] }))
+              }
+              className="w-full p-3 border border-gray-300 rounded-xl bg-white"
+            />
+          </div>
+
 
           <div className="flex flex-col">
           <label className="text-sm font-semibold text-gray-600 mb-1">

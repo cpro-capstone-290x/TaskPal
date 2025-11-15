@@ -361,3 +361,33 @@ export const uploadCompanyDocuments = async (req, res) => {
     return res.status(500).json({ error: "Upload failed" });
   }
 };
+
+export const uploadBackgroundCheck = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const { name, email } = req.body;
+
+    const safeName = slugify(name || email || "provider");
+    const ext = req.file.originalname.split(".").pop();
+    const fileName = `Provider-Background-Checks/${safeName}-${Date.now()}.${ext}`;
+
+    const blob = await put(fileName, req.file.buffer, {
+      access: "public",
+      contentType: req.file.mimetype,
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+    });
+
+    return res.json({
+      success: true,
+      url: blob.url,
+      message: "Background check uploaded successfully.",
+    });
+  } catch (err) {
+    console.error("❌ Background check upload failed:", err);
+    return res.status(500).json({ error: "Upload failed" });
+  }
+};
+

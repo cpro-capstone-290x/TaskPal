@@ -105,7 +105,8 @@ export const registerProvider = async (req, res) => {
     id_number,
     id_expiry,
     password,
-    terms_accepted
+    terms_accepted,
+    note
   } = req.body;
 
   if (!name || !provider_type || !service_type || !email || !password) {
@@ -151,7 +152,8 @@ export const registerProvider = async (req, res) => {
       id_expiry,
       password: hashed,
       terms_accepted: true,
-      terms_accepted_at: new Date().toISOString()
+      terms_accepted_at: new Date().toISOString(),
+      note
     };
 
     await sql`
@@ -419,6 +421,7 @@ export const verifyProviderOTP = async (req, res) => {
           password,
           terms_accepted,
           terms_accepted_at,
+          note,
           is_verified,
           created_at,
           updated_at
@@ -430,7 +433,7 @@ export const verifyProviderOTP = async (req, res) => {
           ${data.license_id},
           ${data.email},
           ${data.phone},
-          ${data.company_documents},
+          ${JSON.stringify(data.company_documents || [])}::jsonb,
           ${data.valid_id_url},
           ${data.id_type},
           ${data.id_number},
@@ -438,6 +441,7 @@ export const verifyProviderOTP = async (req, res) => {
           ${data.password},
           ${termsAccepted},
           ${termsAcceptedAt},
+          ${data.note},
           true,
           NOW(),
           NOW()

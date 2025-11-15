@@ -43,6 +43,8 @@ const RegisterProvider = ({ onSuccess }) => {
     insurance_expiry: "",
     insurance_document: null,
 
+    // 🔥 FIXED LOCATION FIELD
+  service_area: "Red Deer, Alberta",
   });
 
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -76,6 +78,7 @@ const RegisterProvider = ({ onSuccess }) => {
 const handleInsuranceFile = (e) => {
   setFormData((prev) => ({ ...prev, insurance_document: e.target.files[0] }));
 };
+
 
 
   // Upload Valid ID through backend
@@ -189,6 +192,7 @@ const handleSubmit = async (e) => {
     "service_type",
     "license_id",
     "phone",
+    "postal_code",
     "id_type",
     "id_number",
     "id_expiry",
@@ -198,6 +202,7 @@ const handleSubmit = async (e) => {
     "insurance_policy_number",
     "insurance_expiry",
     "insurance_document",
+    "service_area",
   ];
 
   const missing = requiredFields.filter((field) => !formData[field]);
@@ -218,6 +223,24 @@ const handleSubmit = async (e) => {
   setStatus({
     loading: false,
     error: "Please upload your background check document.",
+    success: false,
+  });
+  return;
+}
+
+// 🔹 VALIDATE RED DEER POSTAL CODE
+const postal = (formData.postal_code || "").toUpperCase().replace(/\s+/g, "");
+
+if (
+  !(
+    postal.startsWith("T4N") ||
+    postal.startsWith("T4P") ||
+    postal.startsWith("T4R")
+  )
+) {
+  setStatus({
+    loading: false,
+    error: "Sorry, TaskPal currently only supports Red Deer providers (Postal must start with T4N, T4P, or T4R).",
     success: false,
   });
   return;
@@ -419,12 +442,29 @@ const handleSubmit = async (e) => {
             />
           </div>
 
-          {/* emails and phone */}
+          {/* emails, phone and address */}
           <div className="grid md:grid-cols-2 gap-6">
-            <InputField label="Email" id="email" type="email" value={formData.email} onChange={handleChange} required />
+          <InputField label="Email" id="email" type="email" value={formData.email} onChange={handleChange} required />
 
-            <InputField label="Phone Number" id="phone" value={formData.phone} onChange={handleChange} required />
-          </div>
+          <InputField label="Phone Number" id="phone" value={formData.phone} onChange={handleChange} required />
+
+          <InputField
+            label="Postal Code"
+            id="postal_code"
+            value={formData.postal_code || ""}
+            onChange={handleChange}
+            required
+            placeholder="e.g., T4N 5E3"
+          />
+
+          <InputField
+            label="Service Area (Auto-Set)"
+            id="service_area"
+            value={formData.service_area}
+            onChange={() => {}}
+          />
+        </div>
+
 
           {/* password */}
           <div className="grid md:grid-cols-2 gap-6">

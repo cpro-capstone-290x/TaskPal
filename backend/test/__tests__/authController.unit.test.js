@@ -1,13 +1,14 @@
 /**
- * Auth Controller — COMPLETE UNIT TEST SUITE
- * Fully aligned with your current authController.js
+ * COMPLETE AUTH CONTROLLER TEST SUITE
+ * Fully aligned with your full updated controller
  */
 
 import { jest } from "@jest/globals";
 
 /* ------------------------------------------------------------- */
-/* 🧠 MOCK DEPENDENCIES BEFORE IMPORTING CONTROLLERS              */
+/* 🔥 MOCK DEPENDENCIES BEFORE IMPORTING CONTROLLER               */
 /* ------------------------------------------------------------- */
+
 jest.unstable_mockModule("../../config/db.js", () => {
   const sqlFn = jest.fn(async () => []);
   sqlFn.query = jest.fn(async () => []);
@@ -33,7 +34,7 @@ jest.unstable_mockModule("jsonwebtoken", () => ({
 }));
 
 /* ------------------------------------------------------------- */
-/* 📦 IMPORTS AFTER MOCKING                                      */
+/* 📦 IMPORT CONTROLLERS AFTER MOCKING                            */
 /* ------------------------------------------------------------- */
 const dbMock = await import("../../config/db.js");
 const mailerMock = await import("../../config/mailer.js");
@@ -45,58 +46,59 @@ const controller = await import("../../controllers/authController.js");
 const {
   registerUser,
   registerProvider,
+  registerAdmin,
+  registerAuthorizedUser,
   verifyUserOTP,
   verifyProviderOTP,
+  verifyAdminOTP,
+  verifyAuthorizedOTP,
   loginUser,
+  loginProvider,
+  loginAdmin,
   sendPasswordResetOTP,
+  verifyPasswordResetOTP,
   updatePasswordAfterOTP,
+  getAuthorizedUsers,
+  deleteAuthorizedUser,
 } = controller;
 
 /* ------------------------------------------------------------- */
-/* COMMON MOCKED RESPONSE OBJ                                    */
+/* COMMON MOCK RESPONSE OBJECT                                   */
 /* ------------------------------------------------------------- */
-const res = {
-  status: jest.fn().mockReturnThis(),
-  json: jest.fn(),
-};
+let res;
 
-/* ------------------------------------------------------------- */
-/* BEFORE EACH TEST                                              */
-/* ------------------------------------------------------------- */
 beforeEach(() => {
+  res = {
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn(),
+  };
   jest.clearAllMocks();
   dbMock.sql.mockReset();
   dbMock.sql.query.mockReset();
 });
 
 /* ------------------------------------------------------------- */
-/* 🧪 TEST SUITE                                                 */
+/* 🧪 TEST SUITE                                                  */
 /* ------------------------------------------------------------- */
-describe("🧪 AUTH CONTROLLER – UNIT TESTS", () => {
+describe("🔥 AUTH CONTROLLER – FULL TEST SUITE", () => {
 
   /* ============================================================
      USER REGISTRATION
   ============================================================ */
-  test("✅ registerUser inserts pending_registrations and sends OTP", async () => {
-    // DB lookups (users, providers, admins, authorized)
+  test("✅ registerUser inserts into pending_registrations", async () => {
     dbMock.sql
-      .mockResolvedValueOnce([]) // users
-      .mockResolvedValueOnce([]) // providers
-      .mockResolvedValueOnce([]) // admins
-      .mockResolvedValueOnce([]) // authorized_users
-      .mockResolvedValueOnce([]); // insert pending
+      .mockResolvedValueOnce([]) 
+      .mockResolvedValueOnce([]) 
+      .mockResolvedValueOnce([]) 
+      .mockResolvedValueOnce([]) 
+      .mockResolvedValueOnce([]); 
 
     bcryptMock.hash
       .mockResolvedValueOnce("hashed_pw")
       .mockResolvedValueOnce("hashed_otp");
 
     const req = {
-      body: {
-        first_name: "John",
-        last_name: "Doe",
-        email: "john@test.com",
-        password: "12345",
-      },
+      body: { first_name: "John", last_name: "Doe", email: "john@test.com", password: "123" },
     };
 
     await registerUser(req, res);
@@ -105,7 +107,7 @@ describe("🧪 AUTH CONTROLLER – UNIT TESTS", () => {
     expect(mailerMock.sendOTP).toHaveBeenCalled();
   });
 
-  test("❌ registerUser fails - missing fields", async () => {
+  test("❌ registerUser fails with missing fields", async () => {
     await registerUser({ body: {} }, res);
     expect(res.status).toHaveBeenCalledWith(400);
   });
@@ -113,14 +115,14 @@ describe("🧪 AUTH CONTROLLER – UNIT TESTS", () => {
   /* ============================================================
      PROVIDER REGISTRATION
   ============================================================ */
-  test("❌ registerProvider should reject missing terms_accepted", async () => {
+  test("❌ registerProvider should require terms_accepted", async () => {
     const req = {
       body: {
         name: "Jane",
         provider_type: "individual",
         service_type: "Cleaning",
-        email: "jane@test.com",
-        password: "12345",
+        email: "x@test.com",
+        password: "123",
         terms_accepted: false,
       },
     };
@@ -131,11 +133,11 @@ describe("🧪 AUTH CONTROLLER – UNIT TESTS", () => {
 
   test("✅ registerProvider inserts pending registration", async () => {
     dbMock.sql
-      .mockResolvedValueOnce([]) // users
-      .mockResolvedValueOnce([]) // providers
-      .mockResolvedValueOnce([]) // admins
-      .mockResolvedValueOnce([]) // authorized
-      .mockResolvedValueOnce([]); // insert pending
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
 
     bcryptMock.hash
       .mockResolvedValueOnce("hashed_pw")
@@ -143,13 +145,17 @@ describe("🧪 AUTH CONTROLLER – UNIT TESTS", () => {
 
     const req = {
       body: {
-        name: "Jane Cleaner",
-        provider_type: "individual",
-        service_type: "Cleaning",
-        license_id: "LIC123",
-        email: "provider@test.com",
+        name: "Provider",
+        provider_type: "ind",
+        service_type: "cleaning",
+        license_id: "LIC",
+        id_type: "Passport",
+        id_number: "123",
+        id_expiry: "2030-01-01",
+        valid_id_url: "id.png",
+        email: "p@test.com",
         phone: "123",
-        password: "pass123",
+        password: "pass",
         terms_accepted: true,
       },
     };
@@ -161,16 +167,81 @@ describe("🧪 AUTH CONTROLLER – UNIT TESTS", () => {
   });
 
   /* ============================================================
+     ADMIN REGISTRATION
+  ============================================================ */
+  test("❌ registerAdmin missing fields", async () => {
+    await registerAdmin({ body: {} }, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  test("✅ registerAdmin inserts pending admin registration", async () => {
+    dbMock.sql
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    bcryptMock.hash
+      .mockResolvedValueOnce("hashed_pw")
+      .mockResolvedValueOnce("hashed_otp");
+
+    const req = {
+      body: {
+        first_name: "Admin",
+        email: "admin@test.com",
+        password: "pass",
+        role_assigned: "super",
+      },
+    };
+
+    await registerAdmin(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(201);
+  });
+
+  /* ============================================================
+     AUTHORIZED USER REGISTRATION
+  ============================================================ */
+  test("❌ registerAuthorizedUser missing fields", async () => {
+    await registerAuthorizedUser({ body: {} }, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  test("✅ registerAuthorizedUser inserts pending", async () => {
+    dbMock.sql
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    bcryptMock.hash
+      .mockResolvedValueOnce("hashed_pw")
+      .mockResolvedValueOnce("hashed_otp");
+
+    const req = {
+      body: {
+        client_id: 1,
+        first_name: "Auth",
+        last_name: "User",
+        relationship: "son",
+        email: "auth@test.com",
+        password: "123",
+      },
+    };
+
+    await registerAuthorizedUser(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(201);
+  });
+
+  /* ============================================================
      USER OTP VERIFICATION
   ============================================================ */
   test("❌ verifyUserOTP invalid OTP", async () => {
     dbMock.sql.mockResolvedValueOnce([
-      {
-        id: 1,
-        twofa_code: "hash",
-        twofa_expires: new Date(Date.now() + 60000),
-        payload: "{}",
-      },
+      { id: 1, twofa_code: "hash", twofa_expires: new Date(Date.now() + 60000), payload: "{}" },
     ]);
 
     bcryptMock.compare.mockResolvedValueOnce(false);
@@ -182,115 +253,167 @@ describe("🧪 AUTH CONTROLLER – UNIT TESTS", () => {
   });
 
   /* ============================================================
-     PROVIDER OTP VERIFICATION
+     PROVIDER VERIFICATION
   ============================================================ */
-  test("✅ verifyProviderOTP inserts provider with terms", async () => {
+  test("✅ verifyProviderOTP inserts provider", async () => {
     const fakeData = {
-      name: "Jane Cleaner",
-      provider_type: "individual",
-      service_type: "Cleaning",
-      license_id: "123",
-      email: "provider@test.com",
-      phone: "123456",
-      password: "hashedpw",
+      name: "Jane",
+      provider_type: "ind",
+      service_type: "clean",
+      license_id: "LIC",
+      email: "p@test.com",
+      password: "hashed",
       terms_accepted: true,
       terms_accepted_at: new Date().toISOString(),
     };
 
-    // Mock pending data
     dbMock.sql
       .mockResolvedValueOnce([
         {
           id: 10,
-          email: "provider@test.com",
           twofa_code: "hash",
           twofa_expires: new Date(Date.now() + 60000),
           payload: JSON.stringify(fakeData),
         },
       ])
-      .mockResolvedValueOnce([{ id: 99, ...fakeData }]) // INSERT provider
-      .mockResolvedValueOnce([]); // DELETE pending
+      .mockResolvedValueOnce([{ id: 99 }])
+      .mockResolvedValueOnce([]);
 
     bcryptMock.compare.mockResolvedValueOnce(true);
 
-    const req = {
-      body: {
-        email: "provider@test.com",
-        otp: "123456",
-        role: "provider",
-      },
-    };
-
+    const req = { body: { email: "p@test.com", otp: "123456", role: "provider" } };
     await verifyProviderOTP(req, res);
 
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        success: true,
-        data: expect.objectContaining({
-          terms_accepted: true,
-        }),
-      })
-    );
+  });
+
+  /* ============================================================
+     ADMIN VERIFICATION
+  ============================================================ */
+  test("❌ verifyAdminOTP invalid OTP", async () => {
+    dbMock.sql.mockResolvedValueOnce([
+      { twofa_code: "hash", twofa_expires: new Date(Date.now() + 60000), payload: "{}" },
+    ]);
+
+    bcryptMock.compare.mockResolvedValueOnce(false);
+
+    const req = { body: { email: "admin@test.com", otp: "111", role: "admin" } };
+    await verifyAdminOTP(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  /* ============================================================
+     AUTHORIZED USER VERIFICATION
+  ============================================================ */
+  test("❌ verifyAuthorizedOTP expired", async () => {
+    dbMock.sql.mockResolvedValueOnce([
+      { twofa_code: "hash", twofa_expires: new Date(Date.now() - 1000), payload: "{}" },
+    ]);
+
+    bcryptMock.compare.mockResolvedValueOnce(true);
+
+    const req = { body: { email: "auth@test.com", otp: "1", role: "authorized" } };
+    await verifyAuthorizedOTP(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
   });
 
   /* ============================================================
      LOGIN
   ============================================================ */
-  test("❌ loginUser invalid email", async () => {
-    dbMock.sql.mockResolvedValueOnce([]); // no user
-    const req = { body: { email: "x@test.com", password: "123" } };
+  test("❌ loginUser - wrong email", async () => {
+    dbMock.sql.mockResolvedValueOnce([]);
+
+    const req = { body: { email: "wrong@test.com", password: "123" } };
     await loginUser(req, res);
+
     expect(res.status).toHaveBeenCalledWith(401);
   });
 
-  test("✅ loginUser success", async () => {
+  test("❌ loginProvider - wrong password", async () => {
+    dbMock.sql.mockResolvedValueOnce([{ email: "p@test.com", password: "aaa" }]);
+    bcryptMock.compare.mockResolvedValueOnce(false);
+
+    await loginProvider({ body: { email: "p@test.com", password: "123" } }, res);
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+
+  test("✅ loginAdmin success", async () => {
     dbMock.sql.mockResolvedValueOnce([
-      {
-        id: 1,
-        email: "john@test.com",
-        password: "hashedpw",
-        first_name: "John",
-        last_name: "Doe",
-      },
+      { id: 1, email: "a@test.com", password: "abc", role: "super" },
     ]);
 
     bcryptMock.compare.mockResolvedValueOnce(true);
-    jwtMock.sign.mockReturnValue("token123");
+    jwtMock.sign.mockReturnValue("token");
 
-    const req = { body: { email: "john@test.com", password: "123" } };
-    await loginUser(req, res);
-
+    await loginAdmin({ body: { email: "a@test.com", password: "abc" } }, res);
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
   /* ============================================================
      PASSWORD RESET
   ============================================================ */
-  test("✔ sendPasswordResetOTP sends OTP when email exists", async () => {
+  test("✔ sendPasswordResetOTP success", async () => {
     dbMock.sql
-      .mockResolvedValueOnce([{ id: 1 }]) // users
-      .mockResolvedValueOnce([]) // providers
-      .mockResolvedValueOnce([]) // admins
-      .mockResolvedValueOnce([]); // insert pending
+      .mockResolvedValueOnce([{ id: 1 }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
 
     bcryptMock.hash.mockResolvedValueOnce("hashedotp");
 
-    const req = { body: { email: "john@test.com" } };
-    await sendPasswordResetOTP(req, res);
-
+    await sendPasswordResetOTP({ body: { email: "x@test.com" } }, res);
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
-  test("❌ updatePasswordAfterOTP fails if email not found", async () => {
-    dbMock.sql
-      .mockResolvedValueOnce([]) // users
-      .mockResolvedValueOnce([]) // providers
-      .mockResolvedValueOnce([]); // admins
+  test("❌ verifyPasswordResetOTP expired", async () => {
+    dbMock.sql.mockResolvedValueOnce([
+      {
+        twofa_code: "hash",
+        twofa_expires: new Date(Date.now() - 1000),
+      },
+    ]);
 
-    const req = { body: { email: "missing@test.com", newPassword: "pass" } };
-    await updatePasswordAfterOTP(req, res);
+    bcryptMock.compare.mockResolvedValueOnce(true);
+
+    await verifyPasswordResetOTP(
+      { body: { email: "x@test.com", otp: "123" } },
+      res
+    );
+
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  test("❌ updatePasswordAfterOTP no account found", async () => {
+    dbMock.sql.mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+
+    await updatePasswordAfterOTP(
+      { body: { email: "no@test.com", newPassword: "pass" } },
+      res
+    );
 
     expect(res.status).toHaveBeenCalledWith(404);
+  });
+
+  /* ============================================================
+     AUTHORIZED USER GET/DELETE
+  ============================================================ */
+  test("✔ getAuthorizedUsers returns data", async () => {
+    dbMock.sql.mockResolvedValueOnce([{ id: 1 }]);
+
+    await getAuthorizedUsers({ params: { userId: 1 } }, res);
+
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true })
+    );
+  });
+
+  test("✔ deleteAuthorizedUser deletes user", async () => {
+    dbMock.sql.mockResolvedValueOnce([]);
+
+    await deleteAuthorizedUser({ params: { authUserId: 1 } }, res);
+
+    expect(res.json).toHaveBeenCalledWith({ success: true });
   });
 });

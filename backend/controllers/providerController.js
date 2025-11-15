@@ -9,6 +9,21 @@ function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+// In providerController.js (at the top, near imports)
+
+// Helper function to create safe filenames
+const slugify = (text) => {
+  if (!text) return "";
+  return text
+    .toString()
+    .toLowerCase()
+    .replace(/\s+/g, "-") // Replace spaces with -
+    .replace(/[^\w-]+/g, "") // Remove all non-word chars
+    .replace(/--+/g, "-") // Replace multiple - with single -
+    .replace(/^-+/, "") // Trim - from start
+    .replace(/-+$/, ""); // Trim - from end
+};
+
 export const getProviders = async (req, res) => {
     try {
         const provider = await sql`
@@ -257,5 +272,53 @@ export const uploadProviderProfilePicture = async (req, res) => {
   } catch (error) {
     console.error("❌ Upload failed:", error);
     return res.status(500).json({ success: false, message: "Upload failed" });
+  }
+};
+
+// 👇 ADD THIS NEW FUNCTION
+export const uploadValidId = async (req, res) => {
+  try {
+    // 1. Check for .env variable
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      console.error("❌ BLOB_READ_WRITE_TOKEN is not set in .env file!");
+      return res.status(500).json({ error: "Server upload configuration error" });
+    }
+    
+    // 2. Check for file
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    // 3. Get the name and ID details from req.body (sent from the form)
+    const { name, id_type, id_number } = req.body;
+
+    // 4. Create "safe" versions of the text using your slugify helper
+    const safeName = slugify(name || "provider");
+    const safeIdType = slugify(id_type || "id");
+    const safeIdNumber = slugify(id_number || Date.now()); // Use timestamp as fallback
+
+    // 5. Get the original file extension (e.g., "pdf" or "jpg")
+    const originalName = req.file.originalname || "file.dat";
+    const extension = originalName.split(".").pop() || "dat";
+
+    // 6. Create the new filename
+    const fileName = `Provider-ValidID/${safeName}_${safeIdType}_${safeIdNumber}.${extension}`;
+
+    // 7. Upload to Vercel Blob
+    const blob = await put(
+      fileName, // Use the new descriptive filename
+      req.file.buffer,
+      {
+        access: "public",
+        contentType: req.file.mimetype,
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      }
+    );
+
+    // 8. Return the new URL
+    return res.json({ success: true, url: blob.url });
+  } catch (err) {
+    console.error("❌ Upload failed:", err);
+    return res.status(500).json({ error: "Upload failed" });
   }
 };

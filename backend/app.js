@@ -191,4 +191,10 @@ app.get("/health", (req, res) => {
 /* -------------------------------------------------------------------------- */
 /* ✅ EXPORT FOR TESTING                                                     */
 /* -------------------------------------------------------------------------- */
+
+// 404 Handler
+app.use((req, res) => {
+  res.status(404).json({ error: "Route not found", path: req.originalUrl });
+});
+
 export default app;

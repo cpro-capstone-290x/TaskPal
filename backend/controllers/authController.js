@@ -4,6 +4,7 @@ import { sql } from '../config/db.js';
 import { sendOTP } from '../config/mailer.js'; // we'll make this helper
 
 
+
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
@@ -98,9 +99,12 @@ export const registerProvider = async (req, res) => {
     license_id, 
     email, 
     phone, 
-    document, 
+    valid_id_url,
+    id_type,
+    id_number,
+    id_expiry,
     password,
-    terms_accepted          // 🆕 from frontend
+    terms_accepted
   } = req.body;
 
   if (!name || !provider_type || !service_type || !email || !password) {
@@ -111,14 +115,18 @@ export const registerProvider = async (req, res) => {
     return res.status(400).json({ error: "You must agree to the Terms & Conditions before registering." });
   }
 
+  if (!valid_id_url || !id_type || !id_number || !id_expiry) {
+    return res.status(400).json({ error: "Valid ID, type, number and expiry are required." });
+  }
+
   try {
-    // check if already exists
     const [u,p,a,au] = await Promise.all([
       sql`SELECT 1 FROM users WHERE email = ${email}`,
       sql`SELECT 1 FROM providers WHERE email = ${email}`,
       sql`SELECT 1 FROM admins WHERE email = ${email}`,
       sql`SELECT 1 FROM authorized_users WHERE email = ${email}`
     ]);
+
     if (u.length || p.length || a.length || au.length) {
       return res.status(400).json({ error: "Email already exists" });
     }
@@ -135,9 +143,12 @@ export const registerProvider = async (req, res) => {
       license_id,
       email,
       phone,
-      document,
+      valid_id_url,
+      id_type,
+      id_number,
+      id_expiry,
       password: hashed,
-      terms_accepted: true,               // 🆕 stored in payload
+      terms_accepted: true,
       terms_accepted_at: new Date().toISOString()
     };
 
@@ -169,7 +180,9 @@ export const registerProvider = async (req, res) => {
     console.error("❌ Registration (provider) failed:", err);
     return res.status(500).json({ error: "Registration failed" });
   }
-}
+};
+
+
 
 
 export const registerAdmin = async (req, res) => {
@@ -397,6 +410,10 @@ export const verifyProviderOTP = async (req, res) => {
           email,
           phone,
           document,
+          valid_id_url,
+          id_type,
+          id_number,
+          id_expiry,
           password,
           terms_accepted,
           terms_accepted_at,
@@ -412,6 +429,10 @@ export const verifyProviderOTP = async (req, res) => {
           ${data.email},
           ${data.phone},
           ${data.document},
+          ${data.valid_id_url},
+          ${data.id_type},
+          ${data.id_number},
+          ${data.id_expiry},
           ${data.password},
           ${termsAccepted},
           ${termsAcceptedAt},
@@ -422,6 +443,7 @@ export const verifyProviderOTP = async (req, res) => {
         RETURNING *
       `;
     }
+
 
     await sql`DELETE FROM pending_registrations WHERE id = ${pending.id}`;
 

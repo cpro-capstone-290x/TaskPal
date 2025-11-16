@@ -2,6 +2,9 @@ services:
   backend:
     build:
       context: ./backend
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
     ports:
       - "5000:5000"
     env_file:
@@ -12,8 +15,9 @@ services:
   frontend:
     build:
       context: ./frontend
+      dockerfile: Dockerfile.prod
     ports:
-      - "80:80" # typically run frontend on port 80 in production
+      - "80:80"
     env_file:
       - ./frontend/.env.production
     environment:

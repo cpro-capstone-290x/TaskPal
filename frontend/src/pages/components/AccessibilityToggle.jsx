@@ -1,5 +1,5 @@
 // src/components/AccessibilityToggle.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 
 const API = axios.create({
@@ -18,52 +18,97 @@ function getToken() {
   );
 }
 
+function clampFontSize(v) {
+  const n = Number(v);
+  if (Number.isNaN(n)) return 100;
+  return Math.max(80, Math.min(200, n));
+}
+
 function applyToRoot(s) {
   const root = document.documentElement;
-  root.style.fontSize = `${s.fontSize}%`;
+  const fs = clampFontSize(s.fontSize);
+  root.style.fontSize = `${fs}%`;
   root.classList.toggle("accessible-readable", !!s.readableFont);
   root.classList.toggle("accessible-spacing", !!s.spacing);
 }
+
+const DEFAULTS = { fontSize: 100, readableFont: false, spacing: false };
 
 const AccessibilityToggle = () => {
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [dirty, setDirty] = useState(false);
-  const [settings, setSettings] = useState({ fontSize: 100, readableFont: false, spacing: false });
+  const [settings, setSettings] = useState(DEFAULTS);
 
-  const token = getToken();
-  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+  // Track the last-seen token so we can detect changes
+  const tokenRef = useRef(getToken());
 
-  // 1) Load once after login, then apply exactly once
-  useEffect(() => {
+  // Fetch from API and apply to DOM
+  const loadAndApply = async () => {
+    const token = getToken();
+    tokenRef.current = token;
+
     if (!token) {
+      applyToRoot(DEFAULTS);
+      setSettings(DEFAULTS);
       setLoaded(true);
-      applyToRoot({ fontSize: 100, readableFont: false, spacing: false });
       return;
     }
-    (async () => {
-      try {
-        const { data } = await API.get("/accessibility/me", { headers: authHeaders });
-        const s = data ?? { fontSize: 100, readableFont: false, spacing: false };
-        setSettings(s);
-        applyToRoot(s);
-      } catch {
-        const s = { fontSize: 100, readableFont: false, spacing: false };
-        setSettings(s);
-        applyToRoot(s);
-      } finally {
-        setLoaded(true);
+
+    try {
+      // RELATIVE path (baseURL already includes /api) → /api/accessibility/me
+      const { data } = await API.get("accessibility/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // be tolerant of camelCase / snake_case
+      const payload = data?.data ?? data ?? {};
+      const s = {
+        fontSize: clampFontSize(payload.fontSize ?? payload.font_size ?? 100),
+        readableFont: !!(payload.readableFont ?? payload.readable_font),
+        spacing: !!payload.spacing,
+      };
+
+      setSettings(s);
+      applyToRoot(s);
+    } catch {
+      setSettings(DEFAULTS);
+      applyToRoot(DEFAULTS);
+    } finally {
+      setLoaded(true);
+    }
+  };
+
+  // 1) Run on mount (covers refresh), and
+  // 2) Re-run immediately after login via an event we dispatch
+  // 3) Also re-check on storage/focus to be robust without changing other files
+  useEffect(() => {
+    loadAndApply();
+
+    const onAuthLogin = () => loadAndApply();
+    const onStorage = (e) => {
+      if (!e.key) return;
+      if (["token", "authToken", "jwt", "accessToken"].includes(e.key)) {
+        loadAndApply();
       }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+    };
+    const onFocus = () => {
+      const current = getToken();
+      if (current !== tokenRef.current) loadAndApply();
+    };
 
-  // Controls (apply immediately locally + mark dirty; save happens on button)
-  const increaseFont = () => setLocals({ fontSize: Math.min(160, settings.fontSize + 10) });
-  const decreaseFont = () => setLocals({ fontSize: Math.max(80, settings.fontSize - 10) });
-  const toggleReadable = () => setLocals({ readableFont: !settings.readableFont });
-  const toggleSpacing  = () => setLocals({ spacing: !settings.spacing });
+    window.addEventListener("auth:login", onAuthLogin);
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("focus", onFocus);
 
+    return () => {
+      window.removeEventListener("auth:login", onAuthLogin);
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, []);
+
+  // Helpers to update local state + mark dirty
   function setLocals(patch) {
     const next = { ...settings, ...patch };
     setSettings(next);
@@ -71,15 +116,24 @@ const AccessibilityToggle = () => {
     setDirty(true);
   }
 
+  // New: Restore to default (does NOT auto-save; lets user confirm via Save)
+  function handleRestoreDefaults() {
+    setLocals({ ...DEFAULTS });
+  }
+
   async function handleSave() {
+    const token = tokenRef.current;
     if (!token) return;
     try {
       const body = {
-        fontSize: settings.fontSize,
+        fontSize: clampFontSize(settings.fontSize),
         readableFont: settings.readableFont,
         spacing: settings.spacing,
       };
-      await API.patch("/accessibility", body, { headers: authHeaders });
+      // keep your original PATCH endpoint if that’s what your backend expects
+      await API.patch("/accessibility", body, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setDirty(false);
     } catch {
       // ignore; user keeps seeing local effect; can retry save
@@ -100,42 +154,87 @@ const AccessibilityToggle = () => {
       </button>
 
       {open && (
-        <div id="accessibility-panel" className="mt-3 bg-white rounded-2xl border border-gray-200 shadow-2xl p-5 w-72 space-y-4 animate-fadeIn">
+        <div
+          id="accessibility-panel"
+          className="mt-3 bg-white rounded-2xl border border-gray-200 shadow-2xl p-5 w-72 space-y-4 animate-fadeIn"
+        >
           <h2 className="text-lg font-semibold text-gray-800 mb-2 text-center border-b border-gray-100 pb-2">
             Accessibility Settings
           </h2>
 
-          {/* Font Size */}
-          <div className="flex justify-between items-center">
-            <span className="text-gray-700">Font Size</span>
-            <div className="space-x-2">
-              <button onClick={decreaseFont} className="px-3 py-1.5 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200">A-</button>
-              <button onClick={increaseFont} className="px-3 py-1.5 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200">A+</button>
+          {/* Font Size (Slider) */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-700">Font Size</span>
+              <span className="text-xs text-gray-500">{clampFontSize(settings.fontSize)}%</span>
+            </div>
+            <input
+              type="range"
+              min={80}
+              max={200}
+              step={2.5}
+              value={clampFontSize(settings.fontSize)}
+              onChange={(e) => setLocals({ fontSize: clampFontSize(e.target.value) })}
+              aria-label="Font size"
+              className="w-full accent-green-600"
+            />
+            <div className="flex justify-between text-xs text-gray-400">
+              <span>Smaller</span>
+              <span>Default</span>
+              <span>Larger</span>
             </div>
           </div>
 
           {/* Readable Font */}
           <label className="flex items-center justify-between cursor-pointer">
             <span className="text-gray-700">Readable Font</span>
-            <input type="checkbox" checked={settings.readableFont} onChange={toggleReadable} className="accent-green-600 scale-125" />
+            <input
+              type="checkbox"
+              checked={settings.readableFont}
+              onChange={() => setLocals({ readableFont: !settings.readableFont })}
+              className="accent-green-600 scale-125"
+            />
           </label>
 
           {/* Extra Spacing */}
           <label className="flex items-center justify-between cursor-pointer">
             <span className="text-gray-700">Extra Spacing</span>
-            <input type="checkbox" checked={settings.spacing} onChange={toggleSpacing} className="accent-green-700 scale-125" />
+            <input
+              type="checkbox"
+              checked={settings.spacing}
+              onChange={() => setLocals({ spacing: !settings.spacing })}
+              className="accent-green-700 scale-125"
+            />
           </label>
 
-          {/* Save button */}
-          <button
-            onClick={handleSave}
-            disabled={!dirty || !token}
-            className={`w-full mt-4 py-2 rounded-lg font-medium transition-colors ${
-              dirty ? "bg-green-700 text-white hover:bg-green-800" : "bg-gray-200 text-gray-500 cursor-not-allowed"
-            }`}
-          >
-            Save changes
-          </button>
+          {/* Actions: Save + Restore (side-by-side) */}
+          <div className="mt-2 flex items-center gap-3">
+            <button
+              onClick={handleSave}
+              disabled={!dirty || !tokenRef.current}
+              className={`flex-1 py-2 rounded-lg font-medium transition-colors ${
+                dirty && tokenRef.current
+                  ? "bg-green-700 text-white hover:bg-green-800"
+                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
+              }`}
+            >
+              Save changes
+            </button>
+
+            <button
+              onClick={handleRestoreDefaults}
+              className="flex-1 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50"
+              title="Restore font, readable font, and spacing to defaults"
+            >
+              Restore to Default
+            </button>
+          </div>
+
+          {!tokenRef.current && (
+            <p className="text-[11px] text-gray-500 mt-1">
+              Tip: Log in to sync settings to your account (otherwise they’re kept in this browser).
+            </p>
+          )}
         </div>
       )}
     </div>

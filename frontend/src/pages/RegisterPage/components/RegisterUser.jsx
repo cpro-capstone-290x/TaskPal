@@ -24,16 +24,24 @@ const RegisterUser = ({ onSuccess }) => {
     const [formData, setFormData] = useState({
         first_name: '',
         last_name: '',
-        type_of_user: 'senior_citizen', // default value
+        type_of_user: 'senior_citizen',
         email: '',
         password: '',
         confirm_password: '',
         unit_no: '',
         street: '',
         city: '',
-        province: 'Alberta', // default value
+        province: 'Alberta',
         postal_code: '',
+        date_of_birth: '',
+        gender: '',
+        assistance_level: '',
+        living_situation: '',
+        emergency_contact_name: '',
+        emergency_contact_relationship: '',
+        emergency_contact_phone: ''
     });
+
 
     // State for handling API status
     const [status, setStatus] = useState({
@@ -228,6 +236,68 @@ const RegisterUser = ({ onSuccess }) => {
                     </div>
 
                     <hr className="my-6 border-t border-gray-200" />
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <InputField
+                            label="Date of Birth"
+                            id="date_of_birth"
+                            type="date"
+                            value={formData.date_of_birth}
+                            onChange={handleChange}
+                            required
+                        />
+
+                        <div className="flex flex-col">
+                            <label className="text-sm font-semibold text-gray-600 mb-1 tracking-wide">
+                                Gender
+                            </label>
+                            <select
+                                id="gender"
+                                name="gender"
+                                value={formData.gender}
+                                onChange={handleChange}
+                                className="w-full p-3 border border-gray-300 rounded-xl bg-white shadow-inner"
+                            >
+                                <option value="">Select...</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="non_binary">Non-Binary</option>
+                                <option value="prefer_not">Prefer Not to Say</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col mt-4">
+                        <label className="text-sm font-semibold text-gray-600 mb-1 tracking-wide">
+                            Level of Assistance Required
+                        </label>
+                        <select
+                            id="assistance_level"
+                            name="assistance_level"
+                            value={formData.assistance_level}
+                            onChange={handleChange}
+                            className="w-full p-3 border border-gray-300 rounded-xl bg-white shadow-inner"
+                        >
+                            <option value="">Select...</option>
+                            <option value="low">Low</option>
+                            <option value="moderate">Moderate</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+
+
+                    <div className="mt-4">
+                        <InputField
+                            label="Living Situation"
+                            id="living_situation"
+                            value={formData.living_situation}
+                            onChange={handleChange}
+                            placeholder="e.g., Lives alone, with family, assisted living"
+                            required
+                        />
+                    </div>
+
+
+                    <hr className="my-6 border-t border-gray-200" />
                     <p className="text-sm text-gray-600 text-center">Please fill in your address details below:</p>
 
                     {/* 4. Address Information */}
@@ -276,7 +346,7 @@ const RegisterUser = ({ onSuccess }) => {
                         <select
                             id="province"
                             name="province"
-                            value="AB"
+                            value={formData.province}
                             onChange={handleChange}
                             required
                             disabled
@@ -285,6 +355,38 @@ const RegisterUser = ({ onSuccess }) => {
                             <option value="AB">Alberta</option>
                         </select>
                     </div>
+                    <hr className="my-6 border-t border-gray-200" />
+                    <p className="text-sm text-gray-600 text-center">In Case of Emergency</p>
+
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <InputField
+                            label="Emergency Contact Full Name"
+                            id="emergency_contact_name"
+                            value={formData.emergency_contact_name}
+                            onChange={handleChange}
+                            required
+                        />
+
+                        <InputField
+                            label="Relationship"
+                            id="emergency_contact_relationship"
+                            value={formData.emergency_contact_relationship}
+                            onChange={handleChange}
+                            required
+                        />
+                    </div>
+
+                    <InputField
+                        label="Emergency Contact Phone Number"
+                        id="emergency_contact_phone"
+                        type="tel"
+                        value={formData.emergency_contact_phone}
+                        onChange={handleChange}
+                        required
+                        placeholder="e.g., 587-555-1234"
+                    />
+
+
 
                     {/* Submit Button */}
                     <button

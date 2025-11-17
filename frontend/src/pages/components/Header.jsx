@@ -1,3 +1,4 @@
+// src/pages/components/Header.jsx
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
@@ -17,17 +18,17 @@ const BellIcon = (props) => (
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-    <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
   </svg>
 );
 
-const MessageIcon = (props) => (
+const CheckIcon = (props) => (
   <svg
     {...props}
     xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
+    width="16"
+    height="16"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -35,16 +36,16 @@ const MessageIcon = (props) => (
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    <polyline points="20 6 9 17 4 12" />
   </svg>
 );
 
-const CalendarIcon = (props) => (
+const MessageCircleIcon = (props) => (
   <svg
     {...props}
     xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
+    width="16"
+    height="16"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -52,19 +53,16 @@ const CalendarIcon = (props) => (
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
-    <line x1="16" x2="16" y1="2" y2="6" />
-    <line x1="8" x2="8" y1="2" y2="6" />
-    <line x1="3" x2="21" y1="10" y2="10" />
+    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
   </svg>
 );
 
-const DollarIcon = (props) => (
+const CalendarClockIcon = (props) => (
   <svg
     {...props}
     xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
+    width="16"
+    height="16"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -72,8 +70,692 @@ const DollarIcon = (props) => (
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <line x1="12" x2="12" y1="1" y2="23" />
-    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+    <line x1="16" y1="2" x2="16" y2="6" />
+    <line x1="8" y1="2" x2="8" y2="6" />
+    <line x1="3" y1="10" x2="21" y2="10" />
+    <path d="M16 14.5a3.5 3.5 0 1 1-3.5 3.5" />
+    <path d="M16 16v1.8l1.2.7" />
+  </svg>
+);
+
+const CreditCardIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="2" y="5" width="20" height="14" rx="2" />
+    <line x1="2" y1="10" x2="22" y2="10" />
+    <line x1="6" y1="15" x2="7" y2="15" />
+    <line x1="10" y1="15" x2="11" y2="15" />
+  </svg>
+);
+
+const AlertTriangleIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M21.73 18.87 13.82 4.26a2 2 0 0 0-3.54 0L2.27 18.87A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3.13Z" />
+    <line x1="12" y1="9" x2="12" y2="13" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
+  </svg>
+);
+
+const InfoIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="16" x2="12" y2="12" />
+    <line x1="12" y1="8" x2="12.01" y2="8" />
+  </svg>
+);
+
+const AlertCircleIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </svg>
+);
+
+const ClockIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </svg>
+);
+
+const MapPinIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0Z" />
+    <circle cx="12" cy="10" r="3" />
+  </svg>
+);
+
+const UsersIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+    <circle cx="8.5" cy="7" r="4" />
+    <path d="M20 8v6" />
+    <path d="M23 11h-6" />
+  </svg>
+);
+
+const BadgeCheckIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M7.5 4.21 12 2l4.5 2.21L20 6l.5 4L20 14l-3.5 2-4.5 2-4.5-2L4 14l-.5-4L4 6z" />
+    <path d="m9 12 2 2 4-4" />
+  </svg>
+);
+
+const CheckCircle2Icon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <polyline points="22 4 12 14.01 9 11.01" />
+  </svg>
+);
+
+const UserCheckIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M8 7a4 4 0 1 0 4-4 4 4 0 0 0-4 4Z" />
+    <path d="M2 21a6 6 0 0 1 12 0" />
+    <path d="m16 11 2 2 4-4" />
+  </svg>
+);
+
+const AlertOctagonIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </svg>
+);
+
+const BadgeDollarSignIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <path d="M10 17V9a2 2 0 0 1 2-2h.5a2.5 2.5 0 0 1 0 5H8" />
+  </svg>
+);
+
+const HandCoinsIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M18 15V5c0-1.1-.9-2-2-2h-5" />
+    <path d="M6 2H4c-1.1 0-2 .9-2 2v12" />
+    <path d="M2 20h4" />
+    <path d="M2 15h8a2 2 0 0 1 0 4h-2" />
+    <circle cx="16" cy="9" r="2" />
+  </svg>
+);
+
+const BadgePercentIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="7" cy="7" r="3" />
+    <path d="m13 11-4 4" />
+    <circle cx="17" cy="17" r="3" />
+  </svg>
+);
+
+const BadgeInfoIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="16" x2="12" y2="12" />
+    <line x1="12" y1="8" x2="12.01" y2="8" />
+  </svg>
+);
+
+const BadgeHelpIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Z" />
+    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+    <path d="M12 17h.01" />
+  </svg>
+);
+
+const ReceiptTextIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M4 2v20l4-2 4 2 4-2 4 2V2H4Z" />
+    <path d="M14 8H8" />
+    <path d="M16 12H8" />
+    <path d="M13 16H8" />
+  </svg>
+);
+
+const ShieldCheckIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+    <path d="m9 12 2 2 4-4" />
+  </svg>
+);
+
+const BadgeAlertIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </svg>
+);
+
+const BadgeXIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <path d="m15 9-6 6" />
+    <path d="m9 9 6 6" />
+  </svg>
+);
+
+const BadgeClockIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </svg>
+);
+
+const BadgeMessageIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M4 21v-4" />
+    <path d="M4 5v4" />
+    <path d="M20 5v4" />
+    <path d="M20 17v-4" />
+    <path d="M12 3v18" />
+    <path d="M17 8H7" />
+    <path d="M17 16H7" />
+  </svg>
+);
+
+const BadgeCalendarIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="3" y="4" width="18" height="18" rx="2" />
+    <line x1="16" y1="2" x2="16" y2="6" />
+    <line x1="8" y1="2" x2="8" y2="6" />
+    <line x1="3" y1="10" x2="21" y2="10" />
+    <path d="M8 14h.01" />
+    <path d="M12 14h.01" />
+    <path d="M16 14h.01" />
+    <path d="M8 18h.01" />
+    <path d="M12 18h.01" />
+    <path d="M16 18h.01" />
+  </svg>
+);
+
+const BadgeUserIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="8" r="4" />
+    <path d="M6 20a6 6 0 0 1 12 0" />
+  </svg>
+);
+
+const BadgeStarIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polygon points="12 2 15 8.5 22 9.5 17 14 18.5 21 12 17.5 5.5 21 7 14 2 9.5 9 8.5 12 2" />
+  </svg>
+);
+
+const BadgeLocationIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="10" r="3" />
+    <path d="M12 2C8 2 4 5 4 9c0 5 8 13 8 13s8-8 8-13c0-4-4-7-8-7z" />
+  </svg>
+);
+
+const BadgeBookingIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="3" y="4" width="18" height="18" rx="2" />
+    <path d="M16 2v4" />
+    <path d="M8 2v4" />
+    <line x1="3" y1="10" x2="21" y2="10" />
+    <path d="M9 14h6" />
+    <path d="M9 18h4" />
+  </svg>
+);
+
+const BadgeSupportIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <path d="M8 15a4 4 0 1 0 8 0" />
+    <path d="M9 9h.01" />
+    <path d="M15 9h.01" />
+  </svg>
+);
+
+const BadgeTaskIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="3" y="4" width="18" height="18" rx="2" />
+    <path d="M9 9h6" />
+    <path d="M9 13h4" />
+    <path d="M9 17h2" />
+    <path d="M7 2h10" />
+  </svg>
+);
+
+const BadgeAppointmentIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="3" y="4" width="18" height="18" rx="2" />
+    <path d="M16 2v4" />
+    <path d="M8 2v4" />
+    <line x1="3" y1="10" x2="21" y2="10" />
+    <circle cx="12" cy="16" r="3" />
+  </svg>
+);
+
+const BadgeAccessibilityIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="4" r="2" />
+    <path d="M10 22l2-6 2 6" />
+    <path d="M4 10l4 1 2 3h0l2-3 4-1" />
+    <path d="m2 10 4 12" />
+    <path d="m22 10-4 12" />
+  </svg>
+);
+
+const BadgeSettingsIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V22a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9.08 20a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+  </svg>
+);
+
+const BadgeSupportAgentIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="7" r="4" />
+    <path d="M6 21a6 6 0 0 1 12 0" />
+    <path d="M4 11h1a2 2 0 0 1 2 2v1" />
+    <path d="M20 11h-1a2 2 0 0 0-2 2v1" />
+  </svg>
+);
+
+const BadgeHelpCircleIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
+  </svg>
+);
+
+const BadgeLocationCheckIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="10" r="3" />
+    <path d="M12 2C8 2 4 5 4 9c0 5 8 13 8 13s8-8 8-13c0-4-4-7-8-7z" />
+    <polyline points="9 10 11 12 15 8" />
   </svg>
 );
 
@@ -84,45 +766,69 @@ function formatTimeAgo(isoDate) {
   const date = new Date(isoDate);
   const seconds = Math.floor((now - date) / 1000);
 
-  let interval = seconds / 31536000;
-  if (interval > 1) return Math.floor(interval) + 'y ago';
-  interval = seconds / 2592000;
-  if (interval > 1) return Math.floor(interval) + 'mo ago';
-  interval = seconds / 86400;
-  if (interval > 1) return Math.floor(interval) + 'd ago';
-  interval = seconds / 3600;
-  if (interval > 1) return Math.floor(interval) + 'h ago';
-  interval = seconds / 60;
-  if (interval > 1) return Math.floor(interval) + 'm ago';
-  return Math.floor(seconds) + 's ago';
+  if (seconds < 60) return 'Just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hr ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
+  const weeks = Math.floor(days / 7);
+  return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
 }
 
-function NotificationIcon({ type }) {
-  const iconProps = { size: 20, className: 'flex-shrink-0 w-5 h-5' };
+const NotificationIcon = ({ type }) => {
   switch (type) {
     case 'message':
-      return <MessageIcon {...iconProps} className="text-blue-500" />;
+      return (
+        <span className="p-2 rounded-full bg-sky-100 text-sky-600">
+          <MessageCircleIcon />
+        </span>
+      );
     case 'booking':
-      return <CalendarIcon {...iconProps} className="text-green-500" />;
+      return (
+        <span className="p-2 rounded-full bg-emerald-100 text-emerald-600">
+          <CalendarClockIcon />
+        </span>
+      );
     case 'payment':
-      return <DollarIcon {...iconProps} className="text-yellow-600" />;
+      return (
+        <span className="p-2 rounded-full bg-amber-100 text-amber-600">
+          <CreditCardIcon />
+        </span>
+      );
+    case 'warning':
+      return (
+        <span className="p-2 rounded-full bg-red-100 text-red-600">
+          <AlertTriangleIcon />
+        </span>
+      );
+    case 'info':
+      return (
+        <span className="p-2 rounded-full bg-slate-100 text-slate-600">
+          <InfoIcon />
+        </span>
+      );
     default:
-      return <BellIcon {...iconProps} className="text-gray-500" />;
+      return (
+        <span className="p-2 rounded-full bg-slate-100 text-slate-600">
+          <AlertCircleIcon />
+        </span>
+      );
   }
-}
+};
 
-function NotificationItem({ notification, onNotificationClick }) {
-  const isRead = notification.read;
+const NotificationCard = ({ notification, onClick, isRead }) => {
   return (
-    <li
-      className={`flex gap-4 p-4 transition-colors duration-150 cursor-pointer ${
+    <button
+      onClick={onClick}
+      className={`w-full flex items-start gap-3 rounded-xl px-3 py-2 text-left transition ${
         isRead
-          ? 'bg-white hover:bg-gray-50'
-          : 'bg-blue-50 hover:bg-blue-100'
+          ? 'bg-white hover:bg-slate-50'
+          : 'bg-sky-50 hover:bg-sky-100 border border-sky-100'
       }`}
-      onClick={() => onNotificationClick(notification)}
     >
-      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+      <div className="mt-1">
         <NotificationIcon type={notification.type} />
       </div>
       <div className="flex-1 overflow-hidden">
@@ -137,101 +843,159 @@ function NotificationItem({ notification, onNotificationClick }) {
         </p>
       </div>
       {!isRead && (
-        <div className="flex-shrink-0 flex items-center justify-center">
-          <div className="w-2.5 h-2.5 bg-blue-500 rounded-full"></div>
+        <div className="flex-shrink-0 mt-1">
+          <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
+            <ClockIcon className="h-3 w-3" />
+            New
+          </span>
         </div>
       )}
-    </li>
+    </button>
   );
-}
+};
 
-function NotificationBell({
+const NotificationBell = ({
   notifications,
   onNotificationClick,
   onMarkAllAsRead,
-}) {
+}) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [unreadIds, setUnreadIds] = useState([]);
   const dropdownRef = useRef(null);
-  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const unreadCount = unreadIds.length;
 
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target)
-      ) {
-        setIsOpen(false);
-      }
+    const ids = notifications
+      .filter((n) => n && n.id && !n.read)
+      .map((n) => n.id);
+    setUnreadIds(ids);
+  }, [notifications]);
+
+  const handleNotificationClick = (notification) => {
+    setUnreadIds((prev) => prev.filter((id) => id !== notification.id));
+    onNotificationClick(notification);
+    setIsOpen(false);
+  };
+
+  const handleMarkAllAsRead = () => {
+    setUnreadIds([]);
+    onMarkAllAsRead();
+  };
+
+  const handleClickOutside = useCallback((event) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      setIsOpen(false);
     }
-    document.addEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [dropdownRef]);
+  }, [isOpen, handleClickOutside]);
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative inline-block text-left" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 shadow-sm transition hover:border-sky-400 hover:text-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
+        aria-label="Notifications"
       >
-        <span className="sr-only">View notifications</span>
-        <BellIcon size={24} />
+        <BellIcon className="h-5 w-5" />
+
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 h-5 w-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-            {unreadCount}
+          <span className="absolute -right-0.5 -top-0.5 inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white shadow-sm">
+            {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
-      <div
-        className={`absolute top-12 right-0 w-80 sm:w-96 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50 transition-all duration-200 ease-out transform origin-top-right
-          ${
-            isOpen
-              ? 'opacity-100 scale-100'
-              : 'opacity-0 scale-95 pointer-events-none'
-          }`}
-      >
-        <div className="flex justify-between items-center p-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-800">Notifications</h3>
-          <button
-            onClick={() => {
-              onMarkAllAsRead();
-              setIsOpen(false);
-            }}
-            disabled={unreadCount === 0}
-            className="text-sm text-blue-500 hover:underline disabled:text-gray-400 disabled:no-underline"
-          >
-            Mark all as read
-          </button>
-        </div>
+      {isOpen && (
+          <div className="absolute left-1/2 -translate-x-1/2 sm:right-0 sm:left-auto sm:translate-x-0 z-50 mt-3 w-[90vw] max-w-sm sm:w-80 sm:max-w-none origin-top-right rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-black/5">
+          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-50 text-sky-600">
+                <BellIcon className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-slate-900">
+                  Notifications
+                </p>
+                <p className="text-xs text-slate-500">
+                  {unreadCount > 0
+                    ? `${unreadCount} unread`
+                    : 'You are all caught up'}
+                </p>
+              </div>
+            </div>
+            {unreadCount > 0 && (
+              <button
+                onClick={handleMarkAllAsRead}
+                className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700 hover:bg-sky-100"
+              >
+                <CheckIcon className="h-3 w-3" />
+                Mark all as read
+              </button>
+            )}
+          </div>
 
-        {notifications.length > 0 ? (
-          <ul className="max-h-96 overflow-y-auto divide-y divide-gray-100">
-            {notifications
-              .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-              .map((notification) => (
-                <NotificationItem
-                  key={notification.id}
-                  notification={notification}
-                  onNotificationClick={(notif) => {
-                    onNotificationClick(notif);
-                    setIsOpen(false);
-                  }}
-                />
-              ))}
-          </ul>
-        ) : (
-          <p className="p-8 text-center text-gray-500">
-            You have no new notifications.
-          </p>
-        )}
-      </div>
+          <div className="max-h-[60vh] divide-y divide-slate-100 overflow-y-auto">
+            {notifications.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-2 px-4 py-10 text-center">
+                <div className="relative">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-sky-50 text-sky-600">
+                    <BellIcon className="h-5 w-5" />
+                  </span>
+                  <span className="absolute -right-1 bottom-0 inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white">
+                    <CheckCircle2Icon className="h-3 w-3" />
+                  </span>
+                </div>
+                <p className="text-sm font-semibold text-slate-900">
+                  No notifications yet
+                </p>
+                <p className="text-xs text-slate-500">
+                  New updates about your bookings and tasks will appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {notifications.map((notification) => (
+                  <NotificationCard
+                    key={notification.id}
+                    notification={notification}
+                    onClick={() => handleNotificationClick(notification)}
+                    isRead={!unreadIds.includes(notification.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-slate-100 bg-slate-50/60 px-4 py-2.5">
+            <p className="flex items-center justify-between text-[11px] text-slate-500">
+              <span>Tip: Enable notifications so you don&apos;t miss updates.</span>
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+};
 
-// --- Your Header Component ---
+// --- Header Component ---
+
+const navLinks = [
+  { name: 'Home', path: '/' },
+  { name: 'Services', path: '/services' },
+  { name: 'Contact', path: '/contact' },
+];
 
 const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -241,7 +1005,6 @@ const Header = () => {
   const navigate = useNavigate();
   const socketRef = useRef(null);
 
-  // ✅ Check login status on load
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     const storedUserId = localStorage.getItem('userId');
@@ -253,169 +1016,164 @@ const Header = () => {
     }
   }, []);
 
-  // --- Notification Logic ---
-
-  // Function to add a new notification (called by WebSocket)
-  const addNotification = useCallback((notificationData) => {
-    const newNotification = {
-      id: Date.now(),
-      ...notificationData,
-      timestamp: new Date().toISOString(),
-      read: false,
-    };
-    setNotifications((prev) => [newNotification, ...prev]);
-  }, []);
-
-// ✅ NEW Function to mark as read AND navigate
-  const handleNotificationClick = useCallback((notification) => {
-    // 1. Mark as read in state
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n))
-    );
-
-    // 2. (Optional) Tell backend to mark as read
-    // fetch(`/api/notifications/${notification.id}/read`, { method: 'POST', ... });
-
-    // 3. Navigate if a booking_id exists
-    if (notification.booking_id && userRole) {
-      const pathRole = userRole === 'provider' ? 'provider' : 'user';
-      navigate(`/chat/${notification.booking_id}/${pathRole}`);
-    } else {
-      if (!notification.booking_id) {
-      console.warn("Navigation failed: notification.booking_id is missing.", notification);
-    } else if (!userRole) {
-      console.warn("Navigation failed: userRole is not set. Check localStorage!", { role: userRole });
-    } else {
-      console.warn("Navigation failed for an unknown reason.", { notification, userRole });
-    }
-    }
-  }, [navigate, userRole]); // Dependency on navigate
-
-  // Function to mark all notifications as read
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    // You should also tell your backend to mark all as read
-    // fetch(`/api/notifications/mark-all-read`, { method: 'POST', ... });
-  };
-
-  // ✅ Effect to fetch notifications and listen for real-time updates
-  useEffect(() => {
-    if (isLoggedIn && userId) {
-      // 1. FETCH EXISTING NOTIFICATIONS
-      // This is where you'd call your API
-      // fetch(`/api/notifications/user/${userId}`)
-      //   .then(res => res.json())
-      //   .then(data => setNotifications(data))
-      //   .catch(err => console.error("Failed to fetch notifications:", err));
-
-      // Making an initial load for demo purposes (remove this in production)
-      // setNotifications([
-      //   {
-      //     id: 1,
-      //     type: 'message',
-      //     title: 'Welcome!',
-      //     message: 'This is your notification center.',
-      //     timestamp: new Date().toISOString(),
-      //     read: false,
-      //   },
-      // ]);
-
-      // 2. SET UP WEBSOCKET LISTENER
-      // This is where you connect to Socket.IO or your WebSocket server
-      const socketUrl = "http://localhost:5000"; // Or "https://taskpal-14oy.onrender.com"
-      socketRef.current = io(socketUrl, {
-        transports: ['websocket', 'polling']
-      });
-      const socket = socketRef.current;
-
-      socket.on('connect', () => {
-        console.log("🔔 Connected to notification socket:", socket.id);
-        socket.emit('join_notification_room', { userId });
-      });
-
-      socket.on('connect_error', (err) => {
-        console.error('Socket connection error:', err.message);
-      });
-
-      // Listen for all our notification types
-      socket.on('new_message', (data) => {
-        addNotification(data);
-      });
-
-      // Listen for 'new_message' event from your server
-      // socket.on('new_message', (data) => {
-      //   addNotification({
-      //     type: 'message',
-      //     title: data.title || 'New Message',
-      //     message: data.message || `From: ${data.senderName}`,
-      //   });
-      // });
-      
-      socket.on('new_booking', (data) => {
-        addNotification(data);
-      });
-      socket.on('payment_agreed', (data) => {
-        addNotification(data);
-      });
-      socket.on('booking_cancelled', (data) => { // <-- ADDED LISTENER
-        addNotification(data);
-      });
-
-      // Clean up the listener when the component unmounts or user logs out
-      return () => {
-        console.log("Disconnecting notif socket...")
-        socket.off('new_message');
-        socket.off('new_booking');
-        socket.off('payment_agreed');
-        socket.off('booking_cancelled'); // <-- ADDED CLEANUP
-        socket.disconnect();
-      };
-
-    } else {
-      // If user logs out, clear notifications
-      setNotifications([]);
-      if (socketRef.current) {
-         socketRef.current.disconnect();
-         socketRef.current = null;
-      }
-    }
-  }, [isLoggedIn, userId, addNotification]); // Dependencies
-
-
-  // ✅ Handle logout
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userId');
     localStorage.removeItem('userRole');
-    localStorage.removeItem('pendingRedirect');
+
     setIsLoggedIn(false);
-    setUserId(null); // Clear userId from state
-    setUserRole(null); // Clear userRole from state
-    console.log('👋 You have been logged out successfully.'); // Replaced alert
-    navigate('/');
+    setUserId(null);
+    setUserRole(null);
+
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
+
+    navigate('/login');
   };
 
-  const navLinks = [
-    { name: 'Home', path: '/' },
-    { name: 'About', path: '/about' },
-    { name: 'Services', path: '/services' },
-    { name: 'Contact', path: '/contact' },
-  ];
+  useEffect(() => {
+    if (isLoggedIn && userId) {
+      const socket = io(import.meta.env.VITE_API_URL, {
+        transports: ['websocket', 'polling'],
+        withCredentials: true,
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 2000,
+      });
 
+      socketRef.current = socket;
+
+      socket.emit('register', { userId });
+
+      socket.on('new_message', (data) => {
+        setNotifications((prev) => [
+          {
+            id: `msg_${Date.now()}`,
+            type: 'message',
+            title: 'New message received',
+            message: data?.message || 'You have a new message',
+            timestamp: new Date().toISOString(),
+          },
+          ...prev,
+        ]);
+      });
+
+      socket.on('new_booking', (data) => {
+        setNotifications((prev) => [
+          {
+            id: `booking_${Date.now()}`,
+            type: 'booking',
+            title: 'New booking request',
+            message:
+              data?.bookingDetails ||
+              'You have a new booking request (details may vary).',
+            timestamp: new Date().toISOString(),
+          },
+          ...prev,
+        ]);
+      });
+
+      socket.on('payment_agreed', (data) => {
+        setNotifications((prev) => [
+          {
+            id: `payment_${Date.now()}`,
+            type: 'payment',
+            title: 'Payment agreed',
+            message:
+              data?.message ||
+              'A customer has agreed to your payment terms. Please review.',
+            timestamp: new Date().toISOString(),
+          },
+          ...prev,
+        ]);
+      });
+
+      socket.on('booking_cancelled', (data) => {
+        setNotifications((prev) => [
+          {
+            id: `cancel_${Date.now()}`,
+            type: 'warning',
+            title: 'Booking cancelled',
+            message:
+              data?.message ||
+              'A booking has been cancelled. Check the details on your dashboard.',
+            timestamp: new Date().toISOString(),
+          },
+          ...prev,
+        ]);
+      });
+
+      return () => {
+        socket.off('new_message');
+        socket.off('new_booking');
+        socket.off('payment_agreed');
+        socket.off('booking_cancelled');
+        socket.disconnect();
+      };
+    } else {
+      setNotifications([]);
+
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    }
+  }, [isLoggedIn, userId]);
+
+  const handleNotificationClick = (notification) => {
+    if (!notification) return;
+
+    switch (notification.type) {
+      case 'message':
+        navigate('/chat');
+        break;
+      case 'booking':
+        if (userRole === 'provider') {
+          navigate('/profileProvider');
+        } else {
+          navigate('/bookings');
+        }
+        break;
+      case 'payment':
+        if (userRole === 'provider') {
+          navigate('/profileProvider');
+        } else {
+          navigate('/payments');
+        }
+        break;
+      case 'warning':
+      case 'info':
+      default:
+        if (userRole === 'provider') {
+          navigate('/profileProvider');
+        } else {
+          navigate('/profile');
+        }
+        break;
+    }
+  };
+
+  const markAllAsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
+  // Responsive, mobile-friendly header layout
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
-      <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+      <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-y-3">
         {/* Logo */}
         <div
-          className="text-2xl font-extrabold text-primary tracking-tight cursor-pointer"
+          className="text-xl sm:text-2xl font-extrabold text-primary tracking-tight cursor-pointer"
           onClick={() => navigate('/')}
         >
           <span className="text-secondary">Task</span>Pal
         </div>
 
         {/* Navigation */}
-        <nav>
-          <ul className="flex space-x-6 items-center">
+        <nav className="w-full sm:w-auto">
+          <ul className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 text-sm sm:text-base">
             {/* Static links */}
             {navLinks.map((link) => (
               <li key={link.name}>
@@ -429,10 +1187,10 @@ const Header = () => {
             ))}
 
             {/* Auth-based actions */}
-            <li className="flex items-center space-x-4">
+            <li className="flex flex-wrap items-center gap-3">
               {isLoggedIn ? (
                 <>
-                  {/* --- NOTIFICATION BELL ADDED HERE --- */}
+                  {/* Notification Bell */}
                   <NotificationBell
                     notifications={notifications}
                     onNotificationClick={handleNotificationClick}
@@ -462,7 +1220,7 @@ const Header = () => {
               ) : (
                 <Link
                   to="/login"
-                  className="px-4 py-2 rounded-full bg-sky-600 text-white font-semibold hover:bg-sky-700 transition"
+                  className="px-4 py-2 rounded-full bg-sky-600 text-white font-semibold hover:bg-sky-700 transition w-full sm:w-auto text-center"
                 >
                   Login
                 </Link>

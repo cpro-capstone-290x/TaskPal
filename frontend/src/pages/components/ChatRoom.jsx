@@ -832,7 +832,7 @@ useEffect(() => {
 
                       {/* Bio */}
                       <p className="mt-4 text-gray-700 leading-relaxed">
-                        {providerDetails.bio ||
+                        {providerDetails.notes ||
                           "This provider hasn’t written a bio yet."}
                       </p>
                     </div>

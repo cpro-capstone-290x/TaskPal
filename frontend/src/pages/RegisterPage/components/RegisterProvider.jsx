@@ -641,11 +641,14 @@ if (
 
           <button
             type="submit"
-            disabled={status.loading}
-            className="w-full py-3 mt-6 bg-sky-600 text-white font-extrabold text-lg rounded-xl shadow-lg hover:bg-sky-700"
+            disabled={status.loading || !termsAccepted}
+            className={`w-full py-3 mt-6 text-white font-extrabold text-lg rounded-xl shadow-lg 
+              ${!termsAccepted ? "bg-gray-400 cursor-not-allowed" : "bg-sky-600 hover:bg-sky-700"}
+            `}
           >
             {status.loading ? "Registering..." : "Complete Registration"}
           </button>
+
         </form>
       </div>
       

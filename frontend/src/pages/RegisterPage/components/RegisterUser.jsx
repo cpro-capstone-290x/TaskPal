@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DocumentUploadField from './DocumentUploadField';
+import UserTerms from './UserTerms';
 
 
 const InputField = ({ label, id, type = 'text', value, onChange, required = false, placeholder = '' }) => (
@@ -47,6 +48,10 @@ const RegisterUser = ({ onSuccess }) => {
     const [pwdFile, setPwdFile] = useState(null);
 
     const [uploading, setUploading] = useState(false);
+
+    const [showTerms, setShowTerms] = useState(false);
+    const [termsAccepted, setTermsAccepted] = useState(false);
+
 
 
 
@@ -108,79 +113,58 @@ const RegisterUser = ({ onSuccess }) => {
     // Function to handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setStatus({ loading: true, error: null, success: false });
+        setStatus({ loading: true, error: null });
 
-        // Basic client-side validation for mandatory fields
-        const requiredFields = ['first_name', 'last_name', 'email', 'password', 'confirm_password', 'type_of_user', 'unit_no', 'street', 'city', 'province', 'postal_code'];
-        const missingFields = requiredFields.filter(field => !formData[field]);
-
-        if (missingFields.length > 0) {
-            setStatus({
-                loading: false,
-                error: `Please fill out all required fields: ${missingFields.join(', ')}`,
-                success: false
-            });
-            return;
-        }
-        
-        if (formData.password !== formData.confirm_password) {
-            setStatus({
-                loading: false,
-                error: "Password and Confirm Password must match.",
-                success: false
-            });
+        // Validate Terms
+        if (!termsAccepted) {
+            setStatus({ loading: false, error: "You must accept the Terms & Conditions." });
             return;
         }
 
+        // Validate documents
+        if (formData.type_of_user === "senior_citizen" && !formData.id_document_url) {
+            setStatus({ loading: false, error: "Please upload a valid Senior ID." });
+            return;
+        }
 
-        const { confirm_password, ...restFormData } = formData;
-        
-        // const API_ENDPOINT = 'http://localhost:5000/api/auth/registerUser';
+        if (formData.type_of_user === "pwd" && !formData.pwd_document_url) {
+            setStatus({ loading: false, error: "Please upload a PWD document." });
+            return;
+        }
+
+        const payload = {
+            ...formData,
+            terms_accepted: termsAccepted,
+            id_document_url: formData.id_document_url || null,
+            pwd_document_url: formData.pwd_document_url || null,
+        };
+
         const API_ENDPOINT = import.meta.env.VITE_API_URL
             ? `${import.meta.env.VITE_API_URL}/auth/registerUser`
             : "https://taskpal-14oy.onrender.com/api/auth/registerUser";
 
-
         try {
             const response = await fetch(API_ENDPOINT, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData),
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
             });
 
             const result = await response.json();
 
             if (!response.ok) {
-                // Handle the specific 'Email already exists' error (400) or general errors (500)
-                const errorMessage = result.error || 'Registration failed due to an unknown error.';
-                setStatus({ loading: false, error: errorMessage, success: false });
+                setStatus({ loading: false, error: result.error });
                 return;
             }
 
-            // Success handling
-            setStatus({ loading: false, error: null, success: true });
-            console.log('User registered successfully:', result.data);
-
-            // Clear form (keeping default user type)
-            setFormData({
-                first_name: '', last_name: '', type_of_user: 'senior_citizen', email: '', password: '', confirm_password: '',
-                unit_no: '', street: '', city: '', province: 'Alberta', postal_code: '',
-            });
-
-            // ✅ Redirect to OTP page
+            setStatus({ loading: false, success: true });
             onSuccess({ email: formData.email });
 
-        } catch (error) {
-            console.error('Network or unexpected error:', error);
-            setStatus({
-                loading: false,
-                error: 'Could not connect to the server. Please check your connection.',
-                success: false
-            });
+        } catch (err) {
+            setStatus({ loading: false, error: "Network error occurred." });
         }
     };
+
 
     return (
         <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 font-sans">
@@ -455,12 +439,32 @@ const RegisterUser = ({ onSuccess }) => {
                         placeholder="e.g., 587-555-1234"
                     />
 
-
+                    <div className="flex items-center gap-3 mt-4">
+                    <input
+                        type="checkbox"
+                        checked={termsAccepted}
+                        onChange={(e) => {
+                        if (e.target.checked) setShowTerms(true);
+                        else setTermsAccepted(false);
+                        }}
+                        className="w-5 h-5"
+                    />
+                    <label className="text-gray-700 font-medium">
+                        I have read and agree to the{" "}
+                        <button
+                        type="button"
+                        onClick={() => setShowTerms(true)}
+                        className="text-sky-600 underline hover:text-sky-800"
+                        >
+                        Terms & Conditions
+                        </button>
+                    </label>
+                    </div>
 
                     {/* Submit Button */}
                     <button
                         type="submit"
-                        disabled={status.loading || uploading}
+                        disabled={status.loading || uploading || !termsAccepted}
                         className="w-full py-3 mt-10 bg-sky-600 text-white font-extrabold text-lg rounded-xl shadow-lg shadow-sky-300/50 hover:bg-sky-700 disabled:bg-sky-400 transition-all duration-300 ease-in-out transform hover:scale-[1.01] hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-sky-500 focus:ring-opacity-70"
                     >
                         {status.loading ? (
@@ -476,8 +480,20 @@ const RegisterUser = ({ onSuccess }) => {
                         )}
                     </button>
                 </form>
-            </div>
-        </div>
+                </div>
+
+                {/* ⭐ Terms & Conditions Modal */}
+                <UserTerms
+                open={showTerms}
+                onClose={() => setShowTerms(false)}
+                onAccept={() => {
+                    setTermsAccepted(true);
+                    setShowTerms(false);
+                }}
+                />
+
+                </div>
+
     );
 };
 

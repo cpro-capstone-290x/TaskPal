@@ -32,11 +32,16 @@ export const registerUser = async (req, res) => {
     emergency_contact_phone,
     id_document_url,
     pwd_document_url,
+    terms_accepted
   } = req.body;
 
 
   if (!first_name || !last_name || !email || !password) {
     return res.status(400).json({ error: "First name, last name, email and password are required" });
+  }
+
+  if (!terms_accepted) {
+  return res.status(400).json({ error: "You must agree to the Terms & Conditions." });
   }
 
   try {
@@ -77,6 +82,8 @@ export const registerUser = async (req, res) => {
     emergency_contact_phone,
     id_document_url,
     pwd_document_url,
+    terms_accepted,
+    terms_accepted_at: new Date().toISOString(),
   };
 
 
@@ -375,21 +382,57 @@ export const verifyUserOTP = async (req, res) => {
     let result;
     if (role === "user") {
       result = await sql`
-        INSERT INTO users (
-          first_name, last_name, type_of_user, email, password,
-          unit_no, street, city, province, postal_code,
-          date_of_birth, gender, assistance_level, living_situation,
-          emergency_contact_name, emergency_contact_relationship, emergency_contact_phone,
-          id_document_url, pwd_document_url,
-          is_verified, created_at, updated_at
+      INSERT INTO users (
+          first_name,
+          last_name,
+          type_of_user,
+          email,
+          password,
+          unit_no,
+          street,
+          city,
+          province,
+          postal_code,
+          date_of_birth,
+          gender,
+          assistance_level,
+          living_situation,
+          emergency_contact_name,
+          emergency_contact_relationship,
+          emergency_contact_phone,
+          id_document_url,
+          pwd_document_url,
+          terms_accepted,
+          terms_accepted_at,
+          is_verified,
+          created_at,
+          updated_at
         )
         VALUES (
-          ${data.first_name}, ${data.last_name}, ${data.type_of_user}, ${data.email}, ${data.password},
-          ${data.unit_no}, ${data.street}, ${data.city}, ${data.province}, ${data.postal_code},
-          ${data.date_of_birth}, ${data.gender}, ${data.assistance_level}, ${data.living_situation},
-          ${data.emergency_contact_name}, ${data.emergency_contact_relationship}, ${data.emergency_contact_phone},
-          ${data.id_document_url}, ${data.pwd_document_url},
-          true, NOW(), NOW()
+          ${data.first_name},
+          ${data.last_name},
+          ${data.type_of_user},
+          ${data.email},
+          ${data.password},
+          ${data.unit_no},
+          ${data.street},
+          ${data.city},
+          ${data.province},
+          ${data.postal_code},
+          ${data.date_of_birth},
+          ${data.gender},
+          ${data.assistance_level},
+          ${data.living_situation},
+          ${data.emergency_contact_name},
+          ${data.emergency_contact_relationship},
+          ${data.emergency_contact_phone},
+          ${data.id_document_url},
+          ${data.pwd_document_url},
+          ${data.terms_accepted},
+          ${data.terms_accepted_at},
+          true,
+          NOW(),
+          NOW()
         )
         RETURNING *
       `;

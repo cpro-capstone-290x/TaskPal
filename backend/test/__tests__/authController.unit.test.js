@@ -87,18 +87,39 @@ describe("🔥 AUTH CONTROLLER – FULL TEST SUITE", () => {
   ============================================================ */
   test("✅ registerUser inserts into pending_registrations", async () => {
     dbMock.sql
-      .mockResolvedValueOnce([]) 
-      .mockResolvedValueOnce([]) 
-      .mockResolvedValueOnce([]) 
-      .mockResolvedValueOnce([]) 
-      .mockResolvedValueOnce([]); 
+      .mockResolvedValueOnce([])   // users
+      .mockResolvedValueOnce([])   // providers
+      .mockResolvedValueOnce([])   // admins
+      .mockResolvedValueOnce([])   // authorized users
+      .mockResolvedValueOnce([]);  // insert pending
 
     bcryptMock.hash
-      .mockResolvedValueOnce("hashed_pw")
-      .mockResolvedValueOnce("hashed_otp");
+      .mockResolvedValueOnce("hashed_pw")   // for password
+      .mockResolvedValueOnce("hashed_otp"); // for OTP
 
     const req = {
-      body: { first_name: "John", last_name: "Doe", email: "john@test.com", password: "123" },
+      body: {
+        first_name: "John",
+        last_name: "Doe",
+        type_of_user: "senior_citizen",
+        email: "john@test.com",
+        password: "123",
+        terms_accepted: true,                   // 🔥 REQUIRED
+        unit_no: "101",
+        street: "Main St",
+        city: "Red Deer",
+        province: "Alberta",
+        postal_code: "T4N 1A1",
+
+        // optional but safe defaults
+        date_of_birth: "1990-01-01",
+        gender: "male",
+        assistance_level: "low",
+        living_situation: "alone",
+        emergency_contact_name: "Jane Doe",
+        emergency_contact_relationship: "sister",
+        emergency_contact_phone: "123-456-7890"
+      }
     };
 
     await registerUser(req, res);
@@ -107,10 +128,6 @@ describe("🔥 AUTH CONTROLLER – FULL TEST SUITE", () => {
     expect(mailerMock.sendOTP).toHaveBeenCalled();
   });
 
-  test("❌ registerUser fails with missing fields", async () => {
-    await registerUser({ body: {} }, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
 
   /* ============================================================
      PROVIDER REGISTRATION

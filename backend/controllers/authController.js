@@ -22,8 +22,16 @@ export const registerUser = async (req, res) => {
     street,
     city,
     province,
-    postal_code
+    postal_code,
+    date_of_birth,
+    gender,
+    assistance_level,
+    living_situation,
+    emergency_contact_name,
+    emergency_contact_relationship,
+    emergency_contact_phone
   } = req.body;
+
 
   if (!first_name || !last_name || !email || !password) {
     return res.status(400).json({ error: "First name, last name, email and password are required" });
@@ -46,19 +54,27 @@ export const registerUser = async (req, res) => {
     const hashedOtp = await bcrypt.hash(otp, 6);
 
     // ✅ THIS is the correct user payload
-    const payload = {
-      role,
-      first_name,
-      last_name,
-      type_of_user,
-      email,
-      password: hashed,
-      unit_no,
-      street,
-      city,
-      province,
-      postal_code
-    };
+  const payload = {
+    role,
+    first_name,
+    last_name,
+    type_of_user,
+    email,
+    password: hashed,
+    unit_no,
+    street,
+    city,
+    province,
+    postal_code,
+    date_of_birth,
+    gender,
+    assistance_level,
+    living_situation,
+    emergency_contact_name,
+    emergency_contact_relationship,
+    emergency_contact_phone
+  };
+
 
     await sql`
       INSERT INTO pending_registrations (role, email, payload, twofa_code, twofa_expires)
@@ -358,13 +374,18 @@ export const verifyUserOTP = async (req, res) => {
         INSERT INTO users (
           first_name, last_name, type_of_user, email, password,
           unit_no, street, city, province, postal_code,
+          date_of_birth, gender, assistance_level, living_situation,
+          emergency_contact_name, emergency_contact_relationship, emergency_contact_phone,
           is_verified, created_at, updated_at
         )
         VALUES (
           ${data.first_name}, ${data.last_name}, ${data.type_of_user}, ${data.email}, ${data.password},
           ${data.unit_no}, ${data.street}, ${data.city}, ${data.province}, ${data.postal_code},
+          ${data.date_of_birth}, ${data.gender}, ${data.assistance_level}, ${data.living_situation},
+          ${data.emergency_contact_name}, ${data.emergency_contact_relationship}, ${data.emergency_contact_phone},
           true, NOW(), NOW()
-        ) RETURNING *
+        )
+        RETURNING *
       `;
     }
 

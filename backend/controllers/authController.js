@@ -29,7 +29,9 @@ export const registerUser = async (req, res) => {
     living_situation,
     emergency_contact_name,
     emergency_contact_relationship,
-    emergency_contact_phone
+    emergency_contact_phone,
+    id_document_url,
+    pwd_document_url,
   } = req.body;
 
 
@@ -72,7 +74,9 @@ export const registerUser = async (req, res) => {
     living_situation,
     emergency_contact_name,
     emergency_contact_relationship,
-    emergency_contact_phone
+    emergency_contact_phone,
+    id_document_url,
+    pwd_document_url,
   };
 
 
@@ -376,6 +380,7 @@ export const verifyUserOTP = async (req, res) => {
           unit_no, street, city, province, postal_code,
           date_of_birth, gender, assistance_level, living_situation,
           emergency_contact_name, emergency_contact_relationship, emergency_contact_phone,
+          id_document_url, pwd_document_url,
           is_verified, created_at, updated_at
         )
         VALUES (
@@ -383,6 +388,7 @@ export const verifyUserOTP = async (req, res) => {
           ${data.unit_no}, ${data.street}, ${data.city}, ${data.province}, ${data.postal_code},
           ${data.date_of_birth}, ${data.gender}, ${data.assistance_level}, ${data.living_situation},
           ${data.emergency_contact_name}, ${data.emergency_contact_relationship}, ${data.emergency_contact_phone},
+          ${data.id_document_url}, ${data.pwd_document_url},
           true, NOW(), NOW()
         )
         RETURNING *

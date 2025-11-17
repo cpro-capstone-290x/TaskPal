@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import DocumentUploadField from './DocumentUploadField';
 
 
 const InputField = ({ label, id, type = 'text', value, onChange, required = false, placeholder = '' }) => (
@@ -42,6 +43,12 @@ const RegisterUser = ({ onSuccess }) => {
         emergency_contact_phone: ''
     });
 
+    const [idFile, setIdFile] = useState(null);
+    const [pwdFile, setPwdFile] = useState(null);
+
+    const [uploading, setUploading] = useState(false);
+
+
 
     // State for handling API status
     const [status, setStatus] = useState({
@@ -59,6 +66,44 @@ const RegisterUser = ({ onSuccess }) => {
     };
 
     const navigate = useNavigate();
+
+    const handleFileUpload = async (file, type) => {
+        if (!file) return;
+
+        setUploading(true);
+
+        const formDataUpload = new FormData();
+        formDataUpload.append("file", file);
+        formDataUpload.append("type", type);
+
+        // ⛔ Requires temporary fake ID before OTP verification
+        const tempUserId = "temp";
+
+        const API = import.meta.env.VITE_API_URL
+            ? `${import.meta.env.VITE_API_URL}/users/${tempUserId}/user-document`
+            : `https://taskpal-14oy.onrender.com/api/users/${tempUserId}/user-document`;
+
+        const res = await fetch(API, {
+            method: "POST",
+            body: formDataUpload,
+        });
+
+        const data = await res.json();
+        setUploading(false);
+
+        if (!data.url) {
+            alert("Upload failed.");
+            return;
+        }
+
+        if (type === "senior_id") {
+            setFormData(prev => ({ ...prev, id_document_url: data.url }));
+        } else {
+            setFormData(prev => ({ ...prev, pwd_document_url: data.url }));
+        }
+    };
+
+
 
     // Function to handle form submission
     const handleSubmit = async (e) => {
@@ -235,6 +280,30 @@ const RegisterUser = ({ onSuccess }) => {
                         </div>
                     </div>
 
+                    {/* Upload Section – Show only for the selected user type */}
+                    {formData.type_of_user === "senior_citizen" && (
+                        <DocumentUploadField
+                        label="Senior Valid ID (Date of Birth Visible)"
+                        description="Accepted: Government-issued ID with visible date of birth (e.g., Passport, Driver’s License, National ID)"
+                        id="senior_id_file"
+                        required
+                        onChange={(e) => handleFileUpload(e.target.files[0], "senior_id")}
+                    />
+
+                    )}
+
+                    {formData.type_of_user === "pwd" && (
+                        <DocumentUploadField
+                        label="PWD Documents"
+                        description="Accepted: PWD ID, medical certification, supporting disability documents."
+                        id="pwd_documents"
+                        required
+                        onChange={(e) => handleFileUpload(e.target.files[0], "pwd_document")}
+                    />
+
+                    )}
+
+
                     <hr className="my-6 border-t border-gray-200" />
                     <div className="grid md:grid-cols-2 gap-6">
                         <InputField
@@ -391,7 +460,7 @@ const RegisterUser = ({ onSuccess }) => {
                     {/* Submit Button */}
                     <button
                         type="submit"
-                        disabled={status.loading}
+                        disabled={status.loading || uploading}
                         className="w-full py-3 mt-10 bg-sky-600 text-white font-extrabold text-lg rounded-xl shadow-lg shadow-sky-300/50 hover:bg-sky-700 disabled:bg-sky-400 transition-all duration-300 ease-in-out transform hover:scale-[1.01] hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-sky-500 focus:ring-opacity-70"
                     >
                         {status.loading ? (

@@ -8,6 +8,7 @@ import {
   deleteUsers,
   uploadProfilePicture,
   getPublicUserById,
+  uploadUserDocument
 } from "../controllers/userController.js";
 
 const router = express.Router();
@@ -23,5 +24,8 @@ router.delete("/:id", deleteUsers);
 
 // ✅ Profile picture routes
 router.post("/:id/profile-picture", upload.single("file"), uploadProfilePicture);
+router.post("/:id/user-document", upload.single("file"), uploadUserDocument);
+
+
 
 export default router;

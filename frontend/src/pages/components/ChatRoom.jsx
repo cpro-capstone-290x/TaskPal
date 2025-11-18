@@ -21,7 +21,7 @@ import ChatSidebar from "../components/chat/ChatSidebar";
 import ChatMessages from "../components/chat/ChatMessages";
 import MessageInput from "../components/chat/MessageInput";
 import ProviderProfileModal from "../components/chat/ProviderProfileModal";
-import BookingInfoPanel from "../../components/booking/BookingInfoPanel";
+import BookingInfoPanel from "../components/booking/BookingInfoPanel";
 
 const ChatRoom = () => {
   const { bookingId } = useParams();

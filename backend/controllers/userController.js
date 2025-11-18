@@ -188,8 +188,7 @@ export const getPublicUserById = async (req, res) => {
         city, 
         province, 
         profile_picture,
-        created_at,
-        profile_picture_url
+        created_at
       FROM users 
       WHERE id = ${id};
     `;
@@ -199,15 +198,20 @@ export const getPublicUserById = async (req, res) => {
     }
 
     const user = result[0];
-      user.profile_picture_url = user.profile_picture_url || user.profile_picture;
+
+    // ✅ Correct fallback chain
+    user.profile_picture_url =
+      user.profile_picture ||
       "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
     res.status(200).json({ data: user });
+
   } catch (err) {
     console.error("❌ Error fetching public user:", err);
     res.status(500).json({ message: "Server error fetching user profile" });
   }
 };
+
 
 export const uploadUserDocument = async (req, res) => {
     try {

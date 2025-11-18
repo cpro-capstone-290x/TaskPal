@@ -75,32 +75,64 @@ export const verifyPaymentSession = async (req, res) => {
       return res.status(400).json({ message: "Payment not verified" });
     }
 
+    // --- ✅ START NEW LOGIC ---
+
+    // 1. Get all necessary data from the session
     const bookingId = session.metadata?.bookingId;
+    const stripePaymentId = session.payment_intent; // Stripe's payment ID
+    const amountPaid = session.amount_total / 100; // Convert from cents to dollars
+
     if (!bookingId) {
       return res.status(400).json({ message: "No booking reference in session" });
     }
 
-    // Update the booking in your database!
-    try {
-      const result = await sql`
-        UPDATE bookings 
-        SET status = 'paid', stripe_session_id = ${sessionId} 
-        WHERE id = ${bookingId}
-        RETURNING id;
-      `;
+    // 2. Fetch booking details (client_id, provider_id)
+    const bookingRows = await sql`
+      SELECT client_id, provider_id 
+      FROM bookings
+      WHERE id = ${bookingId};
+    `;
 
-      if (result.length === 0) {
-        console.error(`❌ Failed to update booking status for ID: ${bookingId}`);
-        // Still, the payment was successful, so let the frontend know.
-      } else {
-        console.log(`✅ Booking ${bookingId} marked as 'paid'.`);
-      }
-    } catch (dbError) {
-      console.error("❌ DB update error after payment:", dbError);
-      // Don't fail the request, payment was successful. Log this error.
+    if (bookingRows.length === 0) {
+      console.error(`❌ Booking ${bookingId} not found in DB after payment.`);
+      return res.status(404).json({ message: "Booking not found" });
     }
 
-    res.json({ bookingId });
+    const { client_id, provider_id } = bookingRows[0];
+
+    // 3. Insert or Update the 'payments' table
+    const existing = await sql`
+      SELECT * FROM payments WHERE booking_id = ${bookingId};
+    `;
+
+    if (existing.length > 0) {
+      await sql`
+        UPDATE payments
+        SET amount = ${amountPaid}, 
+            stripe_payment_id = ${stripePaymentId},
+            status = 'Paid',
+            created_at = NOW()
+        WHERE booking_id = ${bookingId};
+      `;
+    } else {
+      await sql`
+        INSERT INTO payments (booking_id, client_id, provider_id, amount, stripe_payment_id, status)
+        VALUES (${bookingId}, ${client_id}, ${provider_id}, ${amountPaid}, ${stripePaymentId}, 'Paid');
+      `;
+    }
+    console.log(`✅ Payment table updated for booking ${bookingId}.`);
+
+    // 4. Update the 'bookings' table
+    await sql`
+      UPDATE bookings 
+      SET status = 'Paid' 
+      WHERE id = ${bookingId};
+    `;
+    console.log(`✅ Booking table status updated for ${bookingId}.`);
+    
+    // --- 🔼 END NEW LOGIC ---
+
+    res.json({ bookingId, message: "Payment verified and recorded" });
   } catch (error) {
     console.error("❌ Stripe verification error:", error);
     res.status(500).json({ message: "Stripe verification failed" });

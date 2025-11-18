@@ -2,16 +2,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
-const socket = io(
-  import.meta.env.VITE_SOCKET_URL || "http://localhost:5000",
-  {
-    transports: ["websocket", "polling"], // ✅ fallback ensures Render stays connected
-    withCredentials: true,
-    reconnectionAttempts: 5, // ✅ auto-retry
-    reconnectionDelay: 3000,
-  }
-);
-
 import { socket } from "../services/socket.js";
 import {
   getBookingById,
@@ -340,19 +330,6 @@ const ChatRoom = () => {
         <MessageInput value={message} onChange={setMessage} onSend={sendMessage} />
       </div>
 
-<<<<<<< HEAD
-      {/* RIGHT: BOOKING INFO PANEL */}
-      <BookingInfoPanel
-        bookingDetails={bookingDetails}
-        role={role}
-        onPriceChange={handlePriceChange}
-        onProposePrice={handleProposePrice}
-        onAgreePrice={handleAgreePrice}
-        onCancelBooking={handleCancelBooking}
-        onDownloadAgreement={handleDownloadAgreement}
-        onProceedToPayment={handleProceedToPayment}
-      />
-=======
       {/* RIGHT PANEL - Booking Info */}
       <div className="w-80 bg-white p-6 flex flex-col justify-between border-l border-gray-200">
         {bookingDetails && (
@@ -717,7 +694,6 @@ const ChatRoom = () => {
           </div>
         </div>
       )}
->>>>>>> d6b3cd2b8b300ce10bb682fa111dd24de2494eac
 
       {/* PROFILE MODAL */}
       <ProviderProfileModal

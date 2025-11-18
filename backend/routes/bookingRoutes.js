@@ -77,12 +77,11 @@ router.put("/:id/paid", async (req, res) => {
     const bookingId = req.params.id;
     const body = req.body || {};
 
-    const amount = Number(body.amount) || 0;
     const stripe_payment_id = body.stripe_payment_id || null;
 
     // 1️⃣ Fetch booking details to get client/provider IDs
     const bookingRows = await sql`
-      SELECT client_id, provider_id
+      SELECT client_id, provider_id, price
       FROM bookings
       WHERE id = ${bookingId};
     `;
@@ -91,7 +90,9 @@ router.put("/:id/paid", async (req, res) => {
       return res.status(404).json({ error: "Booking not found." });
     }
 
-    const { client_id, provider_id } = bookingRows[0];
+    const { client_id, provider_id, price } = bookingRows[0];
+
+    const amount = Number(price) || 0;
 
     // 2️⃣ Check if a payment already exists for this booking
     const existing = await sql`

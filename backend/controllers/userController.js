@@ -188,7 +188,8 @@ export const getPublicUserById = async (req, res) => {
         city, 
         province, 
         profile_picture,
-        created_at
+        created_at,
+        profile_picture_url
       FROM users 
       WHERE id = ${id};
     `;
@@ -198,8 +199,7 @@ export const getPublicUserById = async (req, res) => {
     }
 
     const user = result[0];
-    user.profile_picture =
-      user.profile_picture ||
+      user.profile_picture_url = user.profile_picture_url || user.profile_picture;
       "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
     res.status(200).json({ data: user });

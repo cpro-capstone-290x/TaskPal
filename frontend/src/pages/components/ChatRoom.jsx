@@ -397,12 +397,19 @@ useEffect(() => {
           <div className="flex flex-col items-center text-center">
             <img
               src={
-                providerDetails.photo_url ||
+                providerDetails.profile_picture_url ||   // correct one from DB
+                providerDetails.profile_picture ||       // also returned in API
+                providerDetails.photo_url ||             // provider
+                providerDetails.photo ||
+                providerDetails.photoUrl ||
+                providerDetails.avatar ||
+                providerDetails.avatar_url ||
                 "https://cdn-icons-png.flaticon.com/512/149/149071.png"
               }
-              alt={role === "provider" ? "Client" : "Provider"}
+              alt="Profile"
               className="w-28 h-28 rounded-full border-4 border-gray-100 bg-gray-100 mb-4 object-cover"
             />
+
             <h3 className="text-lg font-semibold text-gray-800">
               {providerDetails.name || (role === "provider" ? "Client" : "Task Provider")}
             </h3>

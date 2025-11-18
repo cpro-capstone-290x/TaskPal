@@ -806,12 +806,17 @@ useEffect(() => {
                     <img
                       src={
                         providerDetails.photo_url ||
+                        providerDetails.photo ||
+                        providerDetails.photoUrl ||
+                        providerDetails.profile_picture ||
+                        providerDetails.profile_picture_url ||
+                        providerDetails.avatar ||
+                        providerDetails.avatar_url ||
                         "https://cdn-icons-png.flaticon.com/512/149/149071.png"
                       }
                       alt="Provider"
                       className="w-32 h-32 rounded-full object-cover border bg-gray-50"
                     />
-
                     {/* Info */}
                     <div className="flex-1 space-y-2">
                       <h2 className="text-2xl font-bold text-gray-800">

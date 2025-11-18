@@ -24,10 +24,12 @@ import AboutPage from "./pages/AboutPage/AboutPage";
 import OTPUser from "./pages/RegisterPage/components/OTPUser";
 import OTPProvider from "./pages/RegisterPage/components/OTPProvider";
 import AccessibilityToggle from "./pages/components/AccessibilityToggle";
+import GlobalAnnouncementBanner from "./components/GlobalAnnouncementBanner";
 
 function App() {
   return (
     <div className="min-h-screen bg-gray-50">
+      <GlobalAnnouncementBanner />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Home />} />

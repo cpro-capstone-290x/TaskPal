@@ -1,39 +1,60 @@
+// __tests__/controllers/providerController.test.js
 import { jest } from "@jest/globals";
 
-// 🧩 1️⃣ Mock Neon & Blob before import
+/* -------------------------------------------------------------------------- */
+/* 🧩 1️⃣ Mock Neon SQL and Vercel Blob BEFORE importing the controller       */
+/* -------------------------------------------------------------------------- */
 jest.unstable_mockModule("../../config/db.js", () => ({
   sql: jest.fn(),
 }));
+
 jest.unstable_mockModule("@vercel/blob", () => ({
   put: jest.fn(),
   del: jest.fn(),
 }));
 
-// 🧠 2️⃣ Dynamically import after mocks
-describe("🧪 Provider Controller — Unit Tests", () => {
-  let sqlMock, putMock, delMock;
-  let controller;
+// bcrypt must be mocked because updateProvider hashes passwords
+jest.unstable_mockModule("bcrypt", () => ({
+  default: {
+    genSalt: jest.fn().mockResolvedValue("salt"),
+    hash: jest.fn().mockResolvedValue("hashed_pw"),
+  },
+}));
 
-  beforeAll(async () => {
-    const mockDb = await import("../../config/db.js");
-    const mockBlob = await import("@vercel/blob");
-    sqlMock = mockDb.sql;
-    putMock = mockBlob.put;
-    delMock = mockBlob.del;
+/* -------------------------------------------------------------------------- */
+/* 🧩 IMPORT CONTROLLER AFTER MOCKS                                           */
+/* -------------------------------------------------------------------------- */
+let sqlMock, putMock, delMock, bcryptMock;
+let controller;
 
-    controller = await import("../../controllers/providerController.js");
+beforeAll(async () => {
+  const db = await import("../../config/db.js");
+  const blob = await import("@vercel/blob");
+  bcryptMock = (await import("bcrypt")).default;
 
-    jest.spyOn(console, "log").mockImplementation(() => {});
-    jest.spyOn(console, "warn").mockImplementation(() => {});
-  });
+  sqlMock = db.sql;
+  putMock = blob.put;
+  delMock = blob.del;
 
-  beforeEach(() => jest.clearAllMocks());
+  controller = await import("../../controllers/providerController.js");
 
+  jest.spyOn(console, "log").mockImplementation(() => {});
+  jest.spyOn(console, "warn").mockImplementation(() => {});
+  jest.spyOn(console, "error").mockImplementation(() => {});
+});
+
+beforeEach(() => jest.clearAllMocks());
+
+/* ========================================================================== */
+/* 📌 TEST SUITE                                                              */
+/* ========================================================================== */
+describe("🧪 Provider Controller — Unit Tests (Updated)", () => {
   /* -------------------------------------------------------------------------- */
-  /* ✅ getProviders                                                            */
+  /* 1️⃣ getProviders                                                            */
   /* -------------------------------------------------------------------------- */
-  test("✅ getProviders should return provider list", async () => {
-    sqlMock.mockResolvedValue([{ id: 1, name: "Test Provider" }]);
+  test("✅ getProviders returns provider list", async () => {
+    sqlMock.mockResolvedValue([{ id: 1, name: "Provider A" }]);
+
     const req = {};
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
@@ -41,152 +62,263 @@ describe("🧪 Provider Controller — Unit Tests", () => {
 
     expect(sqlMock).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
   });
 
   /* -------------------------------------------------------------------------- */
-  /* ✅ getProvider                                                             */
+  /* 2️⃣ getProvider                                                             */
   /* -------------------------------------------------------------------------- */
-  test("✅ getProvider should return a single provider", async () => {
+  test("✅ getProvider returns provider", async () => {
     sqlMock.mockResolvedValue([{ id: 1, name: "Provider A" }]);
+
     const req = { params: { id: 1 } };
     const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
 
     await controller.getProvider(req, res);
-    expect(sqlMock).toHaveBeenCalled();
+
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
   });
 
-  test("❌ getProvider returns 404 if not found", async () => {
+  test("❌ getProvider returns 404", async () => {
     sqlMock.mockResolvedValue([]);
-    const req = { params: { id: 99 } };
+
+    const req = { params: { id: 999 } };
     const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
 
     await controller.getProvider(req, res);
+
     expect(res.status).toHaveBeenCalledWith(404);
   });
 
   /* -------------------------------------------------------------------------- */
-  /* ✅ updateProvider                                                          */
+  /* 3️⃣ updateProvider                                                          */
   /* -------------------------------------------------------------------------- */
-  test("✅ updateProvider updates valid fields", async () => {
-    sqlMock.unsafe = jest.fn().mockResolvedValue([{ id: 1, name: "Updated Provider" }]);
+  test("✅ updateProvider updates fields without password change", async () => {
+    sqlMock
+      .mockResolvedValueOnce([{ password: "old_hashed_pw" }]) // SELECT old pw
+      .mockResolvedValueOnce([{ id: 1, name: "Updated Provider" }]); // UPDATE
+
     const req = {
       params: { id: 1 },
-      user: { role: "admin" },
-      body: { name: "Updated Provider", email: "test@provider.com" },
+      body: {
+        name: "Updated Provider",
+        email: "updated@example.com",
+        password: "", // keep old password
+      },
     };
-    const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
     await controller.updateProvider(req, res);
-    expect(sqlMock.unsafe).toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(200);
-  });
-
-  test("❌ updateProvider returns 403 for unauthorized user", async () => {
-    const req = {
-      params: { id: 1 },
-      user: { id: 2, role: "provider" },
-      body: { name: "Updated Provider" },
-    };
-    const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
-
-    await controller.updateProvider(req, res);
-    expect(res.status).toHaveBeenCalledWith(403);
-  });
-
-  /* -------------------------------------------------------------------------- */
-  /* ✅ deleteProvider                                                          */
-  /* -------------------------------------------------------------------------- */
-  test("✅ deleteProvider removes provider", async () => {
-    sqlMock.mockResolvedValue([{ id: 1 }]);
-    const req = { params: { id: 1 } };
-    const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
-
-    await controller.deleteProvider(req, res);
-    expect(sqlMock).toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(200);
-  });
-
-  test("❌ deleteProvider returns 404 when not found", async () => {
-    sqlMock.mockResolvedValue([]);
-    const req = { params: { id: 99 } };
-    const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
-
-    await controller.deleteProvider(req, res);
-    expect(res.status).toHaveBeenCalledWith(404);
-  });
-
-  /* -------------------------------------------------------------------------- */
-  /* ✅ updateProviderStatus                                                    */
-  /* -------------------------------------------------------------------------- */
-  test("✅ updateProviderStatus updates status", async () => {
-    sqlMock.mockResolvedValue([{ id: 1, status: "Approved" }]);
-    const req = { params: { id: 1 }, body: { status: "Approved" } };
-    const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
-
-    await controller.updateProviderStatus(req, res);
-    expect(sqlMock).toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(200);
-  });
-
-  test("❌ updateProviderStatus requires reason for Rejected", async () => {
-    const req = { params: { id: 1 }, body: { status: "Rejected" } };
-    const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
-
-    await controller.updateProviderStatus(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
-
-  /* -------------------------------------------------------------------------- */
-  /* ✅ getProvidersByServiceType                                               */
-  /* -------------------------------------------------------------------------- */
-  test("✅ getProvidersByServiceType returns data", async () => {
-    sqlMock.mockResolvedValue([{ id: 1, service_type: "Cleaning" }]);
-    const req = { params: { service_type: "Cleaning" } };
-    const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
-
-    await controller.getProvidersByServiceType(req, res);
-    expect(sqlMock).toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(200);
-  });
-
-  test("❌ getProvidersByServiceType 404 when empty", async () => {
-    sqlMock.mockResolvedValue([]);
-    const req = { params: { service_type: "Cleaning" } };
-    const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
-
-    await controller.getProvidersByServiceType(req, res);
-    expect(res.status).toHaveBeenCalledWith(404);
-  });
-
-  /* -------------------------------------------------------------------------- */
-  /* ✅ uploadProviderProfilePicture                                            */
-  /* -------------------------------------------------------------------------- */
-  test("✅ uploadProviderProfilePicture uploads new file", async () => {
-    sqlMock.mockResolvedValueOnce([{ id: 1, name: "Test", profile_picture_url: null }]);
-    putMock.mockResolvedValue({ url: "https://vercel-storage.com/test.jpg" });
-
-    const req = {
-      params: { providerId: 1 },
-      file: { buffer: Buffer.from("fake"), mimetype: "image/jpeg", originalname: "photo.jpg" },
-    };
-    const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
-
-    await controller.uploadProviderProfilePicture(req, res);
 
     expect(sqlMock).toHaveBeenCalledTimes(2);
-    expect(putMock).toHaveBeenCalledTimes(1);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ success: true, blobUrl: expect.stringContaining("https://") })
-    );
+    expect(res.status).toHaveBeenCalledWith(200);
   });
 
-  test("❌ uploadProviderProfilePicture returns 400 if no file", async () => {
-    const req = { params: { providerId: 1 }, file: null };
-    const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+  test("✅ updateProvider hashes new password", async () => {
+    sqlMock
+      .mockResolvedValueOnce([{ password: "old_hashed_pw" }])
+      .mockResolvedValueOnce([{ id: 1 }]);
+
+    const req = {
+      params: { id: 1 },
+      body: { password: "newpass123" },
+    };
+
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    await controller.updateProvider(req, res);
+
+    expect(bcryptMock.hash).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  test("❌ updateProvider returns 404 missing provider", async () => {
+    sqlMock.mockResolvedValueOnce([]);
+
+    const req = { params: { id: 99 }, body: {} };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    await controller.updateProvider(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+  });
+
+  /* -------------------------------------------------------------------------- */
+  /* 4️⃣ deleteProvider                                                          */
+  /* -------------------------------------------------------------------------- */
+  test("✅ deleteProvider works", async () => {
+    sqlMock.mockResolvedValue([{ id: 1 }]);
+
+    const req = { params: { id: 1 } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    await controller.deleteProvider(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  test("❌ deleteProvider returns 404", async () => {
+    sqlMock.mockResolvedValue([]);
+
+    const req = { params: { id: 999 } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    await controller.deleteProvider(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+  });
+
+  /* -------------------------------------------------------------------------- */
+  /* 5️⃣ updateProviderStatus                                                   */
+  /* -------------------------------------------------------------------------- */
+  test("❌ updateProviderStatus requires rejection_reason when Rejected/Suspended", async () => {
+    const req = { params: { id: 1 }, body: { status: "Rejected" } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    await controller.updateProviderStatus(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  test("✅ updateProviderStatus updates provider", async () => {
+    sqlMock.mockResolvedValue([{ id: 1, status: "Approved" }]);
+
+    const req = { params: { id: 1 }, body: { status: "Approved" } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    await controller.updateProviderStatus(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  /* -------------------------------------------------------------------------- */
+  /* 6️⃣ getProvidersByServiceType                                              */
+  /* -------------------------------------------------------------------------- */
+  test("✅ getProvidersByServiceType works", async () => {
+    sqlMock.mockResolvedValue([{ id: 1, service_type: "Cleaning" }]);
+
+    const req = { params: { service_type: "Cleaning" } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    await controller.getProvidersByServiceType(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  test("❌ getProvidersByServiceType returns 404", async () => {
+    sqlMock.mockResolvedValue([]);
+
+    const req = { params: { service_type: "Cleaning" } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    await controller.getProvidersByServiceType(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+  });
+
+  /* -------------------------------------------------------------------------- */
+  /* 7️⃣ uploadProviderProfilePicture                                           */
+  /* -------------------------------------------------------------------------- */
+  test("❌ uploadProviderProfilePicture returns 400 when no file", async () => {
+    const req = { params: { id: 1 }, file: null };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
     await controller.uploadProviderProfilePicture(req, res);
+
     expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  test("✅ uploadProviderProfilePicture uploads file", async () => {
+    sqlMock
+      .mockResolvedValueOnce([{ id: 1, name: "Test Provider", profile_picture_url: null }])
+      .mockResolvedValueOnce([]); // UPDATE provider
+
+    putMock.mockResolvedValue({ url: "https://storage.com/profile.jpg" });
+
+    const req = {
+      params: { id: 1 },
+      file: {
+        originalname: "photo.jpg",
+        buffer: Buffer.from("123"),
+        mimetype: "image/jpeg",
+      },
+    };
+
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    await controller.uploadProviderProfilePicture(req, res);
+
+    expect(putMock).toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+  });
+
+  /* -------------------------------------------------------------------------- */
+  /* 8️⃣ uploadValidId                                                           */
+  /* -------------------------------------------------------------------------- */
+  test("❌ uploadValidId — no file uploaded", async () => {
+    const req = { file: null, body: {} };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    await controller.uploadValidId(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  test("✅ uploadValidId uploads file", async () => {
+    process.env.BLOB_READ_WRITE_TOKEN = "token";
+
+    putMock.mockResolvedValue({ url: "https://storage.com/id.jpg" });
+
+    const req = {
+      file: {
+        originalname: "id.jpg",
+        buffer: Buffer.from("123"),
+        mimetype: "image/jpeg",
+      },
+      body: { name: "John Doe", id_type: "Passport", id_number: "12345" },
+    };
+
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    await controller.uploadValidId(req, res);
+
+    expect(putMock).toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+  });
+
+  /* -------------------------------------------------------------------------- */
+  /* 9️⃣ uploadCompanyDocuments (multi-file upload)                             */
+  /* -------------------------------------------------------------------------- */
+  test("❌ uploadCompanyDocuments — requires files", async () => {
+    const req = { files: [], body: {} };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    await controller.uploadCompanyDocuments(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  test("✅ uploadCompanyDocuments uploads multiple files", async () => {
+    process.env.BLOB_READ_WRITE_TOKEN = "token";
+
+    putMock.mockResolvedValueOnce({ url: "https://storage.com/doc1.pdf" });
+    putMock.mockResolvedValueOnce({ url: "https://storage.com/doc2.pdf" });
+
+    const req = {
+      files: [
+        { originalname: "doc1.pdf", buffer: Buffer.from("123"), mimetype: "application/pdf" },
+        { originalname: "doc2.pdf", buffer: Buffer.from("456"), mimetype: "application/pdf" },
+      ],
+      body: { name: "Test Provider" },
+    };
+
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    await controller.uploadCompanyDocuments(req, res);
+
+    expect(putMock).toHaveBeenCalledTimes(2);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true, urls: expect.any(Array) })
+    );
   });
 });

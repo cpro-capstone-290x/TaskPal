@@ -6,7 +6,7 @@ import api from '../../api';
 import Header from "./Header";
 
 const socket = io(
-  import.meta.env.VITE_SOCKET_URL || "https://taskpal-14oy.onrender.com",
+  import.meta.env.VITE_SOCKET_URL || "http://localhost:5000",
   {
     transports: ["websocket", "polling"], // ✅ fallback ensures Render stays connected
     withCredentials: true,

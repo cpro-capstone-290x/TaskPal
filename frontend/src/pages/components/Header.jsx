@@ -322,7 +322,7 @@ const Header = () => {
 
       // 2. SET UP WEBSOCKET LISTENER
       // This is where you connect to Socket.IO or your WebSocket server
-      const socketUrl = "http://localhost:5000"; // Or "https://taskpal-14oy.onrender.com"
+      const socketUrl = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
       socketRef.current = io(socketUrl, {
         transports: ['websocket', 'polling']
       });

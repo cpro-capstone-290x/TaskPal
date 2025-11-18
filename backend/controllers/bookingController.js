@@ -4,7 +4,7 @@ import { put } from "@vercel/blob";
 import fs from "fs";
 
 export const bookTask = async (req, res) => {
-  const { client_id, provider_id, notes, scheduled_date } = req.body;
+  const { client_id, provider_id, notes, scheduled_date, price } = req.body;
 
   if (!client_id || !provider_id || !scheduled_date) {
     return res
@@ -15,8 +15,8 @@ export const bookTask = async (req, res) => {
   try {
     // 1️⃣ Create booking
     const [booking] = await sql`
-      INSERT INTO bookings (client_id, provider_id, notes, scheduled_date)
-      VALUES (${client_id}, ${provider_id}, ${notes}, ${scheduled_date})
+      INSERT INTO bookings (client_id, provider_id, notes, scheduled_date, price)
+      VALUES (${client_id}, ${provider_id}, ${notes}, ${scheduled_date}, ${price})
       RETURNING id, client_id, provider_id, scheduled_date, status;
     `;
 
@@ -43,6 +43,7 @@ export const bookTask = async (req, res) => {
       provider_id: booking.provider_id,
       scheduled_date: booking.scheduled_date,
       status: booking.status,
+      price: booking.price,
     });
   } catch (err) {
     console.error("❌ Booking creation error:", err);

@@ -66,8 +66,6 @@ function App() {
         <Route path="/verify-otp-provider" element={<OTPProvider />} />
       </Routes>
 
-      {/* Global Accessibility Toggle */}
-      <AccessibilityToggle />
     </div>
   );
 }

@@ -1,13 +1,12 @@
-// src/components/AccessibilityToggle.jsx
+// src/pages/components/AccessibilityToggle.jsx
 import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL, // e.g., http://localhost:5000/api
-  withCredentials: false,                // your auth uses Bearer header
+  baseURL: import.meta.env.VITE_API_URL, // e.g. http://localhost:5000/api
+  withCredentials: false,
 });
 
-// Read a JWT from common keys; change if yours is different.
 function getToken() {
   return (
     localStorage.getItem("token") ||
@@ -24,218 +23,267 @@ function clampFontSize(v) {
   return Math.max(80, Math.min(200, n));
 }
 
-function applyToRoot(s) {
-  const root = document.documentElement;
-  const fs = clampFontSize(s.fontSize);
-  root.style.fontSize = `${fs}%`;
-  root.classList.toggle("accessible-readable", !!s.readableFont);
-  root.classList.toggle("accessible-spacing", !!s.spacing);
-}
-
 const DEFAULTS = { fontSize: 100, readableFont: false, spacing: false };
 
-const AccessibilityToggle = () => {
+/** First-load hard apply */
+function applyToRoot(next) {
+  const root = document.documentElement;
+  root.style.fontSize = `${clampFontSize(next.fontSize)}%`;
+  root.classList.toggle("accessible-readable", !!next.readableFont);
+  root.classList.toggle("accessible-spacing", !!next.spacing);
+}
+
+/** Apply only pieces that changed */
+function applyToRootPartial(prev, next) {
+  const root = document.documentElement;
+
+  // font size
+  const prevFs = clampFontSize(prev.fontSize);
+  const nextFs = clampFontSize(next.fontSize);
+  if (prevFs !== nextFs) root.style.fontSize = `${nextFs}%`;
+
+  // readable
+  const prevReadable = !!prev.readableFont;
+  const nextReadable = !!next.readableFont;
+  if (prevReadable !== nextReadable) {
+    root.classList.toggle("accessible-readable", nextReadable);
+  }
+
+  // spacing
+  const prevSpacing = !!prev.spacing;
+  const nextSpacing = !!next.spacing;
+  if (prevSpacing !== nextSpacing) {
+    root.classList.toggle("accessible-spacing", nextSpacing);
+  }
+}
+
+const AccessibilityToggle = ({ variant = "nav" }) => {
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [settings, setSettings] = useState(DEFAULTS);
+  const lastAppliedRef = useRef(DEFAULTS);
+  const comboRef = useRef(null); // for showing indeterminate
 
-  // Track the last-seen token so we can detect changes
-  const tokenRef = useRef(getToken());
+  const token = getToken();
+  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
-  // Fetch from API and apply to DOM
-  const loadAndApply = async () => {
-    const token = getToken();
-    tokenRef.current = token;
-
+  // Load settings and apply once
+  useEffect(() => {
     if (!token) {
-      applyToRoot(DEFAULTS);
       setSettings(DEFAULTS);
+      applyToRoot(DEFAULTS);
+      lastAppliedRef.current = DEFAULTS;
       setLoaded(true);
       return;
     }
-
-    try {
-      // RELATIVE path (baseURL already includes /api) → /api/accessibility/me
-      const { data } = await API.get("accessibility/me", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      // be tolerant of camelCase / snake_case
-      const payload = data?.data ?? data ?? {};
-      const s = {
-        fontSize: clampFontSize(payload.fontSize ?? payload.font_size ?? 100),
-        readableFont: !!(payload.readableFont ?? payload.readable_font),
-        spacing: !!payload.spacing,
-      };
-
-      setSettings(s);
-      applyToRoot(s);
-    } catch {
-      setSettings(DEFAULTS);
-      applyToRoot(DEFAULTS);
-    } finally {
-      setLoaded(true);
-    }
-  };
-
-  // 1) Run on mount (covers refresh), and
-  // 2) Re-run immediately after login via an event we dispatch
-  // 3) Also re-check on storage/focus to be robust without changing other files
-  useEffect(() => {
-    loadAndApply();
-
-    const onAuthLogin = () => loadAndApply();
-    const onStorage = (e) => {
-      if (!e.key) return;
-      if (["token", "authToken", "jwt", "accessToken"].includes(e.key)) {
-        loadAndApply();
+    (async () => {
+      try {
+        const { data } = await API.get("/accessibility/me", { headers: authHeaders });
+        const s = data
+          ? {
+              fontSize: clampFontSize(data.fontSize ?? 100),
+              readableFont: !!data.readableFont,
+              spacing: !!data.spacing,
+            }
+          : DEFAULTS;
+        setSettings(s);
+        applyToRoot(s);
+        lastAppliedRef.current = s;
+      } catch {
+        setSettings(DEFAULTS);
+        applyToRoot(DEFAULTS);
+        lastAppliedRef.current = DEFAULTS;
+      } finally {
+        setLoaded(true);
       }
-    };
-    const onFocus = () => {
-      const current = getToken();
-      if (current !== tokenRef.current) loadAndApply();
-    };
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
-    window.addEventListener("auth:login", onAuthLogin);
-    window.addEventListener("storage", onStorage);
-    window.addEventListener("focus", onFocus);
-
-    return () => {
-      window.removeEventListener("auth:login", onAuthLogin);
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener("focus", onFocus);
-    };
+  // Accessibility open from mobile menu if you dispatch this event
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener("open-accessibility", handler);
+    return () => window.removeEventListener("open-accessibility", handler);
   }, []);
 
-  // Helpers to update local state + mark dirty
+  // Make the single checkbox show an indeterminate state if only one of the two is true
+  useEffect(() => {
+    if (!comboRef.current) return;
+    const onlyOne = settings.readableFont !== settings.spacing;
+    comboRef.current.indeterminate = onlyOne;
+  }, [settings.readableFont, settings.spacing]);
+
   function setLocals(patch) {
     const next = { ...settings, ...patch };
+    const prev = lastAppliedRef.current;
     setSettings(next);
-    applyToRoot(next); // reflect immediately
+    applyToRootPartial(prev, next);
+    lastAppliedRef.current = next;
     setDirty(true);
   }
 
-  // New: Restore to default (does NOT auto-save; lets user confirm via Save)
   function handleRestoreDefaults() {
-    setLocals({ ...DEFAULTS });
+    const prev = lastAppliedRef.current;
+    const next = { ...DEFAULTS };
+    setSettings(next);
+    applyToRootPartial(prev, next);
+    lastAppliedRef.current = next;
+    setDirty(true);
   }
 
   async function handleSave() {
-    const token = tokenRef.current;
     if (!token) return;
     try {
-      const body = {
-        fontSize: clampFontSize(settings.fontSize),
-        readableFont: settings.readableFont,
-        spacing: settings.spacing,
-      };
-      // keep your original PATCH endpoint if that’s what your backend expects
-      await API.patch("/accessibility", body, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await API.patch(
+        "/accessibility",
+        {
+          fontSize: clampFontSize(settings.fontSize),
+          readableFont: !!settings.readableFont,
+          spacing: !!settings.spacing,
+        },
+        { headers: authHeaders }
+      );
       setDirty(false);
     } catch {
-      // ignore; user keeps seeing local effect; can retry save
+      /* keep local effect; user can retry */
     }
   }
 
-  if (!loaded) return null; // avoid initial flash
+  if (!loaded) return null;
+
+  const triggerClass =
+    variant === "nav"
+      ? "inline-flex items-center h-12 px-3 text-lg lg:text-xl font-semibold text-gray-900 hover:text-sky-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 rounded-md"
+      : variant === "menu"
+      ? "w-full text-left px-3 py-3 rounded-lg text-[15px] font-semibold text-slate-900 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
+      : "inline-flex h-11 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-900 px-4 shadow-sm hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600";
+
+  const modalClass =
+    variant === "menu"
+      ? "fixed inset-x-4 top-24 z-[70] max-w-[calc(100%-2rem)] mx-auto rounded-2xl border border-gray-200 bg-white shadow-2xl p-5 space-y-4"
+      : "absolute right-0 top-[calc(100%+12px)] w-80 max-w-[90vw] rounded-2xl border border-gray-200 bg-white shadow-2xl p-5 space-y-4";
+
+  // ---- Combined checkbox logic ----
+  // We consider it "checked" only if BOTH are true.
+  const combinedChecked = !!settings.readableFont && !!settings.spacing;
+  function onToggleCombined(nextChecked) {
+    // When the single checkbox is toggled, we set both to the same value
+    setLocals({ readableFont: nextChecked, spacing: nextChecked });
+  }
 
   return (
-    <div className="fixed bottom-6 left-6 z-50 font-poppins">
+    <div className="relative z-[60]">
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls="accessibility-panel"
-        className="bg-gradient-to-r from-green-700 to-green-600 text-white px-5 py-3 rounded-full shadow-lg hover:scale-105 transition-transform duration-200 focus:ring-4 focus:ring-green-300 font-medium tracking-wide"
+        className={triggerClass}
       >
         Accessibility
       </button>
 
       {open && (
-        <div
-          id="accessibility-panel"
-          className="mt-3 bg-white rounded-2xl border border-gray-200 shadow-2xl p-5 w-72 space-y-4 animate-fadeIn"
-        >
-          <h2 className="text-lg font-semibold text-gray-800 mb-2 text-center border-b border-gray-100 pb-2">
-            Accessibility Settings
-          </h2>
-
-          {/* Font Size (Slider) */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-gray-700">Font Size</span>
-              <span className="text-xs text-gray-500">{clampFontSize(settings.fontSize)}%</span>
-            </div>
-            <input
-              type="range"
-              min={80}
-              max={200}
-              step={2.5}
-              value={clampFontSize(settings.fontSize)}
-              onChange={(e) => setLocals({ fontSize: clampFontSize(e.target.value) })}
-              aria-label="Font size"
-              className="w-full accent-green-600"
+        <>
+          {/* Backdrop for mobile or when you prefer overlay */}
+          {variant === "menu" && (
+            <div
+              className="fixed inset-0 z-[60] bg-black/20"
+              onClick={() => setOpen(false)}
+              aria-hidden="true"
             />
-            <div className="flex justify-between text-xs text-gray-400">
-              <span>Smaller</span>
-              <span>Default</span>
-              <span>Larger</span>
-            </div>
-          </div>
-
-          {/* Readable Font */}
-          <label className="flex items-center justify-between cursor-pointer">
-            <span className="text-gray-700">Readable Font</span>
-            <input
-              type="checkbox"
-              checked={settings.readableFont}
-              onChange={() => setLocals({ readableFont: !settings.readableFont })}
-              className="accent-green-600 scale-125"
-            />
-          </label>
-
-          {/* Extra Spacing */}
-          <label className="flex items-center justify-between cursor-pointer">
-            <span className="text-gray-700">Extra Spacing</span>
-            <input
-              type="checkbox"
-              checked={settings.spacing}
-              onChange={() => setLocals({ spacing: !settings.spacing })}
-              className="accent-green-700 scale-125"
-            />
-          </label>
-
-          {/* Actions: Save + Restore (side-by-side) */}
-          <div className="mt-2 flex items-center gap-3">
-            <button
-              onClick={handleSave}
-              disabled={!dirty || !tokenRef.current}
-              className={`flex-1 py-2 rounded-lg font-medium transition-colors ${
-                dirty && tokenRef.current
-                  ? "bg-green-700 text-white hover:bg-green-800"
-                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
-              }`}
-            >
-              Save changes
-            </button>
-
-            <button
-              onClick={handleRestoreDefaults}
-              className="flex-1 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50"
-              title="Restore font, readable font, and spacing to defaults"
-            >
-              Restore to Default
-            </button>
-          </div>
-
-          {!tokenRef.current && (
-            <p className="text-[11px] text-gray-500 mt-1">
-              Tip: Log in to sync settings to your account (otherwise they’re kept in this browser).
-            </p>
           )}
-        </div>
+
+          <div
+            id="accessibility-panel"
+            className={modalClass}
+            role="dialog"
+            aria-label="Accessibility settings"
+          >
+            {/* Font size */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-gray-800 font-medium">Font Size</span>
+                <span className="text-xs text-gray-500">
+                  {clampFontSize(settings.fontSize)}%
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-gray-500">Smaller</span>
+                <input
+                  type="range"
+                  min={80}
+                  max={200}
+                  step={2.5}
+                  value={clampFontSize(settings.fontSize)}
+                  onChange={(e) =>
+                    setLocals({ fontSize: clampFontSize(e.target.value) })
+                  }
+                  aria-label="Font size"
+                  className="w-full accent-sky-700"
+                />
+                <span className="text-xs text-gray-500">Larger</span>
+              </div>
+            </div>
+
+            {/* Single combined checkbox (Readable Font + Extra Spacing) */}
+            <label className="flex items-center justify-between cursor-pointer">
+              <span className="text-gray-800">
+                Readable Font &amp; Extra Spacing
+              </span>
+              <input
+                ref={comboRef}
+                type="checkbox"
+                checked={combinedChecked}
+                onChange={(e) => onToggleCombined(e.target.checked)}
+                className="accent-sky-700 scale-125"
+                aria-describedby="acc-combined-desc"
+              />
+            </label>
+            <p id="acc-combined-desc" className="text-xs text-gray-500">
+              Enables a high-legibility font and increases line/word spacing (WCAG 1.4.12).
+            </p>
+
+            {/* Actions */}
+            <div className="mt-2 grid grid-cols-3 gap-3">
+              <button
+                onClick={handleSave}
+                disabled={!dirty || !token}
+                className={`col-span-2 h-10 rounded-lg font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-700 ${
+                  dirty && token
+                    ? "bg-sky-700 text-white hover:bg-sky-800"
+                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                }`}
+              >
+                Save changes
+              </button>
+
+              <button
+                onClick={handleRestoreDefaults}
+                className="h-10 rounded-lg border border-gray-300 text-gray-800 font-medium hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+              >
+                Restore
+              </button>
+            </div>
+
+            {!token && (
+              <p className="text-[11px] text-gray-500 mt-1">
+                Tip: Log in to sync settings to your account (otherwise they’re kept in this browser).
+              </p>
+            )}
+
+            {/* Close button for both desktop & mobile */}
+            <div className="pt-2">
+              <button
+                onClick={() => setOpen(false)}
+                className="w-full h-10 rounded-lg border border-slate-300 text-slate-800 font-medium hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

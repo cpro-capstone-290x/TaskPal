@@ -6,7 +6,7 @@ import api from '../../api';
 import Header from "./Header";
 
 const socket = io(
-  import.meta.env.VITE_SOCKET_URL || "https://taskpal-14oy.onrender.com",
+  import.meta.env.VITE_SOCKET_URL || "http://localhost:5000",
   {
     transports: ["websocket", "polling"], // ✅ fallback ensures Render stays connected
     withCredentials: true,
@@ -397,12 +397,19 @@ useEffect(() => {
           <div className="flex flex-col items-center text-center">
             <img
               src={
-                providerDetails.photo_url ||
+                providerDetails.profile_picture_url ||   // correct one from DB
+                providerDetails.profile_picture ||       // also returned in API
+                providerDetails.photo_url ||             // provider
+                providerDetails.photo ||
+                providerDetails.photoUrl ||
+                providerDetails.avatar ||
+                providerDetails.avatar_url ||
                 "https://cdn-icons-png.flaticon.com/512/149/149071.png"
               }
-              alt={role === "provider" ? "Client" : "Provider"}
+              alt="Profile"
               className="w-28 h-28 rounded-full border-4 border-gray-100 bg-gray-100 mb-4 object-cover"
             />
+
             <h3 className="text-lg font-semibold text-gray-800">
               {providerDetails.name || (role === "provider" ? "Client" : "Task Provider")}
             </h3>
@@ -799,12 +806,17 @@ useEffect(() => {
                     <img
                       src={
                         providerDetails.photo_url ||
+                        providerDetails.photo ||
+                        providerDetails.photoUrl ||
+                        providerDetails.profile_picture ||
+                        providerDetails.profile_picture_url ||
+                        providerDetails.avatar ||
+                        providerDetails.avatar_url ||
                         "https://cdn-icons-png.flaticon.com/512/149/149071.png"
                       }
                       alt="Provider"
                       className="w-32 h-32 rounded-full object-cover border bg-gray-50"
                     />
-
                     {/* Info */}
                     <div className="flex-1 space-y-2">
                       <h2 className="text-2xl font-bold text-gray-800">
@@ -832,7 +844,7 @@ useEffect(() => {
 
                       {/* Bio */}
                       <p className="mt-4 text-gray-700 leading-relaxed">
-                        {providerDetails.bio ||
+                        {providerDetails.notes ||
                           "This provider hasn’t written a bio yet."}
                       </p>
                     </div>

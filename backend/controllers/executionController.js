@@ -1,7 +1,39 @@
 import { sql } from "../config/db.js";
 
 /* -------------------------------------------------------------------------- */
-/* Get execution by bookingId                                                 */
+/* Helper: Save Notification to DB + Emit Socket                              */
+/* -------------------------------------------------------------------------- */
+async function notifyExecutionEvent(req, targetUserId, bookingId, title, message) {
+  try {
+    // 1️⃣ Save notification into DB
+    const [saved] = await sql`
+      INSERT INTO notifications (user_id, type, title, message, booking_id)
+      VALUES (${targetUserId}, 'execution', ${title}, ${message}, ${bookingId})
+      RETURNING *;
+    `;
+
+    const payload = {
+      id: saved.id,
+      type: "execution",
+      title,
+      message,
+      booking_id: bookingId,
+      timestamp: saved.created_at,
+      read: false,
+    };
+
+    // 2️⃣ Send Socket Event
+    req.io.to(`user-${targetUserId}`).emit("execution_update", payload);
+    console.log(`📩 Execution Notification sent to user-${targetUserId}`);
+
+  } catch (err) {
+    console.error("❌ Failed to send execution notification:", err);
+  }
+}
+
+
+/* -------------------------------------------------------------------------- */
+/* Get Execution by Booking ID                                                */
 /* -------------------------------------------------------------------------- */
 export const getExecutionByBooking = async (req, res) => {
   try {
@@ -11,9 +43,6 @@ export const getExecutionByBooking = async (req, res) => {
       SELECT * FROM execution WHERE booking_id = ${bookingId};
     `;
 
-    // --------------------------
-    // If not found → Auto-create
-    // --------------------------
     if (result.length === 0) {
       const booking = await sql`
         SELECT id, client_id, provider_id 
@@ -28,7 +57,6 @@ export const getExecutionByBooking = async (req, res) => {
         });
       }
 
-      // Payment lookup
       const payment = await sql`
         SELECT id FROM payments WHERE booking_id = ${bookingId};
       `;
@@ -62,7 +90,7 @@ export const getExecutionByBooking = async (req, res) => {
 
 
 /* -------------------------------------------------------------------------- */
-/* Create execution manually                                                  */
+/* Create Execution Manually                                                  */
 /* -------------------------------------------------------------------------- */
 export const createExecutionIfMissing = async (req, res) => {
   const { booking_id } = req.body;
@@ -85,7 +113,7 @@ export const createExecutionIfMissing = async (req, res) => {
 
     const [created] = await sql`
       INSERT INTO execution (booking_id, client_id, provider_id, payment_id)
-      VALUES (${booking_id}, ${booking.client_id}, ${booking.provider_id}, ${payment?.id || 0})
+      VALUES (${booking_id}, ${booking.client_id}, ${booking.provider_id}, ${payment?.id || null})
       RETURNING *
     `;
 
@@ -96,15 +124,14 @@ export const createExecutionIfMissing = async (req, res) => {
   }
 };
 
+
 /* -------------------------------------------------------------------------- */
-/* Update a single execution field                                            */
+/* Update Execution Field + Notify                                            */
 /* -------------------------------------------------------------------------- */
 export const updateExecutionField = async (req, res) => {
   try {
     const { field } = req.body;
     const { bookingId } = req.params;
-
-    console.log(`Create Request Received: ID=${bookingId}, Field=${field}`); // 🔍 Debug Log 1
 
     const allowedFields = ['validatedcredential', 'completedprovider', 'completedclient'];
 
@@ -114,6 +141,7 @@ export const updateExecutionField = async (req, res) => {
 
     let updated;
 
+    // 🔵 PROVIDER validated upon arrival
     if (field === 'validatedcredential') {
       updated = await sql`
         UPDATE execution
@@ -121,7 +149,18 @@ export const updateExecutionField = async (req, res) => {
         WHERE booking_id = ${bookingId}
         RETURNING *;
       `;
-    } 
+
+      const exec = updated[0];
+      await notifyExecutionEvent(
+        req,
+        exec.client_id,
+        bookingId,
+        "Provider Validated Arrival",
+        "Your provider has validated the service and started the job."
+      );
+    }
+
+    // 🟢 PROVIDER marks work completed
     else if (field === 'completedprovider') {
       updated = await sql`
         UPDATE execution
@@ -129,8 +168,18 @@ export const updateExecutionField = async (req, res) => {
         WHERE booking_id = ${bookingId}
         RETURNING *;
       `;
-    } 
-    // ✅ FIXED: Added the missing handler for 'completedclient'
+
+      const exec = updated[0];
+      await notifyExecutionEvent(
+        req,
+        exec.client_id,
+        bookingId,
+        "Provider Completed the Task",
+        "Your provider has marked the task as completed. Please review and confirm."
+      );
+    }
+
+    // 🟣 CLIENT confirms completion
     else if (field === 'completedclient') {
       updated = await sql`
         UPDATE execution
@@ -138,15 +187,23 @@ export const updateExecutionField = async (req, res) => {
         WHERE booking_id = ${bookingId}
         RETURNING *;
       `;
+
+      const exec = updated[0];
+      await notifyExecutionEvent(
+        req,
+        exec.provider_id,
+        bookingId,
+        "Client Confirmed Completion",
+        "Your client has confirmed the job as completed."
+      );
     }
 
-    // Check if the DB actually found and updated the row
+
     if (!updated || updated.length === 0) {
-        console.error(`❌ Record not found for booking_id: ${bookingId}`); // 🔍 Debug Log 2
-        return res.status(404).json({ error: "Booking ID not found in Execution table" });
+      console.error(`❌ Record not found for booking_id: ${bookingId}`);
+      return res.status(404).json({ error: "Booking ID not found in Execution table" });
     }
 
-    console.log("✅ Update successful:", updated[0]);
     return res.json({ success: true, data: updated[0] });
 
   } catch (error) {

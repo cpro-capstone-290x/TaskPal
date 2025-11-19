@@ -1,6 +1,6 @@
-// src/pages/profile/User/components/Sidebar.jsx
 import React from "react";
 import ProfilePictureUploader from "../../../components/ProfilePictureUploader";
+import { X } from "lucide-react";
 
 const Sidebar = ({
   user,
@@ -8,6 +8,8 @@ const Sidebar = ({
   setActiveTab,
   onLogout,
   onProfilePictureUpdate,
+  mobileMenuOpen,
+  setMobileMenuOpen,
 }) => {
   const menuItems = [
     { key: "profile", label: "Profile" },
@@ -17,54 +19,83 @@ const Sidebar = ({
   ];
 
   return (
-    <aside className="w-full lg:w-64 bg-white border-b lg:border-b-0 lg:border-r border-gray-200 shadow-sm p-4 sm:p-6 flex flex-col justify-between">
-      <div>
-        {/* Profile section matching ProviderSidebar formatting */}
-        {/* <div className="flex items-center gap-3 mb-6 sm:mb-8">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2">
-            <ProfilePictureUploader
-              user={user}
-              onUpdate={onProfilePictureUpdate}
-              size={64}
-            />
-          </div>
+    <>
+      {/* MOBILE OVERLAY */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        ></div>
+      )}
 
-          <div className="min-w-0">
-            <h2 className="font-semibold text-sm sm:text-base truncate">
-              {user.first_name} {user.last_name}
-            </h2>
-            <p className="text-xs sm:text-sm text-gray-500 capitalize">
-              {user.type_of_user}
-            </p>
-          </div>
-        </div> */}
+      {/* MOBILE DRAWER */}
+      <aside
+        className={`
+          fixed top-0 left-0 h-full w-64 bg-white border-r shadow-xl z-50
+          transform transition-transform duration-300 lg:hidden
+          ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
+        `}
+      >
+        <div className="flex items-center justify-between p-4 border-b">
+          <h2 className="text-lg font-semibold">Menu</h2>
+          <button onClick={() => setMobileMenuOpen(false)}>
+            <X size={20} />
+          </button>
+        </div>
 
-        {/* Navigation Menu */}
-        <nav className="space-y-2">
+        <nav className="p-4 space-y-2">
           {menuItems.map((item) => (
             <button
               key={item.key}
-              onClick={() => setActiveTab(item.key)}
-              className={`w-full text-left px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium transition ${
+              className={`w-full text-left px-4 py-2 rounded-lg text-sm font-medium transition ${
                 activeTab === item.key
                   ? "bg-green-600 text-white"
                   : "text-gray-700 hover:bg-gray-100"
               }`}
+              onClick={() => {
+                setActiveTab(item.key);
+                setMobileMenuOpen(false);
+              }}
             >
               {item.label}
             </button>
           ))}
         </nav>
-      </div>
 
-      {/* Logout Button */}
-      <button
-        onClick={onLogout}
-        className="w-full mt-6 px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm sm:text-base hover:bg-red-200 transition"
-      >
-        Logout
-      </button>
-    </aside>
+        <button
+          onClick={onLogout}
+          className="m-4 px-4 py-2 bg-red-100 text-red-700 rounded-lg"
+        >
+          Logout
+        </button>
+      </aside>
+
+      {/* DESKTOP SIDEBAR */}
+      <aside className="hidden lg:flex lg:flex-col w-64 bg-white border-r p-6 shadow-sm">
+        <nav className="space-y-2">
+          {menuItems.map((item) => (
+            <button
+              key={item.key}
+              className={`w-full text-left px-4 py-2 rounded-lg text-sm font-medium transition ${
+                activeTab === item.key
+                  ? "bg-green-600 text-white"
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}
+              onClick={() => setActiveTab(item.key)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        <button
+          onClick={onLogout}
+          className="mt-6 px-4 py-2 bg-red-100 text-red-700 rounded-lg"
+        >
+          Logout
+        </button>
+      </aside>
+    </>
   );
 };
 

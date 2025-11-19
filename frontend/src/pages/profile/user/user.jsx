@@ -22,14 +22,13 @@ const User = () => {
   const [activeTab, setActiveTab] = useState("profile");
   const [editMode, setEditMode] = useState(false);
 
-  // 🔥 Upload States
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const [newProfilePicture, setNewProfilePicture] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  // ⭐ NEW — Upload success popup state
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
-  // USER DETAILS HOOK
   const {
     user,
     loading: userLoading,
@@ -40,13 +39,11 @@ const User = () => {
 
   // ⭐ BOOKING HOOK — ongoing + history
   const {
-    bookings,
     ongoingBookings,
     historyBookings,
     loading: bookingLoading,
   } = useBookings(id);
 
-  // AUTHORIZED USER HOOK
   const {
     authorizedUser,
     loading: loadingAuth,
@@ -55,7 +52,6 @@ const User = () => {
     refreshAuthorizedUser,
   } = useAuthorizedUser(id);
 
-  // LOGOUT HANDLER
   const handleLogout = () => {
     localStorage.removeItem("authToken");
     localStorage.removeItem("userId");
@@ -103,7 +99,6 @@ const User = () => {
     }
   };
 
-  // LOADING / ERROR STATES
   if (userLoading) {
     return <p className="text-center mt-10 text-gray-500">Loading...</p>;
   }
@@ -118,14 +113,12 @@ const User = () => {
 
   return (
     <>
-      {/* SUCCESS POPUP */}
       {uploadSuccess && (
         <div className="fixed top-4 right-4 bg-green-100 text-green-700 border border-green-300 px-4 py-2 rounded-lg shadow flex items-center gap-2 z-50">
-          <span className="font-semibold">✓ Profile picture updated!</span>
+          ✓ Profile picture updated!
         </div>
       )}
 
-      {/* Floating Edit Button */}
       {activeTab === "profile" && !editMode && (
         <button
           onClick={() => setEditMode(true)}
@@ -134,6 +127,24 @@ const User = () => {
           Edit Profile
         </button>
       )}
+
+      {/* MOBILE HEADER */}
+      <div className="md:hidden flex items-center justify-between p-4 bg-white border-b shadow-sm">
+        <button
+          onClick={() => setMobileMenuOpen(true)}
+          className="p-2 bg-gray-100 border rounded-lg"
+        >
+          ☰
+        </button>
+
+        <h2 className="text-2xl font-semibold text-gray-800">
+          Profile <span className="bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">
+            Dashboard
+          </span>
+        </h2>
+
+
+      </div>
 
       {/* PAGE LAYOUT */}
       <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
@@ -145,7 +156,11 @@ const User = () => {
           onProfilePictureUpdate={(newPhoto) =>
             setUser((prev) => ({ ...prev, profile_picture_url: newPhoto }))
           }
+          
+          mobileMenuOpen={mobileMenuOpen}
+          setMobileMenuOpen={setMobileMenuOpen}
         />
+
 
         {/* Main content now uses responsive padding like Provider */}
         <main className="flex-1 w-full px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
@@ -160,15 +175,10 @@ const User = () => {
             />
           )}
 
-          {/* BOOKING HISTORY TAB */}
           {activeTab === "bookings" && (
-            <BookingHistory
-              bookings={historyBookings}
-              loading={bookingLoading}
-            />
+            <BookingHistory bookings={historyBookings} loading={bookingLoading} />
           )}
 
-          {/* ONGOING BOOKINGS TAB */}
           {activeTab === "ongoing" && (
             <OngoingBookings
               ongoingBookings={ongoingBookings}
@@ -176,7 +186,6 @@ const User = () => {
             />
           )}
 
-          {/* AUTHORIZED USER TAB */}
           {activeTab === "authorized" && (
             <AuthorizedUserSection
               user={user}
@@ -192,7 +201,6 @@ const User = () => {
         </main>
       </div>
 
-      {/* EDIT PROFILE MODAL */}
       {editMode && (
         <EditProfileModal
           user={user}

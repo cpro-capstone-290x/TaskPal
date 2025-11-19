@@ -1,5 +1,6 @@
+// src/hooks/provider/useProviderBookings.js
 import { useEffect, useState } from "react";
-import api from "../../../../api";
+import { getProviderBookingsWithClientNames } from "../../../services/bookingService";
 
 export const useProviderBookings = (providerId) => {
   const [bookings, setBookings] = useState([]);
@@ -16,32 +17,25 @@ export const useProviderBookings = (providerId) => {
       setLoading(true);
 
       try {
-        const res = await api.get(`/bookings?provider_id=${providerId}`);
+        // ⭐ REPLACED — now fetches booking **with client names**
+        const data = await getProviderBookingsWithClientNames(providerId);
 
         if (!isMounted) return;
 
-        let data = Array.isArray(res.data)
-          ? res.data
-          : Array.isArray(res.data?.data)
-          ? res.data.data
-          : [];
-
-        // Normalize status
-        data = data.map((b) => ({
+        // Normalize certain fields
+        const normalized = data.map((b) => ({
           ...b,
           status: b.status ? String(b.status).trim() : "",
-          completedclient:
-            b.completedclient?.trim().toLowerCase() || "",
-          completedprovider:
-            b.completedprovider?.trim().toLowerCase() || "",
+          completedclient: b.completedclient?.trim().toLowerCase() || "",
+          completedprovider: b.completedprovider?.trim().toLowerCase() || "",
         }));
 
-        setBookings(data);
+        setBookings(normalized);
 
-        // ---------------------------
-        // ONGOING FILTER (IDENTICAL TO CLIENT)
-        // ---------------------------
-        const ongoing = data.filter((b) => {
+        // ------------------------------------
+        // ONGOING FILTER (not completed/cancelled)
+        // ------------------------------------
+        const ongoing = normalized.filter((b) => {
           const s = b.status;
 
           const finished =
@@ -52,16 +46,13 @@ export const useProviderBookings = (providerId) => {
 
           if (finished) return false;
 
-          return (
-            s === "Paid" ||
-            s === "Confirmed" ||
-            s === "Pending" ||
-            s === "Negotiating"
-          );
+          return ["Paid", "Confirmed", "Pending", "Negotiating"].includes(s);
         });
 
-        // HISTORY
-        const history = data.filter((b) => {
+        // ------------------------------------
+        // HISTORY FILTER
+        // ------------------------------------
+        const history = normalized.filter((b) => {
           const s = b.status;
           return (
             s === "Completed" ||
@@ -75,7 +66,7 @@ export const useProviderBookings = (providerId) => {
         setHistoryJobs(history);
       } catch (err) {
         console.error("Provider booking load error:", err);
-        setBookings([]);
+        if (isMounted) setBookings([]);
       } finally {
         if (isMounted) setLoading(false);
       }

@@ -22,14 +22,13 @@ const User = () => {
   const [activeTab, setActiveTab] = useState("profile");
   const [editMode, setEditMode] = useState(false);
 
-  // 🔥 Upload States
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const [newProfilePicture, setNewProfilePicture] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  // ⭐ NEW — Upload success popup state
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
-  // USER DETAILS HOOK
   const {
     user,
     loading: userLoading,
@@ -38,15 +37,12 @@ const User = () => {
     setUser,
   } = useUserDetails(id);
 
-  // ⭐ BOOKING HOOK — NOW HAS ongoingBookings + historyBookings
   const {
-    bookings,
     ongoingBookings,
     historyBookings,
     loading: bookingLoading,
   } = useBookings(id);
 
-  // AUTHORIZED USER HOOK
   const {
     authorizedUser,
     loading: loadingAuth,
@@ -55,13 +51,11 @@ const User = () => {
     refreshAuthorizedUser,
   } = useAuthorizedUser(id);
 
-  // LOGOUT HANDLER
   const handleLogout = () => {
     localStorage.removeItem("authToken");
     navigate("/login");
   };
 
-  // PROFILE PICTURE UPLOAD FINAL LOGIC
   const onConfirmUpload = async () => {
     if (!newProfilePicture) return;
 
@@ -88,10 +82,8 @@ const User = () => {
 
       setNewProfilePicture(null);
 
-      // ⭐ NEW POPUP
       setUploadSuccess(true);
       setTimeout(() => setUploadSuccess(false), 2500);
-
     } catch (err) {
       console.error("❌ Upload error:", err);
       alert("Failed to upload profile image.");
@@ -100,7 +92,6 @@ const User = () => {
     }
   };
 
-  // LOADING / ERROR STATES
   if (userLoading) {
     return <p className="text-center mt-10 text-gray-500">Loading...</p>;
   }
@@ -115,14 +106,12 @@ const User = () => {
 
   return (
     <>
-      {/* SUCCESS POPUP */}
       {uploadSuccess && (
         <div className="fixed top-4 right-4 bg-green-100 text-green-700 border border-green-300 px-4 py-2 rounded-lg shadow flex items-center gap-2 z-50">
-          <span className="font-semibold">✓ Profile picture updated!</span>
+          ✓ Profile picture updated!
         </div>
       )}
 
-      {/* Floating Edit Button */}
       {activeTab === "profile" && !editMode && (
         <button
           onClick={() => setEditMode(true)}
@@ -132,8 +121,28 @@ const User = () => {
         </button>
       )}
 
+      {/* MOBILE HEADER */}
+      <div className="md:hidden flex items-center justify-between p-4 bg-white border-b shadow-sm">
+        <button
+          onClick={() => setMobileMenuOpen(true)}
+          className="p-2 bg-gray-100 border rounded-lg"
+        >
+          ☰
+        </button>
+
+        <h2 className="text-2xl font-semibold text-gray-800">
+          Profile <span className="bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">
+            Dashboard
+          </span>
+        </h2>
+
+
+      </div>
+
       {/* PAGE LAYOUT */}
-      <div className="min-h-screen bg-gray-50 flex">
+      <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row w-full overflow-x-hidden">
+
+        {/* DESKTOP SIDEBAR */}
         <Sidebar
           user={user}
           activeTab={activeTab}
@@ -142,10 +151,35 @@ const User = () => {
           onProfilePictureUpdate={(newPhoto) =>
             setUser((prev) => ({ ...prev, profile_picture_url: newPhoto }))
           }
+          isMobile={false}
         />
 
-        <main className="flex-1 p-10">
-          {/* PROFILE TAB */}
+        {/* MOBILE DRAWER SIDEBAR */}
+        {mobileMenuOpen && (
+          <div className="fixed inset-0 z-50 flex md:hidden bg-black/40">
+            <div className="w-64 bg-white p-5 shadow-xl h-full overflow-y-auto">
+              <Sidebar
+                user={user}
+                activeTab={activeTab}
+                setActiveTab={(tab) => {
+                  setActiveTab(tab);
+                  setMobileMenuOpen(false);
+                }}
+                onLogout={handleLogout}
+                onProfilePictureUpdate={(newPhoto) =>
+                  setUser((prev) => ({ ...prev, profile_picture_url: newPhoto }))
+                }
+                isMobile={true}
+              />
+            </div>
+
+            <div className="flex-1" onClick={() => setMobileMenuOpen(false)} />
+          </div>
+        )}
+
+        {/* MAIN CONTENT */}
+        <main className="flex-1 w-full p-4 md:p-10 flex justify-center md:justify-start">
+
           {activeTab === "profile" && (
             <ProfileView
               user={user}
@@ -156,15 +190,10 @@ const User = () => {
             />
           )}
 
-          {/* BOOKING HISTORY TAB */}
           {activeTab === "bookings" && (
-            <BookingHistory
-              bookings={historyBookings}
-              loading={bookingLoading}
-            />
+            <BookingHistory bookings={historyBookings} loading={bookingLoading} />
           )}
 
-          {/* ONGOING BOOKINGS TAB */}
           {activeTab === "ongoing" && (
             <OngoingBookings
               ongoingBookings={ongoingBookings}
@@ -172,7 +201,6 @@ const User = () => {
             />
           )}
 
-          {/* AUTHORIZED USER TAB */}
           {activeTab === "authorized" && (
             <AuthorizedUserSection
               user={user}
@@ -188,7 +216,6 @@ const User = () => {
         </main>
       </div>
 
-      {/* EDIT PROFILE MODAL */}
       {editMode && (
         <EditProfileModal
           user={user}

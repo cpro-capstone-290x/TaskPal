@@ -20,16 +20,13 @@ const SelectionIcons = () => {
   };
 
   return (
-    <div className="bg-gray-100 hero min-h-screen">
-      <div className="hero-content text-center max-w-2xl w-full">
+    <div className="bg-white hero min-h-screen">
+      <div className="hero-content text-center max-w-2xl w-full px-4">
         <div className="flex flex-col items-center w-full">
           {/* Logo / Title */}
-          <h1 className="text-9xl font-extrabold text-primary mb-10 tracking-tight">
-            <span className="text-secondary">Task</span>Pal
-          </h1>
-
+          <h1 className="text-8xl font-extrabold text-primary mb-9 tracking-tight"> <span className="text-secondary">Task</span>Pal </h1>
           {/* Subtitle */}
-          <p className="text-2xl text-base-content/70 mb-12 text-zinc-950">
+          <p className="text-lg sm:text-xl md:text-2xl text-base-content/70 mb-10 text-zinc-950">
             Select a category to begin exploring our resources.
           </p>
 
@@ -40,7 +37,9 @@ const SelectionIcons = () => {
                 key={option.id}
                 onClick={() => handleOptionClick(option.id)}
                 className={`
-                  btn btn-xl rounded-full px-15 text-3xl font-semibold transition-all duration-300 shadow-md 
+                  btn btn-lg sm:btn-xl rounded-full px-8 sm:px-10 md:px-14
+                  text-lg sm:text-xl md:text-2xl font-semibold
+                  transition-all duration-300 shadow-md
                   ${
                     selectedOption === option.id
                       ? "btn-primary text-primary-content shadow-xl scale-105"
@@ -48,7 +47,7 @@ const SelectionIcons = () => {
                   }
                 `}
               >
-                <span className="mr-2 text-xl">{option.icon}</span>
+                <span className="mr-2 text-xl sm:text-2xl">{option.icon}</span>
                 {option.label}
               </button>
             ))}

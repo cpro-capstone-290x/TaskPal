@@ -183,13 +183,16 @@ export const getPublicUserById = async (req, res) => {
     const result = await sql`
       SELECT 
         id, 
+        first_name,
+        last_name,
         CONCAT(first_name, ' ', last_name) AS name,
         email, 
         city, 
         province, 
         profile_picture,
-        created_at,
-        profile_picture_url
+        id_document_url,    -- Senior citizen ID
+        pwd_document_url,   -- PWD ID
+        created_at
       FROM users 
       WHERE id = ${id};
     `;
@@ -199,15 +202,36 @@ export const getPublicUserById = async (req, res) => {
     }
 
     const user = result[0];
-      user.profile_picture_url = user.profile_picture_url || user.profile_picture;
+
+    // Ensure a consistent key exists
+    user.profile_picture_url =
+      user.profile_picture ||
       "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
-    res.status(200).json({ data: user });
+    res.status(200).json({
+      success: true,
+      data: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        city: user.city,
+        province: user.province,
+        profile_picture_url: user.profile_picture_url,
+
+        // NEW FIELDS (important)
+        id_document_url: user.id_document_url,   // Senior ID
+        pwd_document_url: user.pwd_document_url, // PWD ID
+
+        created_at: user.created_at,
+      },
+    });
+
   } catch (err) {
     console.error("❌ Error fetching public user:", err);
     res.status(500).json({ message: "Server error fetching user profile" });
   }
 };
+
 
 export const uploadUserDocument = async (req, res) => {
     try {

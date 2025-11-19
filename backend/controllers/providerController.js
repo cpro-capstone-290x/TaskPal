@@ -79,10 +79,15 @@ export const updateProvider = async (req, res) => {
     }
 
     // 2. Handle password update
-    let passwordHash = existingProvider.password; // Default to the old, existing hash
-    
-    // Only if a new, non-empty password was provided, hash it.
-    if (password && password.trim() !== "") {
+    let passwordHash = existingProvider.password; // Default to existing hash
+
+    // ⭐ FIX: Only hash if NEW password was provided (not empty, not same bcrypt hash)
+    const isNewPasswordProvided =
+      password &&
+      password.trim() !== "" &&
+      !password.startsWith("$2b$");
+
+    if (isNewPasswordProvided) {
       const salt = await bcrypt.genSalt(10);
       passwordHash = await bcrypt.hash(password, salt);
       console.log(`Password updated for provider ${id}`);
@@ -100,11 +105,11 @@ export const updateProvider = async (req, res) => {
         )
       ) {
         return res.status(400).json({
-          error: "TaskPal only supports Red Deer providers. Postal code must start with T4N, T4P, or T4R.",
+          error:
+            "TaskPal only supports Red Deer providers. Postal code must start with T4N, T4P, or T4R.",
         });
       }
     }
-
 
     // 3. Run the simple, explicit update query
     const result = await sql`
@@ -121,28 +126,30 @@ export const updateProvider = async (req, res) => {
         status = ${status},
         profile_picture_url = ${profile_picture_url},
         note = ${note},
-        password = ${passwordHash}, 
+        password = ${passwordHash},
         updated_at = NOW()
       WHERE id = ${id}
       RETURNING *;
     `;
 
     if (!result || result.length === 0) {
-      // This shouldn't happen if the first check passed, but it's good practice
-      return res.status(404).json({ error: "Provider not found during update" });
+      return res
+        .status(404)
+        .json({ error: "Provider not found during update" });
     }
 
-    // Return 200 OK with the newly updated data
     return res.status(200).json({ success: true, data: result[0] });
-
   } catch (error) {
     console.error("❌ Failed to update provider:", error);
-    if (error.code === '23505') { // Handle unique email constraint
-      return res.status(409).json({ error: `Failed to update: ${error.detail}` });
+    if (error.code === "23505") {
+      return res
+        .status(409)
+        .json({ error: `Failed to update: ${error.detail}` });
     }
     res.status(500).json({ error: "Failed to update provider" });
   }
 };
+
 
 
 

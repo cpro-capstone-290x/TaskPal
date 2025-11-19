@@ -47,8 +47,8 @@ const LoginProvider = ({ onSuccess }) => {
     setStatus({ loading: true, error: null, success: false });
 
     const API_ENDPOINT = import.meta.env.VITE_API_URL
-        ? `${import.meta.env.VITE_API_URL}/auth/loginProvider`
-        : "https://taskpal-14oy.onrender.com/api/auth/loginProvider";
+      ? `${import.meta.env.VITE_API_URL}/auth/loginProvider`
+      : "https://taskpal-14oy.onrender.com/api/auth/loginProvider";
 
     try {
       const response = await fetch(API_ENDPOINT, {
@@ -60,7 +60,6 @@ const LoginProvider = ({ onSuccess }) => {
       const result = await response.json();
       console.log("🔍 Full login response:", result);
 
-
       if (!response.ok) {
         const errorMessage =
           result.error || 'Login failed. Please check your email and password.';
@@ -68,11 +67,9 @@ const LoginProvider = ({ onSuccess }) => {
         return;
       }
 
-        // ✅ Extract Provider ID and Token correctly
-        const providerId = result.data?.provider?.id;
-        const token = result.data?.token;
-
-      
+      // ✅ Extract Provider ID and Token correctly
+      const providerId = result.data?.provider?.id;
+      const token = result.data?.token;
 
       if (!providerId || !token) {
         console.error('Unexpected server response:', result);
@@ -84,33 +81,46 @@ const LoginProvider = ({ onSuccess }) => {
         return;
       }
 
-      // ✅ Store session data
+      /* ------------------------------------------------------- */
+      /* ✅ STORE TOKENS — STANDARDIZED FOR WHOLE APP            */
+      /* ------------------------------------------------------- */
+
+      // 🔥 Main token key (used by ExecutionPage, chat, bookings)
+      localStorage.setItem('token', token);
+
+      // 🔥 Backup (your older pages use these names)
       localStorage.setItem('authToken', token);
-      localStorage.setItem("userId", providerId);
+      localStorage.setItem('provider_token', token);
+
+      // 🔥 Store providerId under a consistent key
+      localStorage.setItem('providerId', providerId);
+
+      // For compatibility with older pages using userId
+      localStorage.setItem('userId', providerId);
+
+      // 🔥 Store role so role-based routing works
       localStorage.setItem('userRole', 'provider');
+
+
+      /* ------------------------------------------------------- */
+      /* END STORAGE FIXES                                       */
+      /* ------------------------------------------------------- */
 
       setStatus({ loading: false, error: null, success: true });
       console.log('✅ Provider logged in successfully:', result.data);
 
-      // ✅ Check if there’s a redirect URL saved before login
+      // Check for redirect before login
       const pendingRedirect = localStorage.getItem("pendingRedirect");
 
-      // ✅ Clear it immediately after using it
       if (pendingRedirect) {
         localStorage.removeItem("pendingRedirect");
       }
 
-      // ✅ Success state
-      setStatus({ loading: false, error: null, success: true });
-      console.log("✅ User logged in successfully:", result.data);
-
-      // ✅ Redirect logic
+      // Redirect logic
       setTimeout(() => {
         if (pendingRedirect) {
-          // Redirect back to booking flow
           navigate(pendingRedirect);
         } else {
-          // Default redirect
           navigate(`/profileProvider/${providerId}`);
         }
       }, 1000);
@@ -128,7 +138,7 @@ const LoginProvider = ({ onSuccess }) => {
 
   return (
     <div className="space-y-6">
-      {/* ✅ Status Messages */}
+      {/* Status Messages */}
       {status.success && (
         <div className="p-4 bg-green-50 border border-green-300 text-green-700 rounded-xl text-center font-semibold animate-pulse-once">
           ✅ Login Successful! Redirecting to your dashboard...
@@ -140,7 +150,7 @@ const LoginProvider = ({ onSuccess }) => {
         </div>
       )}
 
-      {/* ✅ Form */}
+      {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
         <InputField
           label="Email Address"
@@ -162,7 +172,7 @@ const LoginProvider = ({ onSuccess }) => {
           placeholder="Your secure password"
         />
 
-        {/* ✅ Submit Button */}
+        {/* Submit Button */}
         <button
           type="submit"
           disabled={status.loading}
@@ -198,7 +208,7 @@ const LoginProvider = ({ onSuccess }) => {
         </button>
       </form>
 
-      {/* ✅ Forgot Password */}
+      {/* Forgot Password */}
       <div className="text-center pt-2">
         <a
           href="/forgot-password"

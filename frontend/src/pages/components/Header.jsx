@@ -359,17 +359,24 @@ const Header = () => {
         socket.emit("join_notification_room", { userId });
       });
 
-      // When server tells us something happened → refresh notifications from DB
+      // ⭐ These refresh the notification list
       socket.on("new_message", fetchNotifications);
       socket.on("new_booking", fetchNotifications);
       socket.on("payment_agreed", fetchNotifications);
       socket.on("booking_cancelled", fetchNotifications);
+
+      // ⭐ NEW: Real-time execution notifications
+      socket.on("execution_update", (data) => {
+        console.log("🔥 Execution Update:", data);
+        fetchNotifications();  // instantly reload notifications
+      });
 
       return () => {
         socket.off("new_message");
         socket.off("new_booking");
         socket.off("payment_agreed");
         socket.off("booking_cancelled");
+        socket.off("execution_update");
         socket.disconnect();
       };
     } else {
@@ -386,18 +393,36 @@ const Header = () => {
   const handleNotificationClick = (n) => {
     const id = n.booking_id;
 
-    if (id) {
-      navigate(userRole === "provider" ? `/chat/${id}/provider` : `/chat/${id}/user`);
+    // ⭐ 1. Execution notifications → redirect to execution page
+    if (n.type === "execution" && id) {
+      navigate(
+        userRole === "provider"
+          ? `/execution/${id}`
+          : `/execution/${id}`
+      );
       setMobileOpen(false);
       return;
     }
 
+    // ⭐ 2. Other booking-based notifications → go to chat
+    if (id) {
+      navigate(
+        userRole === "provider"
+          ? `/chat/${id}/provider`
+          : `/chat/${id}/user`
+      );
+      setMobileOpen(false);
+      return;
+    }
+
+    // ⭐ 3. Message type → generic chat
     if (n.type === "message") {
       navigate("/chat");
       setMobileOpen(false);
       return;
     }
 
+    // ⭐ 4. Fallback → role dashboard
     navigate(userRole === "provider" ? "/provider" : "/user");
     setMobileOpen(false);
   };

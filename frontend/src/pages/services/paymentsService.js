@@ -1,17 +1,31 @@
 // src/services/paymentsService.js
-import api from '../../api';
+import api from "../../api";
+
 /**
  * Get payout history for the logged-in provider.
- * Uses bearer token for /payments/my-history
+ * Automatically selects the correct provider token.
  */
 export const getMyPayouts = async (token) => {
-  if (!token) throw new Error("Authorization token missing.");
+  // Auto-detect provider token if not passed
+  const finalToken =
+    token ||
+    localStorage.getItem("providerToken") ||
+    localStorage.getItem("authToken");
 
-  const res = await api.get("/payments/my-history", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  if (!finalToken) {
+    throw new Error("Authorization token missing.");
+  }
 
-  return res.data || [];
+  try {
+    const res = await api.get("/payments/my-history", {
+      headers: {
+        Authorization: `Bearer ${finalToken}`,
+      },
+    });
+
+    return res.data || [];
+  } catch (err) {
+    console.error("❌ Error loading payouts:", err);
+    throw err;
+  }
 };

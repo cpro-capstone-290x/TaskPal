@@ -1,7 +1,20 @@
+// controllers/bookingController.js
 import { sql } from "../config/db.js";
 import PDFDocument from "pdfkit";
 import { put } from "@vercel/blob";
 import fs from "fs";
+
+// 🔥 Helper to save notifications to DB
+async function saveNotification({ userId, type, title, message, bookingId }) {
+  try {
+    await sql`
+      INSERT INTO notifications (user_id, type, title, message, booking_id)
+      VALUES (${userId}, ${type}, ${title}, ${message}, ${bookingId})
+    `;
+  } catch (err) {
+    console.error("❌ Failed to save notification:", err);
+  }
+}
 
 export const bookTask = async (req, res) => {
   const { client_id, provider_id, notes, scheduled_date, price } = req.body;
@@ -17,7 +30,7 @@ export const bookTask = async (req, res) => {
     const [booking] = await sql`
       INSERT INTO bookings (client_id, provider_id, notes, scheduled_date, price)
       VALUES (${client_id}, ${provider_id}, ${notes}, ${scheduled_date}, ${price})
-      RETURNING id, client_id, provider_id, scheduled_date, status;
+      RETURNING *, notes;
     `;
 
     // 2️⃣ Initialize empty chat record
@@ -26,15 +39,25 @@ export const bookTask = async (req, res) => {
       VALUES (${booking.id}, '[]'::jsonb)
     `;
 
-        const notificationData = {
-      type: 'booking', // This will use the CalendarIcon in the header
-      title: 'New Booking Request',
-      message: `You have a new request. Notes: ${booking.notes ? booking.notes.substring(0, 30) : 'N/A'}...`,
-      booking_id: booking.id
+    // 3️⃣ Socket notification
+    const notificationData = {
+      type: "booking",
+      title: "New Booking Request",
+      message: `You have a new request. Notes: ${booking.notes ? booking.notes.substring(0, 30) : "N/A"}...`,
+      booking_id: booking.id,
     };
-    // Emit to the provider's private notification room
-    req.io.to(`user-${booking.provider_id}`).emit('new_booking', notificationData);
+
+    req.io.to(`user-${booking.provider_id}`).emit("new_booking", notificationData);
     console.log(`🔔 Sent 'new_booking' notification to user ${booking.provider_id}`);
+
+    // 4️⃣ Persistent DB notification
+    await saveNotification({
+      userId: booking.provider_id,
+      type: "booking",
+      title: notificationData.title,
+      message: notificationData.message,
+      bookingId: booking.id,
+    });
 
     res.status(201).json({
       message: "✅ Booking created successfully, chat initialized",
@@ -51,7 +74,6 @@ export const bookTask = async (req, res) => {
   }
 };
 
-
 export const getBookingById = async (req, res) => {
   const { id } = req.params;
 
@@ -61,7 +83,6 @@ export const getBookingById = async (req, res) => {
 
     const user = req.user;
 
-    // 🧠 Role-based access control
     if (user.role === "user" && booking.client_id !== user.id) {
       return res.status(403).json({ error: "Unauthorized to view this booking" });
     }
@@ -70,7 +91,6 @@ export const getBookingById = async (req, res) => {
       return res.status(403).json({ error: "Unauthorized to view this booking" });
     }
 
-    // Admins can view all
     return res.json(booking);
   } catch (err) {
     console.error("Error fetching booking:", err);
@@ -78,8 +98,6 @@ export const getBookingById = async (req, res) => {
   }
 };
 
-
-// Update booking price (provider)
 export const updateBookingPrice = async (req, res) => {
   const { id } = req.params;
   const { price } = req.body;
@@ -94,18 +112,27 @@ export const updateBookingPrice = async (req, res) => {
 
     if (!booking) return res.status(404).json({ error: "Booking not found" });
 
-    // ✅ Broadcast to both client and provider via chat room
     req.io.to(`chat-${id}`).emit("booking_updated", booking);
 
-        const notificationData = {
-      type: 'payment', // This will use the DollarIcon
-      title: 'Price Updated',
+    const notificationData = {
+      type: "payment",
+      title: "Price Updated",
       message: `The provider proposed a new price: $${booking.price}`,
-      booking_id: id
+      booking_id: id,
     };
-    // Emit to the client's private notification room
-    req.io.to(`user-${booking.client_id}`).emit('payment_agreed', notificationData);
+
+    // Socket notify user
+    req.io.to(`user-${booking.client_id}`).emit("payment_agreed", notificationData);
     console.log(`🔔 Sent 'payment_agreed' notification to user ${booking.client_id}`);
+
+    // Persistent notify
+    await saveNotification({
+      userId: booking.client_id,
+      type: "payment",
+      title: notificationData.title,
+      message: notificationData.message,
+      bookingId: id,
+    });
 
     res.json({ message: "Price updated successfully", booking });
   } catch (err) {
@@ -114,8 +141,6 @@ export const updateBookingPrice = async (req, res) => {
   }
 };
 
-
-// Client or Provider agrees
 export const agreeToPrice = async (req, res) => {
   const { id } = req.params;
   const { role } = req.body;
@@ -127,7 +152,8 @@ export const agreeToPrice = async (req, res) => {
     let updated;
     let notificationData = {};
     let notifyTo = null;
-    let eventType = 'payment_agreed';
+    let notifyUserId = null;
+
     if (role === "user") {
       updated = await sql`
         UPDATE bookings
@@ -135,15 +161,14 @@ export const agreeToPrice = async (req, res) => {
         WHERE id = ${id}
         RETURNING *;
       `;
-      // Notify PROVIDER that client agreed
       notifyTo = `user-${updated[0].provider_id}`;
+      notifyUserId = updated[0].provider_id;
       notificationData = {
-        type: 'payment',
-        title: 'Client Agreed',
-        message: 'The client has agreed to the price.',
-        booking_id: updated[0].id
+        type: "payment",
+        title: "Client Agreed",
+        message: "The client has agreed to the price.",
+        booking_id: updated[0].id,
       };
-
     } else if (role === "provider") {
       updated = await sql`
         UPDATE bookings
@@ -151,22 +176,33 @@ export const agreeToPrice = async (req, res) => {
         WHERE id = ${id}
         RETURNING *;
       `;
-      // Notify CLIENT that provider agreed
       notifyTo = `user-${updated[0].client_id}`;
+      notifyUserId = updated[0].client_id;
       notificationData = {
-        type: 'payment',
-        title: 'Provider Agreed',
-        message: 'The provider has agreed to the price.',
-        booking_id: updated[0].id
+        type: "payment",
+        title: "Provider Agreed",
+        message: "The provider has agreed to the price.",
+        booking_id: updated[0].id,
       };
-
     } else {
       return res.status(400).json({ error: "Invalid role" });
     }
 
     const updatedBooking = updated[0];
 
-    // ✅ If both sides agreed → Confirm booking
+    // 🔥 Persistent notify
+    await saveNotification({
+      userId: notifyUserId,
+      type: notificationData.type,
+      title: notificationData.title,
+      message: notificationData.message,
+      bookingId: updatedBooking.id,
+    });
+
+    // 🔥 Socket notify
+    req.io.to(notifyTo).emit("payment_agreed", notificationData);
+
+    // If both agreed → Confirm booking
     if (
       updatedBooking.agreement_signed_by_client &&
       updatedBooking.agreement_signed_by_provider
@@ -178,41 +214,46 @@ export const agreeToPrice = async (req, res) => {
         RETURNING *;
       `;
 
-      if (!confirmed) {
-        console.error(`❌ Failed to find booking ${id} for final confirmation.`);
-        return res.status(404).json({ error: "Booking not found during final update." });
-      }
-
       const confirmedBooking = confirmed;
-      req.io.to(`chat-${id}`).emit("booking_updated", confirmedBooking); // <--- broadcast to both clients
-      
+
+      req.io.to(`chat-${id}`).emit("booking_updated", confirmedBooking);
+
       const clientNotification = {
-        type: 'booking', // Use CalendarIcon
-        title: 'Booking Confirmed!',
+        type: "booking",
+        title: "Booking Confirmed!",
         message: `Your booking (ID: ${confirmedBooking.id}) is confirmed.`,
-        booking_id: confirmedBooking.id
+        booking_id: confirmedBooking.id,
       };
-      req.io.to(`user-${confirmedBooking.client_id}`).emit('new_booking', clientNotification);
+      req.io.to(`user-${confirmedBooking.client_id}`).emit("new_booking", clientNotification);
 
       const providerNotification = {
-        type: 'booking',
-        title: 'Booking Confirmed!',
+        type: "booking",
+        title: "Booking Confirmed!",
         message: `Your booking (ID: ${confirmedBooking.id}) is confirmed.`,
-        booking_id: confirmedBooking.id
+        booking_id: confirmedBooking.id,
       };
-      req.io.to(`user-${confirmedBooking.provider_id}`).emit('new_booking', providerNotification);
-      console.log(`🔔 Sent 'new_booking' (Confirmed) to client ${confirmedBooking.client_id} and provider ${confirmedBooking.provider_id}`);
+      req.io.to(`user-${confirmedBooking.provider_id}`).emit("new_booking", providerNotification);
+
+      // 🔥 Persistent for both client + provider
+      await saveNotification({
+        userId: confirmedBooking.client_id,
+        type: "booking",
+        title: clientNotification.title,
+        message: clientNotification.message,
+        bookingId: confirmedBooking.id,
+      });
+      await saveNotification({
+        userId: confirmedBooking.provider_id,
+        type: "booking",
+        title: providerNotification.title,
+        message: providerNotification.message,
+        bookingId: confirmedBooking.id,
+      });
 
       return res.json({ message: "Booking confirmed", booking: confirmedBooking });
     }
 
-    // ✅ Otherwise, still negotiating → notify both sides
-    req.io.to(`chat-${id}`).emit("booking_updated", updatedBooking); // <--- broadcast to both clients
-    
-    if (notifyTo) {
-      req.io.to(notifyTo).emit(eventType, notificationData);
-      console.log(`🔔 Sent '${eventType}' notification to ${notifyTo}`);
-    }
+    req.io.to(`chat-${id}`).emit("booking_updated", updatedBooking);
 
     res.json({ message: "Agreement updated", booking: updatedBooking });
   } catch (err) {
@@ -221,30 +262,17 @@ export const agreeToPrice = async (req, res) => {
   }
 };
 
-
-
 export const downloadAgreement = async (req, res) => {
   const { id } = req.params;
 
   try {
     const [booking] = await sql`SELECT * FROM bookings WHERE id = ${id}`;
-    if (!booking) {
-      res.status(404).json({ error: "Booking not found" });
-      return;
+    if (!booking) return res.status(404).json({ error: "Booking not found" });
+
+    if (!booking.agreement_signed_by_client || !booking.agreement_signed_by_provider) {
+      return res.status(400).json({ error: "Agreement not fully signed" });
     }
 
-    // ✅ Ensure both sides agreed
-    if (
-      !booking.agreement_signed_by_client ||
-      !booking.agreement_signed_by_provider
-    ) {
-      res
-        .status(400)
-        .json({ error: "Agreement not yet signed by both parties" });
-      return;
-    }
-
-    // ✅ Prepare data safely
     const price =
       booking.price && !isNaN(booking.price)
         ? parseFloat(booking.price).toFixed(2)
@@ -254,20 +282,17 @@ export const downloadAgreement = async (req, res) => {
       ? new Date(booking.scheduled_date).toLocaleString()
       : "Not scheduled";
 
-    // ✅ Generate PDF in memory
     const PDFBuffer = await new Promise((resolve, reject) => {
       const chunks = [];
       const doc = new PDFDocument();
 
-      doc.on("data", (chunk) => chunks.push(chunk));
+      doc.on("data", (c) => chunks.push(c));
       doc.on("end", () => resolve(Buffer.concat(chunks)));
       doc.on("error", reject);
 
-      // --- HEADER
       doc.fontSize(22).text("TaskPal Service Agreement", { align: "center" });
       doc.moveDown(2);
 
-      // --- BOOKING DETAILS
       doc.fontSize(14).text("Booking Summary", { underline: true });
       doc.moveDown(0.5);
       doc.fontSize(12);
@@ -280,17 +305,15 @@ export const downloadAgreement = async (req, res) => {
       doc.text(`Status: ${booking.status}`);
       doc.moveDown(1.5);
 
-      // --- AGREEMENT TERMS
       doc.fontSize(14).text("Agreement Terms", { underline: true });
       doc.moveDown(0.5);
       doc.fontSize(12);
       doc.text(
-        "This document confirms that both parties have reviewed and agreed to the TaskPal Terms & Conditions. " +
-          "Once signed, the provider commits to fulfilling the service as described, and the client agrees to pay the stated price."
+        "This confirms that both parties have reviewed and agreed to the TaskPal Terms & Conditions. " +
+          "The provider commits to fulfill the service and the client agrees to pay the price stated."
       );
       doc.moveDown(1.5);
 
-      // --- SIGNATURE SECTION
       doc.text("___________________________", { continued: true }).text("     ", {
         continued: true,
       });
@@ -303,64 +326,51 @@ export const downloadAgreement = async (req, res) => {
       doc.end();
     });
 
-// ✅ Upload PDF to Vercel Blob (safe overwrite)
-const blobPath = `Client-Provider-Agreement/agreement_booking_${id}.pdf`;
+    const blobPath = `Client-Provider-Agreement/agreement_booking_${id}.pdf`;
 
-const upload = await put(blobPath, PDFBuffer, {
-  access: "public",
-  contentType: "application/pdf",
-  token: process.env.BLOB_READ_WRITE_TOKEN,
-  allowOverwrite: true, // ✅ correct placement for v2.x
-});
+    const upload = await put(blobPath, PDFBuffer, {
+      access: "public",
+      contentType: "application/pdf",
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+      allowOverwrite: true,
+    });
 
-console.log("✅ Uploaded to Blob:", upload.url);
+    await sql`
+      UPDATE bookings
+      SET agreement_pdf_url = ${upload.url}, updated_at = NOW()
+      WHERE id = ${id};
+    `;
 
-// ✅ Save the Blob URL to the bookings table
-await sql`
-  UPDATE bookings
-  SET agreement_pdf_url = ${upload.url}, updated_at = NOW()
-  WHERE id = ${id};
-`;
-
-console.log("💾 Saved agreement URL to DB for booking:", id);
-
-// ✅ Return JSON response
-res.status(200).json({
-  success: true,
-  message: "Agreement uploaded successfully to Vercel Blob",
-  url: upload.url,
-});
-
+    res.status(200).json({
+      success: true,
+      message: "Agreement uploaded successfully",
+      url: upload.url,
+    });
   } catch (err) {
-    console.error("❌ Error generating/downloading agreement:", err);
+    console.error("❌ Agreement generation error:", err);
     res.status(500).json({ error: "Failed to generate/download agreement" });
   }
 };
 
-// controllers/bookingController.js
 export const cancelBooking = async (req, res) => {
   const { id } = req.params;
   const user = req.user;
 
   try {
-    // 1️⃣ Find the booking
     const [booking] = await sql`SELECT * FROM bookings WHERE id = ${id}`;
     if (!booking) return res.status(404).json({ error: "Booking not found" });
 
-    // 2️⃣ Check permissions — only the client or provider can cancel
     if (
       (user.role === "user" && booking.client_id !== user.id) ||
       (user.role === "provider" && booking.provider_id !== user.id)
     ) {
-      return res.status(403).json({ error: "Unauthorized to cancel this booking" });
+      return res.status(403).json({ error: "Unauthorized" });
     }
 
-    // 3️⃣ Prevent re-cancelling or cancelling confirmed/completed bookings
     if (["Cancelled", "Completed"].includes(booking.status)) {
       return res.status(400).json({ error: `Booking already ${booking.status}` });
     }
 
-    // 4️⃣ Update status to Cancelled (soft delete)
     const [updatedBooking] = await sql`
       UPDATE bookings
       SET status = 'Cancelled', updated_at = NOW()
@@ -368,28 +378,31 @@ export const cancelBooking = async (req, res) => {
       RETURNING *;
     `;
 
-    // 5️⃣ Optional: Emit socket notification to the other party
     req.io.to(`chat-${id}`).emit("booking_updated", updatedBooking);
 
-    // Notify the other party (client ↔ provider)
-    const notifyTo =
-      user.role === "user"
-        ? `user-${booking.provider_id}`
-        : `user-${booking.client_id}`;
+    const otherPartyId =
+      user.role === "user" ? booking.provider_id : booking.client_id;
 
     const notificationData = {
       type: "booking",
       title: "Booking Cancelled",
       message: `Booking (ID: ${id}) has been cancelled by the ${user.role}.`,
-      booking_id: id
+      booking_id: id,
     };
 
-    req.io.to(notifyTo).emit("booking_cancelled", notificationData);
+    req.io.to(`user-${otherPartyId}`).emit("booking_cancelled", notificationData);
 
-    console.log(`🛑 Booking ${id} cancelled by ${user.role}.`);
+    // Persistent notify
+    await saveNotification({
+      userId: otherPartyId,
+      type: "booking",
+      title: notificationData.title,
+      message: notificationData.message,
+      bookingId: id,
+    });
 
     res.json({
-      message: "Booking cancelled successfully.",
+      message: "Booking cancelled successfully",
       booking: updatedBooking,
     });
   } catch (err) {

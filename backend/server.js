@@ -23,6 +23,7 @@ import reviewRoutes from "./routes/reviewRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
 import accessibilityRoutes from "./routes/accessibilityRoutes.js";
 import announcementRoutes from "./routes/announcementRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 import { protect } from "./middleware/authMiddleware.js";
 import { sql } from "./config/db.js";
@@ -109,6 +110,7 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/accessibility", accessibilityRoutes); // ← keep only this (no pp.use duplicate)
 app.use("/api/announcements", announcementRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // ✅ Blob test route (unchanged)
 app.get("/test-upload", async (req, res) => {
@@ -200,10 +202,30 @@ io.on("connection", (socket) => {
         type: "message",
         title: "New Message",
         message: message.substring(0, 50) + "...",
+        booking_id: bookingId,
       };
+
+      // 🔥 1. Save notification to DB
+      try {
+        await sql`
+          INSERT INTO notifications (user_id, type, title, message, booking_id)
+          VALUES (
+            ${recipientId},
+            ${notificationData.type},
+            ${notificationData.title},
+            ${notificationData.message},
+            ${bookingId}
+          );
+        `;
+      } catch (err) {
+        console.error("❌ Failed to save notification:", err);
+      }
+
+      // 🔥 2. Emit realtime notification
       io.to(`user-${recipientId}`).emit("new_message", notificationData);
-      console.log(`🔔 Sent 'new_message' notification to user ${recipientId}`);
+      console.log(`🔔 Sent and saved 'new_message' to user ${recipientId}`);
     }
+
   });
 
   socket.on("disconnect", () => {

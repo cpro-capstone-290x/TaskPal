@@ -156,8 +156,11 @@ const User = () => {
           onProfilePictureUpdate={(newPhoto) =>
             setUser((prev) => ({ ...prev, profile_picture_url: newPhoto }))
           }
-          isMobile={false}
+          
+          mobileMenuOpen={mobileMenuOpen}
+          setMobileMenuOpen={setMobileMenuOpen}
         />
+
 
         {/* Main content now uses responsive padding like Provider */}
         <main className="flex-1 w-full px-4 py-6 sm:px-6 lg:px-10 lg:py-10">

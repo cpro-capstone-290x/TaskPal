@@ -13,6 +13,7 @@ const User = () => {
   const [bookingLoading, setBookingLoading] = useState(false);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("profile");
+  
 
   // Added for Edit Profile Feature
   const [editMode, setEditMode] = useState(false);
@@ -119,7 +120,7 @@ const User = () => {
     { key: "profile", label: "Profile" },
     { key: "bookings", label: "Booking History" },
     { key: "ongoing", label: "Ongoing" },
-    { key: "authorized", label: "Authorized User" },
+    { key: "authorized", label: "Authorized User" }
   ];
 
   // ✅ Show only "Paid" bookings where completedClient is not "completed"
@@ -135,16 +136,16 @@ const User = () => {
       {activeTab === "profile" && !editMode && (
         <button
           onClick={() => setEditMode(true)}
-          className="fixed bottom-6 right-6 px-4 py-2 rounded-full shadow-lg bg-blue-600 text-white hover:bg-blue-700 transition text-sm sm:text-base"
+          className="fixed bottom-6 right-6 px-4 py-2 rounded-full shadow-lg bg-blue-600 text-white hover:bg-blue-700 transition"
         >
           Edit Profile
         </button>
       )}
 
-      {/*  Edit Profile Modal */}
+            {/*  Edit Profile Modal */}
       {editMode && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-xl shadow-xl p-4 sm:p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-2xl">
             <h3 className="text-lg font-semibold mb-4">Edit Profile</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -167,7 +168,7 @@ const User = () => {
                     name={field.name}
                     value={formData[field.name]}
                     onChange={handleChange}
-                    className="w-full border rounded px-3 py-2 text-sm sm:text-base"
+                    className="w-full border rounded px-3 py-2"
                   />
                 </div>
               ))}
@@ -184,7 +185,7 @@ const User = () => {
                     value={formData.password}
                     onChange={handleChange}
                     placeholder="Enter your password to confirm email change"
-                    className="w-full border rounded px-3 py-2 text-sm sm:text-base"
+                    className="w-full border rounded px-3 py-2"
                     required
                   />
                 </div>
@@ -194,13 +195,13 @@ const User = () => {
             <div className="flex justify-end gap-2 mt-6">
               <button
                 onClick={() => setEditMode(false)}
-                className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200 text-sm sm:text-base"
+                className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 text-sm sm:text-base"
+                className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
               >
                 Save Changes
               </button>
@@ -209,69 +210,44 @@ const User = () => {
         </div>
       )}
 
+
       {/* Main Dashboard Layout */}
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col lg:flex-row gap-6">
-          {/* Sidebar */}
-          <aside className="w-full lg:w-64 bg-white border border-gray-200 shadow-sm p-4 sm:p-6 flex flex-col justify-between rounded-2xl">
-            <div>
-              <div className="flex items-center gap-3 mb-6 sm:mb-8">
-                <ProfilePictureUploader
-                  user={user}
-                  onUpdate={(newPhoto) =>
-                    setUser((prev) => ({
-                      ...prev,
-                      profile_picture: newPhoto,
-                    }))
-                  }
-                />
+      <div className="min-h-screen bg-gray-50 flex">
+        {/* Sidebar */}
+        <aside className="w-64 bg-white border-r border-gray-200 shadow-sm p-6 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-3 mb-8">
+              <ProfilePictureUploader
+                user={user}
+                onUpdate={(newPhoto) => setUser((prev) => ({ ...prev, profile_picture: newPhoto }))}
+              />
 
-                <div className="min-w-0">
-                  <h2 className="text-base sm:text-lg font-semibold text-gray-800 truncate">
-                    {user.first_name} {user.last_name}
-                  </h2>
-                  <p className="text-xs sm:text-sm text-gray-500 capitalize">
-                    {user.type_of_user}
-                  </p>
-                </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800">
+                  {user.first_name} {user.last_name}
+                </h2>
+                <p className="text-sm text-gray-500 capitalize">
+                  {user.type_of_user}
+                </p>
               </div>
-
-              <nav className="space-y-2">
-                {menuItems.map((item) => (
-                  <button
-                    key={item.key}
-                    onClick={() => setActiveTab(item.key)}
-                    className={`w-full text-left px-4 py-2 rounded-lg font-medium transition text-sm sm:text-base ${
-                      activeTab === item.key
-                        ? "bg-green-600 text-white"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </nav>
             </div>
 
-            <button
-              onClick={() => {
-                localStorage.removeItem("authToken");
-                navigate("/login");
-              }}
-              className="w-full mt-6 px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium hover:bg-red-200 transition text-sm sm:text-base"
-            >
-              Logout
-            </button>
-          </aside>
-
-          {/* Main Content */}
-          <main className="flex-1">
-            {/* Profile Tab */}
-            {activeTab === "profile" && (
-              <div className="w-full max-w-3xl bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 lg:p-8 mx-auto">
-                <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4 sm:mb-6">
-                  User Profile
-                </h2>
+            <nav className="space-y-2">
+              {menuItems.map((item) => (
+                <button
+                  key={item.key}
+                  onClick={() => setActiveTab(item.key)}
+                  className={`w-full text-left px-4 py-2 rounded-lg font-medium transition ${
+                    activeTab === item.key
+                      ? "bg-green-600 text-white"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </nav>
+          </div>
 
           <button
             onClick={() => {
@@ -572,63 +548,106 @@ const User = () => {
                           </span>
                           </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {ongoingBookings.map((b) => (
-                          <tr
-                            key={b.id}
-                            className="border-b hover:bg-green-50 transition"
-                          >
-                            <td className="px-3 sm:px-4 py-2 text-gray-700 font-medium">
-                              #{b.id}
-                            </td>
-                            <td className="px-3 sm:px-4 py-2 text-gray-700">
-                              {b.provider_name || "N/A"}
-                            </td>
-                            <td className="px-3 sm:px-4 py-2 text-gray-700">
-                              {b.scheduled_date
-                                ? new Date(
-                                    b.scheduled_date
-                                  ).toLocaleString()
-                                : "Not set"}
-                            </td>
-                            <td className="px-3 sm:px-4 py-2 text-green-700 font-medium">
-                              {b.price
-                                ? `$${Number(b.price).toFixed(2)}`
-                                : "N/A"}
-                            </td>
-                            <td className="px-3 sm:px-4 py-2">
-                              <span className="px-3 py-1 rounded-full text-[11px] sm:text-xs font-medium bg-green-100 text-green-700">
-                                Paid
-                              </span>
-                            </td>
-                            <td className="px-3 sm:px-4 py-2 text-right">
-                              <button
-                                onClick={() => navigate(`/execution/${b.id}`)}
-                                className="bg-green-600 text-white px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium hover:bg-green-700 transition"
-                              >
-                                View Execution
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            )}
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
 
-            {/* ✅ Authorized User Tab */}
-            {activeTab === "authorized" && (
-              <AuthorizedUserSection
-                user={user}
-                navigate={navigate}
-                setActiveTab={setActiveTab}
-              />
-            )}
-          </main>
-        </div>
+          {/* ✅ Ongoing Tab */}
+          {activeTab === "ongoing" && (
+            <div className="max-w-6xl bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+                Ongoing Bookings
+              </h2>
+
+              {bookingLoading ? (
+                <p className="text-center text-gray-500">
+                  Loading ongoing bookings...
+                </p>
+              ) : ongoingBookings.length === 0 ? (
+                <p className="text-center text-gray-500">
+                  No ongoing bookings yet.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border border-gray-100 text-sm">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Booking ID
+                        </th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Provider
+                        </th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Scheduled Date
+                        </th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Price
+                        </th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Status
+                        </th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Action
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ongoingBookings.map((b) => (
+                        <tr
+                          key={b.id}
+                          className="border-b hover:bg-green-50 transition cursor-pointer"
+                        >
+                          <td className="px-4 py-2 text-gray-700 font-medium">
+                            #{b.id}
+                          </td>
+                          <td className="px-4 py-2 text-gray-700">
+                            {b.provider_name || "N/A"}
+                          </td>
+                          <td className="px-4 py-2 text-gray-700">
+                            {b.scheduled_date
+                              ? new Date(b.scheduled_date).toLocaleString()
+                              : "Not set"}
+                          </td>
+                          <td className="px-4 py-2 text-green-700 font-medium">
+                            {b.price
+                              ? `$${Number(b.price).toFixed(2)}`
+                              : "N/A"}
+                          </td>
+                          <td className="px-4 py-2">
+                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                              Paid
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            <button
+                              onClick={() => navigate(`/execution/${b.id}`)}
+                              className="bg-green-600 text-white px-4 py-1.5 rounded-full text-sm font-medium hover:bg-green-700 transition"
+                            >
+                              View Execution
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+          {/* ✅ Authorized User Tab */}
+          {activeTab === "authorized" && (
+            <AuthorizedUserSection
+              user={user}
+              navigate={navigate}
+              setActiveTab={setActiveTab}
+            />
+          )}
+        </main>
       </div>
     </>
   );
@@ -660,7 +679,7 @@ const AuthorizedUserSection = ({ user, navigate, setActiveTab }) => {
 
   if (loadingAuth)
     return (
-      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 lg:p-8 mx-auto text-center text-gray-500">
+      <div className="max-w-3xl bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center text-gray-500">
         Loading authorized user...
       </div>
     );
@@ -668,33 +687,29 @@ const AuthorizedUserSection = ({ user, navigate, setActiveTab }) => {
   // ✅ CASE 1: Authorized User exists
   if (authUser) {
     return (
-      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 lg:p-8 mx-auto">
-        <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4 sm:mb-6">
+      <div className="max-w-3xl bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+        <h2 className="text-2xl font-semibold text-gray-800 mb-6">
           Authorized User Details
         </h2>
 
         {/* ✅ Display Authorized User Details */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm text-gray-600 mb-1">
-              First Name
-            </label>
+            <label className="block text-sm text-gray-600 mb-1">First Name</label>
             <input
               type="text"
               value={authUser.first_name}
               readOnly
-              className="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-700 text-sm sm:text-base"
+              className="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-700"
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">
-              Last Name
-            </label>
+            <label className="block text-sm text-gray-600 mb-1">Last Name</label>
             <input
               type="text"
               value={authUser.last_name}
               readOnly
-              className="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-700 text-sm sm:text-base"
+              className="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-700"
             />
           </div>
           <div>
@@ -703,7 +718,7 @@ const AuthorizedUserSection = ({ user, navigate, setActiveTab }) => {
               type="email"
               value={authUser.email}
               readOnly
-              className="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-700 text-sm sm:text-base"
+              className="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-700"
             />
           </div>
           <div>
@@ -712,18 +727,16 @@ const AuthorizedUserSection = ({ user, navigate, setActiveTab }) => {
               type="tel"
               value={authUser.phone || "N/A"}
               readOnly
-              className="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-700 text-sm sm:text-base"
+              className="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-700"
             />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm text-gray-600 mb-1">
-              Relationship
-            </label>
+            <label className="block text-sm text-gray-600 mb-1">Relationship</label>
             <input
               type="text"
               value={authUser.relationship}
               readOnly
-              className="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-700 text-sm sm:text-base"
+              className="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-700"
             />
           </div>
         </div>
@@ -746,7 +759,7 @@ const AuthorizedUserSection = ({ user, navigate, setActiveTab }) => {
                 }
               }
             }}
-            className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition text-sm sm:text-base"
+            className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition"
           >
             Remove Authorized User
           </button>
@@ -757,12 +770,12 @@ const AuthorizedUserSection = ({ user, navigate, setActiveTab }) => {
 
   // ✅ CASE 2: No Authorized User → Registration Form
   return (
-    <div className="w-full max-w-3xl bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 lg:p-8 mx-auto">
-      <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4 sm:mb-6">
+    <div className="max-w-3xl bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+      <h2 className="text-2xl font-semibold text-gray-800 mb-6">
         Add Authorized User
       </h2>
 
-      <p className="text-gray-600 mb-6 leading-relaxed text-sm sm:text-base">
+      <p className="text-gray-600 mb-6 leading-relaxed">
         You can optionally add an <strong>Authorized User</strong> (such as a
         family member, guardian, or assistant) who can help manage your
         bookings, payments, or service tracking.
@@ -795,41 +808,33 @@ const AuthorizedUserSection = ({ user, navigate, setActiveTab }) => {
               alert("OTP sent to the authorized user's email!");
               navigate(`/verify-authorized?email=${payload.email}`);
             } else {
-              alert(
-                res.data.error || "Something went wrong. Please try again."
-              );
+              alert(res.data.error || "Something went wrong. Please try again.");
             }
           } catch (err) {
             console.error("Error adding authorized user:", err);
-            alert(
-              err.response?.data?.error || "Failed to add authorized user."
-            );
+            alert(err.response?.data?.error || "Failed to add authorized user.");
           }
         }}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm text-gray-600 mb-1">
-              First Name
-            </label>
+            <label className="block text-sm text-gray-600 mb-1">First Name</label>
             <input
               type="text"
               name="first_name"
               required
               placeholder="Authorized user's first name"
-              className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-200 text-sm sm:text-base"
+              className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-200"
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">
-              Last Name
-            </label>
+            <label className="block text-sm text-gray-600 mb-1">Last Name</label>
             <input
               type="text"
               name="last_name"
               required
               placeholder="Authorized user's last name"
-              className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-200 text-sm sm:text-base"
+              className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-200"
             />
           </div>
         </div>
@@ -842,19 +847,17 @@ const AuthorizedUserSection = ({ user, navigate, setActiveTab }) => {
               name="email"
               required
               placeholder="authorized@example.com"
-              className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-200 text-sm sm:text-base"
+              className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-200"
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">
-              Relationship
-            </label>
+            <label className="block text-sm text-gray-600 mb-1">Relationship</label>
             <input
               type="text"
               name="relationship"
               required
               placeholder="e.g., Daughter, Assistant"
-              className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-200 text-sm sm:text-base"
+              className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-200"
             />
           </div>
         </div>
@@ -865,21 +868,21 @@ const AuthorizedUserSection = ({ user, navigate, setActiveTab }) => {
             type="tel"
             name="phone"
             placeholder="+1 (555) 123-4567"
-            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-200 text-sm sm:text-base"
+            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-200"
           />
         </div>
 
-        <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
+        <div className="flex justify-end gap-3 mt-6">
           <button
             type="button"
             onClick={() => setActiveTab("profile")}
-            className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-sm sm:text-base"
+            className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium"
           >
             Skip
           </button>
           <button
             type="submit"
-            className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium text-sm sm:text-base"
+            className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium"
           >
             Add Authorized User
           </button>

@@ -3,15 +3,14 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import ProviderSidebar from "./components/ProviderSidebar";
-import ProviderProfile, {
-  ProviderProfileSkeleton,
-} from "./components/ProviderProfile";
+import ProviderProfile, { ProviderProfileSkeleton } from "./components/ProviderProfile";
 import ProviderBookingHistory from "./components/ProviderBookingHistory";
 import ProviderOngoingJobs from "./components/ProviderOngoingJobs";
 import ProviderPayouts from "./components/ProviderPayout";
 
 import { useProviderDetails } from "./hooks/useProviderDetails";
 import { useProviderBookings } from "./hooks/useProviderBookings";
+import { Menu } from "lucide-react";
 
 const Provider = () => {
   const { id } = useParams();
@@ -25,6 +24,9 @@ const Provider = () => {
   const [formData, setFormData] = useState({});
   const [newProfilePicture, setNewProfilePicture] = useState(null);
 
+  // ⭐ MOBILE SIDEBAR TOGGLE
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const {
     provider,
     loading: providerLoading,
@@ -34,10 +36,10 @@ const Provider = () => {
     setProvider,
   } = useProviderDetails(id);
 
-  const {
-    bookings,
-    loading: bookingsLoading,
-  } = useProviderBookings(id, activeTab === "bookings" || activeTab === "ongoing");
+  const { bookings, loading: bookingsLoading } = useProviderBookings(
+    id,
+    activeTab === "bookings" || activeTab === "ongoing"
+  );
 
   useEffect(() => {
     if (provider) {
@@ -48,26 +50,25 @@ const Provider = () => {
     }
   }, [provider]);
 
-const ongoingJobs = useMemo(() => {
-  return bookings.filter((b) => {
-    const status = String(b.status).trim();
+  const ongoingJobs = useMemo(() => {
+    return bookings.filter((b) => {
+      const status = String(b.status).trim();
+      const finished =
+        status === "Completed" ||
+        status === "Cancelled" ||
+        b.completedclient === "completed" ||
+        b.completedprovider === "completed";
 
-    const finished =
-      status === "Completed" ||
-      status === "Cancelled" ||
-      b.completedclient === "completed" ||
-      b.completedprovider === "completed";
+      if (finished) return false;
 
-    if (finished) return false;
-
-    return (
-      status === "Paid" ||
-      status === "Confirmed" ||
-      status === "Pending" ||
-      status === "Negotiating"
-    );
-  });
-}, [bookings]);
+      return (
+        status === "Paid" ||
+        status === "Confirmed" ||
+        status === "Pending" ||
+        status === "Negotiating"
+      );
+    });
+  }, [bookings]);
 
   const handleLogout = () => {
     localStorage.clear();
@@ -97,8 +98,7 @@ const ongoingJobs = useMemo(() => {
         type: "success",
         message: "Profile updated successfully!",
       });
-    } catch (err) {
-      console.error("Error updating provider profile:", err);
+    } catch {
       setSaveMessage({
         type: "error",
         message: "Failed to update profile.",
@@ -114,6 +114,7 @@ const ongoingJobs = useMemo(() => {
     try {
       setIsUploading(true);
       const res = await uploadProfilePicture(newProfilePicture);
+
       if (res?.blobUrl) {
         setFormData((prev) => ({
           ...prev,
@@ -121,9 +122,6 @@ const ongoingJobs = useMemo(() => {
         }));
         setNewProfilePicture(null);
       }
-    } catch (err) {
-      console.error("Error uploading profile picture:", err);
-      // optional: show message
     } finally {
       setIsUploading(false);
     }
@@ -131,77 +129,76 @@ const ongoingJobs = useMemo(() => {
 
   if (providerLoading && !provider) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
-        <main className="flex-1 w-full px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
+      <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+        <main className="flex-1 w-full p-6">
           <ProviderProfileSkeleton />
         </main>
       </div>
     );
   }
 
-  if (providerError) {
-    return (
-      <p className="text-center text-red-500 mt-10">{providerError}</p>
-    );
-  }
-
-  if (!provider) {
-    return (
-      <p className="text-center text-gray-500 mt-10">
-        No provider found.
-      </p>
-    );
-  }
+  if (providerError) return <p className="text-center text-red-500 mt-10">{providerError}</p>;
+  if (!provider) return <p className="text-center text-gray-500 mt-10">No provider found.</p>;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
-      <ProviderSidebar
-        provider={provider}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onLogout={handleLogout}
-      />
+    <>
+      {/* ⭐ MOBILE TOP HEADER w/ BURGER */}
+      <div className="md:hidden flex items-center gap-3 bg-white px-4 py-3 border-b shadow-sm">
+        <button onClick={() => setSidebarOpen(true)}>
+          <Menu size={28} className="text-gray-700" />
+        </button>
+      </div>
 
-      <main className="flex-1 w-full px-4 py-6 sm:px-6 lg:px-10 lg:py-10 overflow-y-auto">
-        {activeTab === "profile" && (
-          <ProviderProfile
-            provider={provider}
-            formData={formData}
-            isEditing={isEditing}
-            isSaving={isSaving}
-            isUploading={isUploading}
-            saveMessage={saveMessage}
-            onEditStart={() => setIsEditing(true)}
-            onCancelEdit={() => {
-              setIsEditing(false);
-              setFormData(provider);
-              setNewProfilePicture(null);
-            }}
-            onSaveSubmit={handleSaveSubmit}
-            onFieldChange={handleFieldChange}
-            newProfilePicture={newProfilePicture}
-            setNewProfilePicture={setNewProfilePicture}
-            onConfirmUpload={handleConfirmUpload}
-          />
-        )}
+      {/* ======================== PAGE LAYOUT ======================== */}
+      <div className="min-h-screen bg-gray-50 flex w-full overflow-x-hidden">
 
-        {activeTab === "bookings" && (
-          <ProviderBookingHistory
-            bookings={bookings}
-            loading={bookingsLoading}
-          />
-        )}
+        {/* ⭐ SIDEBAR (responsive drawer) */}
+        <ProviderSidebar
+          provider={provider}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onLogout={handleLogout}
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+        />
 
-        {activeTab === "ongoing" && (
-          <ProviderOngoingJobs
-            ongoingJobs={ongoingJobs}
-            loading={bookingsLoading}
-          />
-        )}
+        {/* MAIN CONTENT */}
+        <main className="flex-1 w-full p-4 md:p-10 flex justify-center overflow-y-auto">
 
-        {activeTab === "payout" && <ProviderPayouts />}
-      </main>
-    </div>
+          {activeTab === "profile" && (
+            <ProviderProfile
+              provider={provider}
+              formData={formData}
+              isEditing={isEditing}
+              isSaving={isSaving}
+              isUploading={isUploading}
+              saveMessage={saveMessage}
+              onEditStart={() => setIsEditing(true)}
+              onCancelEdit={() => {
+                setIsEditing(false);
+                setFormData(provider);
+                setNewProfilePicture(null);
+              }}
+              onSaveSubmit={handleSaveSubmit}
+              onFieldChange={handleFieldChange}
+              newProfilePicture={newProfilePicture}
+              setNewProfilePicture={setNewProfilePicture}
+              onConfirmUpload={handleConfirmUpload}
+            />
+          )}
+
+          {activeTab === "bookings" && (
+            <ProviderBookingHistory bookings={bookings} loading={bookingsLoading} />
+          )}
+
+          {activeTab === "ongoing" && (
+            <ProviderOngoingJobs ongoingJobs={ongoingJobs} loading={bookingsLoading} />
+          )}
+
+          {activeTab === "payout" && <ProviderPayouts />}
+        </main>
+      </div>
+    </>
   );
 };
 

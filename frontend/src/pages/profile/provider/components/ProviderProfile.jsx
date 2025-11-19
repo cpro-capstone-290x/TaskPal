@@ -63,22 +63,22 @@ const ProviderProfile = ({
 }) => {
   return (
     <div className="w-full max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 bg-white rounded-2xl shadow-xl border border-gray-100">
-
       {/* ---------------------- Header ---------------------- */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 border-b pb-4">
+      <div className="flex justify-between items-center mb-8 border-b pb-4">
+
         <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">
-          Provider Profile
+          Provider <span className="text-indigo-600">Dashboard</span>
         </h2>
 
         {!isEditing ? (
           <button
             onClick={onEditStart}
-            className="mt-3 sm:mt-0 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition"
           >
             Edit Profile
           </button>
         ) : (
-          <div className="flex gap-3 mt-3 sm:mt-0">
+          <div className="flex gap-3">
             <button
               type="button"
               onClick={onCancelEdit}
@@ -98,7 +98,9 @@ const ProviderProfile = ({
             </button>
           </div>
         )}
+
       </div>
+
 
       {/* ---------------------- Save Message ---------------------- */}
       {saveMessage?.message && (
@@ -115,8 +117,6 @@ const ProviderProfile = ({
 
       {/* ---------------------- Profile Picture + Upload ---------------------- */}
       <div className="flex flex-col items-center text-center gap-4 mb-8">
-
-        {/* Profile Picture */}
         <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-gray-200">
           <img
             src={formData.profile_picture_url || provider.profile_picture_url}
@@ -125,7 +125,6 @@ const ProviderProfile = ({
           />
         </div>
 
-        {/* Provider Name */}
         <div>
           <h3 className="text-xl font-semibold text-gray-800">
             {provider.name}
@@ -135,9 +134,8 @@ const ProviderProfile = ({
           </p>
         </div>
 
-        {/* Upload Controls */}
         {isEditing && (
-          <div className="flex items-center gap-3 mt-2">
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
             <input
               type="file"
               id="provider-profile-pic"
@@ -173,7 +171,6 @@ const ProviderProfile = ({
       {/* ---------------------- Editable Fields ---------------------- */}
       <form id="provider-profile-form" onSubmit={onSaveSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-
           <ProfileField
             label="Business Name"
             value={isEditing ? formData.name : provider.name}
@@ -195,7 +192,6 @@ const ProviderProfile = ({
             onChange={(e) => onFieldChange("service_type", e.target.value)}
           />
 
-          {/* Email */}
           <div className="md:col-span-2">
             <ProfileField
               label="Email"
@@ -206,7 +202,6 @@ const ProviderProfile = ({
             />
           </div>
 
-          {/* Bio */}
           <div className="md:col-span-2">
             <label className="block text-gray-600 text-sm font-medium mb-1">
               Personal Note / Bio
@@ -232,7 +227,6 @@ const ProviderProfile = ({
             onChange={(e) => onFieldChange("phone", e.target.value)}
           />
 
-          {/* Rating */}
           <div>
             <label className="block mb-1 text-gray-600 text-sm">Rating</label>
             <input
@@ -245,138 +239,162 @@ const ProviderProfile = ({
             />
           </div>
 
-          {/* ----- VALID ID INFORMATION ----- */}
-            <div className="md:col-span-2 mt-6 border-t pt-4">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Valid Government ID</h3>
+          {/* VALID ID */}
+          <div className="md:col-span-2 mt-6 border-t pt-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">
+              Valid Government ID
+            </h3>
 
             <ProfileField
-                label="ID Type"
-                value={isEditing ? formData.id_type : provider.id_type}
-                readOnly={!isEditing}
-                onChange={(e) => onFieldChange("id_type", e.target.value)}
+              label="ID Type"
+              value={isEditing ? formData.id_type : provider.id_type}
+              readOnly={!isEditing}
+              onChange={(e) => onFieldChange("id_type", e.target.value)}
             />
 
             <ProfileField
-                label="ID Number"
-                value={isEditing ? formData.id_number : provider.id_number}
-                readOnly={!isEditing}
-                onChange={(e) => onFieldChange("id_number", e.target.value)}
+              label="ID Number"
+              value={isEditing ? formData.id_number : provider.id_number}
+              readOnly={!isEditing}
+              onChange={(e) => onFieldChange("id_number", e.target.value)}
             />
 
             <ProfileField
-                label="ID Expiry"
-                type="date"
-                value={isEditing ? formData.id_expiry : provider.id_expiry}
-                readOnly={!isEditing}
-                onChange={(e) => onFieldChange("id_expiry", e.target.value)}
+              label="ID Expiry"
+              type="date"
+              value={isEditing ? formData.id_expiry : provider.id_expiry}
+              readOnly={!isEditing}
+              onChange={(e) => onFieldChange("id_expiry", e.target.value)}
             />
 
             {provider.valid_id_url && (
-                <a
+              <a
                 href={provider.valid_id_url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sky-600 underline text-sm inline-block mt-2"
-                >
+              >
                 View Uploaded Valid ID
-                </a>
+              </a>
             )}
-            </div>
+          </div>
 
-            {/* ----- BACKGROUND CHECK ----- */}
-            <div className="md:col-span-2 mt-6 border-t pt-4">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Background Check</h3>
+          {/* BACKGROUND CHECK */}
+          <div className="md:col-span-2 mt-6 border-t pt-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">
+              Background Check
+            </h3>
 
             {provider.background_check_url ? (
-                <a
+              <a
                 href={provider.background_check_url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sky-600 underline text-sm"
-                >
+              >
                 View Background Check Document
-                </a>
+              </a>
             ) : (
-                <p className="text-gray-500 text-sm">No background check uploaded.</p>
+              <p className="text-gray-500 text-sm">
+                No background check uploaded.
+              </p>
             )}
-            </div>
+          </div>
 
-            {/* ----- INSURANCE INFORMATION ----- */}
-            <div className="md:col-span-2 mt-6 border-t pt-4">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Insurance Information</h3>
-
-            <ProfileField
-                label="Insurance Provider"
-                value={isEditing ? formData.insurance_provider : provider.insurance_provider}
-                readOnly={!isEditing}
-                onChange={(e) => onFieldChange("insurance_provider", e.target.value)}
-            />
+          {/* INSURANCE */}
+          <div className="md:col-span-2 mt-6 border-t pt-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">
+              Insurance Information
+            </h3>
 
             <ProfileField
-                label="Policy Number"
-                value={
+              label="Insurance Provider"
+              value={
                 isEditing
-                    ? formData.insurance_policy_number
-                    : provider.insurance_policy_number
-                }
-                readOnly={!isEditing}
-                onChange={(e) => onFieldChange("insurance_policy_number", e.target.value)}
+                  ? formData.insurance_provider
+                  : provider.insurance_provider
+              }
+              readOnly={!isEditing}
+              onChange={(e) =>
+                onFieldChange("insurance_provider", e.target.value)
+              }
             />
 
             <ProfileField
-                label="Insurance Expiry"
-                type="date"
-                value={
-                isEditing ? formData.insurance_expiry : provider.insurance_expiry
-                }
-                readOnly={!isEditing}
-                onChange={(e) => onFieldChange("insurance_expiry", e.target.value)}
+              label="Policy Number"
+              value={
+                isEditing
+                  ? formData.insurance_policy_number
+                  : provider.insurance_policy_number
+              }
+              readOnly={!isEditing}
+              onChange={(e) =>
+                onFieldChange("insurance_policy_number", e.target.value)
+              }
+            />
+
+            <ProfileField
+              label="Insurance Expiry"
+              type="date"
+              value={
+                isEditing
+                  ? formData.insurance_expiry
+                  : provider.insurance_expiry
+              }
+              readOnly={!isEditing}
+              onChange={(e) =>
+                onFieldChange("insurance_expiry", e.target.value)
+              }
             />
 
             {provider.insurance_document_url && (
-                <a
+              <a
                 href={provider.insurance_document_url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sky-600 underline text-sm mt-2 inline-block"
-                >
+              >
                 View Insurance Document
-                </a>
+              </a>
             )}
-            </div>
+          </div>
 
-            {/* ----- COMPANY DOCUMENTS (FOR BUSINESS PROVIDERS) ----- */}
-            {provider.provider_type === "company" && (
+          {/* COMPANY DOCS */}
+          {provider.provider_type === "company" && (
             <div className="md:col-span-2 mt-6 border-t pt-4">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">Company Documents</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                Company Documents
+              </h3>
 
-                {provider.company_documents && provider.company_documents.length > 0 ? (
+              {provider.company_documents &&
+              provider.company_documents.length > 0 ? (
                 <ul className="space-y-2">
-                    {provider.company_documents.map((doc, idx) => (
+                  {provider.company_documents.map((doc, idx) => (
                     <li key={idx}>
-                        <a
+                      <a
                         href={doc}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-sky-600 underline text-sm"
-                        >
+                      >
                         Document {idx + 1}
-                        </a>
+                      </a>
                     </li>
-                    ))}
+                  ))}
                 </ul>
-                ) : (
-                <p className="text-gray-500 text-sm">No company documents uploaded.</p>
-                )}
+              ) : (
+                <p className="text-gray-500 text-sm">
+                  No company documents uploaded.
+                </p>
+              )}
             </div>
-            )}
+          )}
 
-
-          {/* Status + Join Date */}
+          {/* STATUS + JOIN DATE */}
           <div className="md:col-span-2 flex flex-wrap items-center gap-3 pt-4 border-t">
             {provider.status === "Approved" ? (
               <span className="px-3 py-1 rounded-full text-sm bg-green-100 text-green-700 border border-green-200 flex items-center gap-1">
-                <CheckCircle size={16} /> Verified & Approved
+                <CheckCircle size={16} /> Verified &amp; Approved
               </span>
             ) : (
               <span className="px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-700 border border-yellow-200 flex items-center gap-1">

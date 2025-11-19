@@ -1,12 +1,13 @@
-// src/pages/profile/Provider/components/ProviderSidebar.jsx
-import React from "react";
-import { User as UserIcon } from "lucide-react";
+import React, { useState } from "react";
+import { X } from "lucide-react";
 
 const ProviderSidebar = ({
   provider,
   activeTab,
   setActiveTab,
   onLogout,
+  sidebarOpen,
+  setSidebarOpen,
 }) => {
   const menuItems = [
     { key: "profile", label: "Profile" },
@@ -16,38 +17,39 @@ const ProviderSidebar = ({
   ];
 
   return (
-    <aside className="w-full lg:w-64 bg-white border-b lg:border-b-0 lg:border-r border-gray-200 shadow-sm p-4 sm:p-6 flex flex-col justify-between">
-      <div>
-        {/* <div className="flex items-center gap-3 mb-6 sm:mb-8">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2">
-            {provider.profile_picture_url ? (
-              <img
-                src={provider.profile_picture_url}
-                className="w-full h-full object-cover"
-                alt="profile"
-              />
-            ) : (
-              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                <UserIcon size={24} className="text-gray-400" />
-              </div>
-            )}
-          </div>
-          <div className="min-w-0">
-            <h2 className="font-semibold text-sm sm:text-base truncate">
-              {provider.name}
-            </h2>
-            <p className="text-xs sm:text-sm text-gray-500 capitalize">
-              {provider.provider_type}
-            </p>
-          </div>
-        </div> */}
+    <>
+      {/* MOBILE OVERLAY */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        ></div>
+      )}
 
-        <nav className="space-y-2">
+      {/* MOBILE DRAWER */}
+      <aside
+        className={`
+          fixed top-0 left-0 h-full w-64 bg-white shadow-xl z-50
+          transform transition-transform duration-300 md:hidden
+          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+        `}
+      >
+        <div className="flex items-center justify-between p-4 border-b">
+          <h2 className="text-lg font-semibold">Menu</h2>
+          <button onClick={() => setSidebarOpen(false)}>
+            <X size={20} />
+          </button>
+        </div>
+
+        <nav className="p-4 space-y-2">
           {menuItems.map((item) => (
             <button
               key={item.key}
-              onClick={() => setActiveTab(item.key)}
-              className={`w-full text-left px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium transition ${
+              onClick={() => {
+                setActiveTab(item.key);
+                setSidebarOpen(false);
+              }}
+              className={`w-full text-left px-4 py-2 rounded-lg text-sm font-medium transition ${
                 activeTab === item.key
                   ? "bg-indigo-600 text-white"
                   : "text-gray-700 hover:bg-gray-100"
@@ -57,15 +59,41 @@ const ProviderSidebar = ({
             </button>
           ))}
         </nav>
-      </div>
 
-      <button
-        onClick={onLogout}
-        className="w-full mt-6 px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm sm:text-base"
-      >
-        Logout
-      </button>
-    </aside>
+        <button
+          onClick={onLogout}
+          className="m-4 px-4 py-2 bg-red-100 text-red-700 rounded-lg"
+        >
+          Logout
+        </button>
+      </aside>
+
+      {/* DESKTOP SIDEBAR */}
+      <aside className="hidden md:flex flex-col w-64 bg-white border-r p-6 shadow-sm">
+        <nav className="space-y-2">
+          {menuItems.map((item) => (
+            <button
+              key={item.key}
+              onClick={() => setActiveTab(item.key)}
+              className={`w-full text-left px-4 py-2 rounded-lg text-sm font-medium transition ${
+                activeTab === item.key
+                  ? "bg-indigo-600 text-white"
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        <button
+          onClick={onLogout}
+          className="mt-6 px-4 py-2 bg-red-100 text-red-700 rounded-lg"
+        >
+          Logout
+        </button>
+      </aside>
+    </>
   );
 };
 

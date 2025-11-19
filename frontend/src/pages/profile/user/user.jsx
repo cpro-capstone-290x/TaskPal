@@ -37,6 +37,7 @@ const User = () => {
     setUser,
   } = useUserDetails(id);
 
+  // ⭐ BOOKING HOOK — ongoing + history
   const {
     ongoingBookings,
     historyBookings,
@@ -53,16 +54,23 @@ const User = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("authToken");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("userRole");
     navigate("/login");
   };
 
+  // ✅ PROFILE PICTURE UPLOAD CONFIRMATION
   const onConfirmUpload = async () => {
     if (!newProfilePicture) return;
 
     try {
       setIsUploading(true);
-
       const token = localStorage.getItem("authToken");
+      if (!token) {
+        alert("Not authenticated.");
+        return;
+      }
+
       const formData = new FormData();
       formData.append("file", newProfilePicture);
 
@@ -80,8 +88,7 @@ const User = () => {
         }));
       }
 
-      setNewProfilePicture(null);
-
+      // ⭐ NEW POPUP
       setUploadSuccess(true);
       setTimeout(() => setUploadSuccess(false), 2500);
     } catch (err) {
@@ -140,9 +147,7 @@ const User = () => {
       </div>
 
       {/* PAGE LAYOUT */}
-      <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row w-full overflow-x-hidden">
-
-        {/* DESKTOP SIDEBAR */}
+      <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
         <Sidebar
           user={user}
           activeTab={activeTab}
@@ -154,32 +159,9 @@ const User = () => {
           isMobile={false}
         />
 
-        {/* MOBILE DRAWER SIDEBAR */}
-        {mobileMenuOpen && (
-          <div className="fixed inset-0 z-50 flex md:hidden bg-black/40">
-            <div className="w-64 bg-white p-5 shadow-xl h-full overflow-y-auto">
-              <Sidebar
-                user={user}
-                activeTab={activeTab}
-                setActiveTab={(tab) => {
-                  setActiveTab(tab);
-                  setMobileMenuOpen(false);
-                }}
-                onLogout={handleLogout}
-                onProfilePictureUpdate={(newPhoto) =>
-                  setUser((prev) => ({ ...prev, profile_picture_url: newPhoto }))
-                }
-                isMobile={true}
-              />
-            </div>
-
-            <div className="flex-1" onClick={() => setMobileMenuOpen(false)} />
-          </div>
-        )}
-
-        {/* MAIN CONTENT */}
-        <main className="flex-1 w-full p-4 md:p-10 flex justify-center md:justify-start">
-
+        {/* Main content now uses responsive padding like Provider */}
+        <main className="flex-1 w-full px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
+          {/* PROFILE TAB */}
           {activeTab === "profile" && (
             <ProfileView
               user={user}

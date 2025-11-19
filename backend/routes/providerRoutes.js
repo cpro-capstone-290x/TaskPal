@@ -28,6 +28,8 @@ router.post(
 );
 router.post("/background-check", upload.single("file"), uploadBackgroundCheck);
 router.post("/insurance", upload.single("file"), uploadInsuranceDocument);
+router.post("/:id/profile-picture", upload.single("file"), uploadProviderProfilePicture)
+
 
 
 

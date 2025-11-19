@@ -1,196 +1,211 @@
 // src/pages/profile/User/components/ProfileView.jsx
-import React from "react";
+import React, { useState } from "react";
+import { CheckCircle, Clock } from "lucide-react";
 
-const ProfileView = ({ user }) => {
+/* Reusable read-only field */
+const ProfileField = ({ label, value }) => (
+  <div>
+    <label className="block text-gray-600 text-sm font-medium mb-1">
+      {label}
+    </label>
+    <input
+      type="text"
+      readOnly
+      value={value || "N/A"}
+      className="w-full px-4 py-2 bg-gray-50 border border-gray-200 text-gray-700 rounded-lg"
+    />
+  </div>
+);
+
+/* Bulletproof image resolver */
+const getUserImage = (user) => {
   return (
-    <div className="max-w-3xl bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-      <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-        User Profile
-      </h2>
+    user?.profile_picture_url?.url || // {url:"..."}
+    user?.profile_picture_url || // direct string
+    user?.profile_picture || // alt key
+    user?.avatar_url || // alt key
+    "/default-user.png" // fallback
+  );
+};
 
-      <div className="space-y-4">
-        {/* First Name */}
-        <div>
-          <label className="block text-gray-600 text-sm font-medium mb-1">
-            First Name
-          </label>
-          <input
-            type="text"
-            value={user.first_name || ""}
-            readOnly
-            className="w-full px-4 py-2 bg-gray-50 border text-gray-700 border-gray-200 rounded-lg"
+const ProfileView = ({
+  user,
+  newProfilePicture,
+  setNewProfilePicture,
+  onConfirmUpload,
+  isUploading,
+}) => {
+  const [uploadSuccess, setUploadSuccess] = useState(false);   // ⭐ minimal state
+
+  // ⭐ wrap original upload call
+  const handleConfirmUpload = async () => {
+    await onConfirmUpload();      // run your existing upload logic
+    setUploadSuccess(true);       // show popup
+    setTimeout(() => setUploadSuccess(false), 2500);  // auto-hide
+  };
+  return (
+    <div className="w-full max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 bg-white rounded-2xl shadow-xl border border-gray-100">
+
+      {/* ⭐ SUCCESS POPUP (minimal) */}
+      {uploadSuccess && (
+        <div className="absolute top-4 right-4 bg-green-100 text-green-700 border border-green-300 px-4 py-2 rounded-lg shadow flex items-center gap-2">
+          <CheckCircle size={18} />
+          <span className="text-sm">Profile picture updated!</span>
+        </div>
+      )}
+      {/* Header */}
+      <div className="flex flex-col mb-6 sm:mb-8 border-b pb-4">
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">
+          User Profile
+        </h2>
+      </div>
+
+      {/* ==========================
+          PROFILE PICTURE + NAME + UPLOAD
+      =========================== */}
+      <div className="flex flex-col items-center text-center gap-4 mb-8">
+
+        {/* Profile Picture */}
+        <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-gray-200">
+          <img
+            src={getUserImage(user)}
+            alt="User"
+            className="w-full h-full object-cover"
           />
         </div>
 
-        {/* Last Name */}
+        {/* User Name & Type */}
         <div>
-          <label className="block text-gray-600 text-sm font-medium mb-1">
-            Last Name
-          </label>
-          <input
-            type="text"
-            value={user.last_name || ""}
-            readOnly
-            className="w-full px-4 py-2 bg-gray-50 border text-gray-700 border-gray-200 rounded-lg"
-          />
+          <h3 className="text-xl font-semibold text-gray-800">
+            {user.first_name} {user.last_name}
+          </h3>
+          <p className="text-gray-500 capitalize">
+            {user.type_of_user || "Regular User"}
+          </p>
         </div>
 
-        {/* Email */}
-        <div>
-          <label className="block text-gray-600 text-sm font-medium mb-1">
-            Email
-          </label>
-          <input
-            type="text"
-            value={user.email || ""}
-            readOnly
-            className="w-full px-4 py-2 bg-gray-50 border text-gray-700 border-gray-200 rounded-lg"
-          />
-        </div>
+        {/* Upload Controls */}
+        <div className="flex items-center gap-3 mt-2">
 
-        {/* Date of Birth */}
-        <div>
-          <label className="block text-gray-600 text-sm font-medium mb-1">
-            Date of Birth
-          </label>
           <input
-            type="text"
-            value={
-              user.date_of_birth
-                ? new Date(user.date_of_birth).toLocaleDateString()
-                : "N/A"
-            }
-            readOnly
-            className="w-full px-4 py-2 bg-gray-50 border text-gray-700 border-gray-200 rounded-lg"
+            type="file"
+            id="user-profile-pic"
+            className="hidden"
+            accept="image/*"
+            onChange={(e) => setNewProfilePicture(e.target.files[0])}
           />
-        </div>
 
-        {/* Gender */}
-        <div>
-          <label className="block text-gray-600 text-sm font-medium mb-1">
-            Gender
-          </label>
-          <input
-            type="text"
-            value={user.gender || "N/A"}
-            readOnly
-            className="w-full px-4 py-2 bg-gray-50 border text-gray-700 border-gray-200 rounded-lg"
-          />
-        </div>
+          <button
+            type="button"
+            onClick={() => document.getElementById("user-profile-pic").click()}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm"
+          >
+            Choose File
+          </button>
 
-        {/* Assistance Level */}
-        <div>
-          <label className="block text-gray-600 text-sm font-medium mb-1">
-            Assistance Level
-          </label>
-          <input
-            type="text"
-            value={user.assistance_level || "N/A"}
-            readOnly
-            className="w-full px-4 py-2 bg-gray-50 border text-gray-700 border-gray-200 rounded-lg"
-          />
+          {newProfilePicture && (
+            <button
+              type="button"
+              onClick={handleConfirmUpload}
+              disabled={isUploading}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm"
+            >
+              {isUploading ? "Uploading..." : "Confirm Upload"}
+            </button>
+          )}
         </div>
+      </div>
 
-        {/* Living Situation */}
-        <div>
-          <label className="block text-gray-600 text-sm font-medium mb-1">
-            Living Situation
-          </label>
-          <input
-            type="text"
-            value={user.living_situation || "N/A"}
-            readOnly
-            className="w-full px-4 py-2 bg-gray-50 border text-gray-700 border-gray-200 rounded-lg"
-          />
-        </div>
+      {/* ==========================
+          PROFILE DETAILS
+      =========================== */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+
+        <ProfileField label="First Name" value={user.first_name} />
+        <ProfileField label="Last Name" value={user.last_name} />
+        <ProfileField label="Email" value={user.email} />
+
+        <ProfileField
+          label="Date of Birth"
+          value={
+            user.date_of_birth
+              ? new Date(user.date_of_birth).toLocaleDateString("en-CA")
+              : "N/A"
+          }
+        />
+
+        <ProfileField label="Gender" value={user.gender} />
+        <ProfileField label="Assistance Level" value={user.assistance_level} />
+        <ProfileField label="Living Situation" value={user.living_situation} />
 
         {/* Address */}
-        <div>
+        <div className="md:col-span-2">
           <label className="block text-gray-600 text-sm font-medium mb-1">
             Address
           </label>
           <textarea
+            readOnly
+            rows="3"
             value={`${user.unit_no || ""} ${user.street || ""}, ${
               user.city || ""
             }, ${user.province || ""}, ${user.postal_code || ""}`}
-            readOnly
-            rows="3"
-            className="w-full px-4 py-2 bg-gray-50 border text-gray-700 border-gray-200 rounded-lg"
-          ></textarea>
-        </div>
-
-        {/* Emergency Contact Name */}
-        <div>
-          <label className="block text-gray-600 text-sm font-medium mb-1">
-            Emergency Contact Name
-          </label>
-          <input
-            type="text"
-            value={user.emergency_contact_name || "N/A"}
-            readOnly
-            className="w-full px-4 py-2 bg-gray-50 border text-gray-700 border-gray-200 rounded-lg"
+            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 text-gray-700 rounded-lg"
           />
         </div>
 
-        {/* Emergency Contact Relationship */}
-        <div>
-          <label className="block text-gray-600 text-sm font-medium mb-1">
-            Relationship
-          </label>
-          <input
-            type="text"
-            value={user.emergency_contact_relationship || "N/A"}
-            readOnly
-            className="w-full px-4 py-2 bg-gray-50 border text-gray-700 border-gray-200 rounded-lg"
-          />
-        </div>
+        {/* Emergency Contact */}
+        <ProfileField
+          label="Emergency Contact Name"
+          value={user.emergency_contact_name}
+        />
+        <ProfileField
+          label="Relationship"
+          value={user.emergency_contact_relationship}
+        />
+        <ProfileField
+          label="Emergency Contact Phone"
+          value={user.emergency_contact_phone}
+        />
 
-        {/* Emergency Contact Phone */}
-        <div>
-          <label className="block text-gray-600 text-sm font-medium mb-1">
-            Emergency Contact Phone
-          </label>
-          <input
-            type="text"
-            value={user.emergency_contact_phone || "N/A"}
-            readOnly
-            className="w-full px-4 py-2 bg-gray-50 border text-gray-700 border-gray-200 rounded-lg"
-          />
-        </div>
-
-        {/* Uploaded Documents */}
-        <div>
+        {/* Documents */}
+        <div className="md:col-span-2">
           <label className="block text-gray-600 text-sm font-medium mb-1">
             Uploaded Documents
           </label>
 
-          {user.id_document_url && (
-            <a
-              href={user.id_document_url}
-              target="_blank"
-              rel="noreferrer"
-              className="text-blue-600 underline block mb-2"
-            >
-              View Senior ID
-            </a>
-          )}
+          <div className="space-y-2">
+            {user.id_document_url && (
+              <a
+                href={user.id_document_url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-blue-600 underline inline-block"
+              >
+                View Senior ID
+              </a>
+            )}
 
-          {user.pwd_document_url && (
-            <a
-              href={user.pwd_document_url}
-              target="_blank"
-              rel="noreferrer"
-              className="text-blue-600 underline block"
-            >
-              View PWD Document
-            </a>
-          )}
+            {user.pwd_document_url && (
+              <a
+                href={user.pwd_document_url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-blue-600 underline inline-block"
+              >
+                View PWD Document
+              </a>
+            )}
+
+            {!user.id_document_url && !user.pwd_document_url && (
+              <p className="text-gray-500 text-sm">No documents uploaded.</p>
+            )}
+          </div>
         </div>
 
         {/* Verification */}
-        <div className="flex items-center gap-3 mt-2">
+        <div className="md:col-span-2 flex flex-wrap items-center gap-3 pt-4 border-t">
           <span
-            className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${
+            className={`px-3 py-1 rounded-full text-sm font-medium ${
               user.is_verified
                 ? "bg-green-100 text-green-700 border border-green-200"
                 : "bg-yellow-100 text-yellow-700 border border-yellow-200"
@@ -198,6 +213,7 @@ const ProfileView = ({ user }) => {
           >
             {user.is_verified ? "Verified" : "Not Verified"}
           </span>
+
           <span className="text-gray-500 text-sm">
             Joined on{" "}
             {new Date(user.created_at).toLocaleDateString("en-US", {
@@ -208,6 +224,7 @@ const ProfileView = ({ user }) => {
           </span>
         </div>
       </div>
+
     </div>
   );
 };

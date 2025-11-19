@@ -1,5 +1,5 @@
 import React from "react";
-import Provider from "./components/provider";
+import Provider from "./provider/provider";
 import Header from "../components/Header";
 import useAutoLogout from "../../hooks/useAutoLogout";
 

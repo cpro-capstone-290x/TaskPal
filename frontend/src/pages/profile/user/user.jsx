@@ -13,12 +13,21 @@ import { useUserDetails } from "./hooks/useUserDetails";
 import { useBookings } from "./hooks/useBookings";
 import { useAuthorizedUser } from "./hooks/useAuthorizedUser";
 
+import api from "../../../api";
+
 const User = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState("profile");
   const [editMode, setEditMode] = useState(false);
+
+  // 🔥 Upload States
+  const [newProfilePicture, setNewProfilePicture] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // ⭐ NEW — Upload success popup state
+  const [uploadSuccess, setUploadSuccess] = useState(false);
 
   const {
     user,
@@ -28,10 +37,7 @@ const User = () => {
     setUser,
   } = useUserDetails(id);
 
-  const {
-    bookings,
-    loading: bookingLoading,
-  } = useBookings(id);
+  const { bookings, loading: bookingLoading } = useBookings(id);
 
   const {
     authorizedUser,
@@ -57,26 +63,70 @@ const User = () => {
     navigate("/login");
   };
 
+  // 🔥 Correct upload logic for your backend route
+  const onConfirmUpload = async () => {
+    if (!newProfilePicture) return;
+
+    try {
+      setIsUploading(true);
+
+      const token = localStorage.getItem("authToken");
+      const formData = new FormData();
+      formData.append("file", newProfilePicture);
+
+      const res = await api.post(`/users/${id}/profile-picture`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (res.data?.blobUrl) {
+        setUser((prev) => ({
+          ...prev,
+          profile_picture_url: res.data.blobUrl,
+        }));
+      }
+
+      setNewProfilePicture(null);
+
+      // ⭐ NEW — Trigger success popup
+      setUploadSuccess(true);
+      setTimeout(() => setUploadSuccess(false), 2500);
+
+    } catch (err) {
+      console.error("❌ Upload error:", err);
+      alert("Failed to upload profile image.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // ------------------------------
+  //         RENDER LOGIC
+  // ------------------------------
+
   if (userLoading) {
-    return (
-      <p className="text-center mt-10 text-gray-500">Loading...</p>
-    );
+    return <p className="text-center mt-10 text-gray-500">Loading...</p>;
   }
 
   if (userError) {
-    return (
-      <p className="text-center text-red-500 mt-10">{userError}</p>
-    );
+    return <p className="text-center text-red-500 mt-10">{userError}</p>;
   }
 
   if (!user) {
-    return (
-      <p className="text-center text-gray-500 mt-10">User not found.</p>
-    );
+    return <p className="text-center mt-10">User not found.</p>;
   }
 
   return (
     <>
+      {/* ⭐ SUCCESS POPUP */}
+      {uploadSuccess && (
+        <div className="fixed top-4 right-4 bg-green-100 text-green-700 border border-green-300 px-4 py-2 rounded-lg shadow flex items-center gap-2 z-50">
+          <span className="font-semibold">✓ Profile picture updated!</span>
+        </div>
+      )}
+
       {/* Floating Edit Button */}
       {activeTab === "profile" && !editMode && (
         <button
@@ -87,7 +137,7 @@ const User = () => {
         </button>
       )}
 
-      {/* Main Layout */}
+      {/* Layout */}
       <div className="min-h-screen bg-gray-50 flex">
         <Sidebar
           user={user}
@@ -95,18 +145,23 @@ const User = () => {
           setActiveTab={setActiveTab}
           onLogout={handleLogout}
           onProfilePictureUpdate={(newPhoto) =>
-            setUser((prev) => ({ ...prev, profile_picture: newPhoto }))
+            setUser((prev) => ({ ...prev, profile_picture_url: newPhoto }))
           }
         />
 
         <main className="flex-1 p-10">
-          {activeTab === "profile" && <ProfileView user={user} />}
+          {activeTab === "profile" && (
+            <ProfileView
+              user={user}
+              newProfilePicture={newProfilePicture}
+              setNewProfilePicture={setNewProfilePicture}
+              onConfirmUpload={onConfirmUpload}
+              isUploading={isUploading}
+            />
+          )}
 
           {activeTab === "bookings" && (
-            <BookingHistory
-              bookings={bookings}
-              loading={bookingLoading}
-            />
+            <BookingHistory bookings={bookings} loading={bookingLoading} />
           )}
 
           {activeTab === "ongoing" && (

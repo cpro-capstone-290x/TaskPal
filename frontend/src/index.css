@@ -2,40 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ===========================================================
-   Accessibility Styles — TaskPal
-   =========================================================== */
-
-/* Readable Font — Improve legibility without altering colors */
-.accessible-readable * {
-  font-family: 'Atkinson Hyperlegible', 'Arial', 'Verdana', sans-serif !important;
-  font-weight: 500 !important;
-  letter-spacing: 0.02em !important;
-}
-
-/* Readability */
-.accessible-readable * {
-  font-family: "Arial", "Helvetica", sans-serif !important;
-}
-
-/* Extra spacing for readability */
-.accessible-spacing * {
-  letter-spacing: 0.05em !important;
-  line-height: 1.8 !important;
-}
-
-/* Smooth fade animation */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
+/* ================================
+   Accessibility helpers (WCAG)
+   Tailwind-aware: @layer utilities
+   ================================ */
+@layer utilities {
+  /* ---------------- Readable Font ---------------- */
+  /* Apply on html + everything inside, with !important
+     so it beats component utilities like font-sans/font-[family]. */
+  html.accessible-readable,
+  html.accessible-readable * {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+                 Arial, "Noto Sans", "Liberation Sans", sans-serif !important;
+    font-feature-settings: "liga" 0, "clig" 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 
-.animate-fadeIn {
-  animation: fadeIn 0.3s ease-in-out;
+  /* Include placeholders and form pseudo parts */
+  html.accessible-readable *::placeholder {
+    font-family: inherit !important;
+  }
+  html.accessible-readable input,
+  html.accessible-readable textarea,
+  html.accessible-readable select,
+  html.accessible-readable button {
+    font-family: inherit !important;
+  }
+
+  /* ---------------- Extra Spacing ---------------- */
+  html.accessible-spacing {
+    --acc-line-height: 1.8;     /* ≥ 1.5 per WCAG 1.4.12 */
+    --acc-letter-space: 0.12em; /* WCAG min */
+    --acc-word-space: 0.16em;   /* WCAG min */
+    --acc-paragraph-gap: 1.2em;
+  }
+
+  /* Only spacing (no font-family here) */
+  html.accessible-spacing body,
+  html.accessible-spacing main,
+  html.accessible-spacing section,
+  html.accessible-spacing article {
+    line-height: var(--acc-line-height) !important;
+    letter-spacing: var(--acc-letter-space);
+    word-spacing: var(--acc-word-space);
+  }
+
+  html.accessible-spacing p,
+  html.accessible-spacing li,
+  html.accessible-spacing dd,
+  html.accessible-spacing figcaption {
+    margin-bottom: var(--acc-paragraph-gap);
+  }
+
+  html.accessible-spacing h1,
+  html.accessible-spacing h2,
+  html.accessible-spacing h3,
+  html.accessible-spacing h4,
+  html.accessible-spacing h5,
+  html.accessible-spacing h6 {
+    margin-top: 0.6em;
+    margin-bottom: 0.6em;
+  }
+
+  html.accessible-spacing input,
+  html.accessible-spacing select,
+  html.accessible-spacing textarea,
+  html.accessible-spacing button {
+    line-height: 1.4;
+  }
 }

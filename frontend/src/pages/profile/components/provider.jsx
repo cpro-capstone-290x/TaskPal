@@ -547,19 +547,135 @@ const Provider = () => {
   // --- JSX Rendering ---
   return (
     <>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col lg:flex-row gap-6">
-          {/* Sidebar */}
-          <aside className="w-full lg:w-64 bg-white border border-gray-200 shadow-sm p-4 sm:p-6 flex flex-col justify-between rounded-2xl">
-            <div>
-              <div className="flex items-center gap-3 mb-6 sm:mb-8">
-                {/* Provider Picture Display */}
-                <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-gray-200">
-                  {provider.profile_picture_url ? (
-                    <img
-                      src={provider.profile_picture_url}
-                      alt={`${provider.name} Profile`}
-                      className="w-full h-full object-cover"
+      <div className="min-h-screen bg-gray-50 flex">
+        {/* ✅ NEW: Sidebar */}
+        <aside className="w-64 bg-white border-r border-gray-200 shadow-sm p-6 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-3 mb-8">
+              {/* Provider Picture Display */}
+              <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-gray-200">
+                {provider.profile_picture_url ? (
+                  <img 
+                    src={provider.profile_picture_url} 
+                    alt={`${provider.name} Profile`} 
+                    className="w-full h-full object-cover" 
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
+                    <UserIcon size={24} />
+                  </div>
+                )}
+              </div>
+              
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800">
+                  {provider.name}
+                </h2>
+                <p className="text-sm text-gray-500 capitalize">
+                  {provider.provider_type}
+                </p>
+              </div>
+            </div>
+
+            <nav className="space-y-2">
+              {menuItems.map((item) => (
+                <button
+                  key={item.key}
+                  onClick={() => setActiveTab(item.key)}
+                  className={`w-full text-left px-4 py-2 rounded-lg font-medium transition ${
+                    activeTab === item.key
+                      ? "bg-indigo-600 text-white" // Using indigo to match original theme
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          <button
+            onClick={() => {
+              // Clear provider-specific local storage
+              localStorage.removeItem("authToken");
+              localStorage.removeItem("userRole");
+              localStorage.removeItem("providerId");
+              navigate("/login");
+            }}
+            className="w-full mt-6 px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium hover:bg-red-200 transition"
+          >
+            Logout
+          </button>
+        </aside>
+
+        {/* ✅ NEW: Main Content Area */}
+        <main className="flex-1 p-10 overflow-y-auto">
+
+          {activeTab === "profile" && (
+            <div className="max-w-4xl mx-auto p-8 bg-white rounded-2xl shadow-xl border border-gray-100">
+              <div className="flex justify-between items-center mb-8 border-b pb-4">
+                <h2 className="text-3xl font-bold text-gray-800">
+                  Provider Profile
+                </h2>
+
+                {/* Edit Button / Control */}
+                {!isEditing ? (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition duration-150 shadow-md"
+                >
+                  <Edit2 size={18} /> Edit Profile
+                </button>
+                ) : (
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={handleCancel}
+                      className="flex items-center gap-2 px-4 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400 transition duration-150"
+                      disabled={isSaving || isUploading}
+                    >
+                      <X size={18} /> Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      form="provider-profile-form"
+                      // onClick={handleSave}
+                      className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition duration-150 shadow-md disabled:opacity-50"
+                      disabled={isSaving || isUploading}
+                    >
+                      {isSaving ? (
+                        <>
+                          <Clock className="animate-spin" size={18} /> Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save size={18} /> Save Changes
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Save Message Display */}
+              {saveMessage.message && (
+                <div className={`p-3 mb-4 rounded-lg text-sm font-medium ${
+                  saveMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                }`}>
+                  {saveMessage.message}
+                </div>
+              )}
+
+              {/* Profile Picture Section */}
+              <div className="flex flex-col sm:flex-row items-center gap-6 mb-8 pb-4 border-b">
+
+                {/* Profile Image Display */}
+                <div className="relative w-28 h-28 rounded-full overflow-hidden border-4 border-gray-200">
+                  {provider.profile_picture_url || formData.profile_picture_url ? (
+                    <img 
+                      src={formData.profile_picture_url || provider.profile_picture_url} 
+                      alt={`${provider.name} Profile`} 
+                      className="w-full h-full object-cover" 
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
@@ -925,41 +1041,181 @@ const Provider = () => {
               </div>
             )}
 
-            {/* Booking History Tab */}
-            {activeTab === "bookings" && (
-              <div className="w-full max-w-6xl bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 lg:p-8 mx-auto">
-                <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4 sm:mb-6">
-                  Booking History
-                </h2>
+                </div>
+              </form>
+                  
+              {/* Save and Cancel buttons at the bottom too, for long forms */}
+              {isEditing && (
+                <div className="flex justify-end gap-3 mt-8 pt-4 border-t">
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400 transition duration-150"
+                    disabled={isSaving || isUploading}
+                  >
+                    <X size={18} /> Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    form="provider-profile-form"
+                    // onClick={handleSave}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition duration-150 shadow-md disabled:opacity-50"
+                    disabled={isSaving || isUploading}
+                  >
+                    {isSaving ? (
+                      <>
+                        <Clock className="animate-spin" size={18} /> Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save size={18} /> Save Changes
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
-                {bookingLoading ? (
-                  <p className="text-center text-gray-500">
-                    Loading bookings...
-                  </p>
-                ) : bookings.length === 0 ? (
-                  <p className="text-center text-gray-500">
-                    No booking history available.
-                  </p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full border border-gray-100 text-xs sm:text-sm">
-                      <thead className="bg-gray-50 border-b border-gray-200">
-                        <tr>
-                          <th className="px-3 sm:px-4 py-2 text-left text-gray-700 font-medium">
-                            Booking ID
-                          </th>
-                          <th className="px-3 sm:px-4 py-2 text-left text-gray-700 font-medium">
-                            Client
-                          </th>
-                          <th className="px-3 sm:px-4 py-2 text-left text-gray-700 font-medium">
-                            Scheduled Date
-                          </th>
-                          <th className="px-3 sm:px-4 py-2 text-left text-gray-700 font-medium">
-                            Price
-                          </th>
-                          <th className="px-3 sm:px-4 py-2 text-left text-gray-700 font-medium">
-                            Status
-                          </th>
+          {/* Booking History Tab */}
+          {activeTab === "bookings" && (
+            <div className="max-w-6xl bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+                Booking History
+              </h2>
+
+              {bookingLoading ? (
+                <p className="text-center text-gray-500">Loading bookings...</p>
+              ) : bookings.length === 0 ? (
+                <p className="text-center text-gray-500">
+                  No booking history available.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border border-gray-100 text-sm">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Booking ID
+                        </th>
+                        {/* ✅ CHANGED: "Provider" to "Client" */}
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Client
+                        </th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Scheduled Date
+                        </th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Price
+                        </th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bookings.map((b) => (
+                        <tr
+                          key={b.id}
+                          className="border-b hover:bg-gray-50 transition"
+                        >
+                          <td className="px-4 py-2 text-gray-700 font-medium">
+                            #{b.id}
+                          </td>
+                          {/* ✅ CHANGED: b.provider_name to b.client_name */}
+                          <td className="px-4 py-2 text-gray-700">
+                            {b.client_name || "N/A"}
+                          </td>
+                          <td className="px-4 py-2 text-gray-700">
+                            {b.scheduled_date
+                              ? new Date(b.scheduled_date).toLocaleString()
+                              : "Not set"}
+                          </td>
+                          <td className="px-4 py-2 text-gray-700">
+                            {b.price
+                              ? `$${Number(b.price).toFixed(2)}`
+                              : "N/A"}
+                          </td>
+                          <td className="px-4 py-2">
+                          <span
+                              className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                b.status === "Paid"
+                                  ? "bg-emerald-100 text-emerald-700"
+                                  : b.status === "Confirmed"
+                                  ? "bg-green-100 text-green-700"
+                                  : b.status === "Negotiating"
+                                  ? "bg-orange-100 text-orange-700"
+                                  : b.status === "Pending"
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : b.status === "Completed"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : b.status === "Cancelled"
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-gray-100 text-gray-700"
+                              }`}
+                            >
+                              {b.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ✅ NEW: Ongoing Tab (Adapted from User.js) */}
+          {activeTab === "ongoing" && (
+            <div className="max-w-6xl bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+                Ongoing Jobs
+              </h2>
+
+              {bookingLoading ? (
+                <p className="text-center text-gray-500">Loading ongoing jobs...</p>
+              ) : ongoingBookings.length === 0 ? (
+                <p className="text-center text-gray-500">
+                  No ongoing jobs.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border border-gray-100 text-sm">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">Booking ID</th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">Client</th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">Scheduled Date</th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">Price</th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">Status</th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ongoingBookings.map((b) => (
+                        <tr key={b.id} className="border-b hover:bg-green-50 transition cursor-pointer">
+                          <td className="px-4 py-2 text-gray-700 font-medium">#{b.id}</td>
+                          <td className="px-4 py-2 text-gray-700">{b.client_name || "N/A"}</td>
+                          <td className="px-4 py-2 text-gray-700">
+                            {b.scheduled_date ? new Date(b.scheduled_date).toLocaleString() : "Not set"}
+                          </td>
+                          <td className="px-4 py-2 text-green-700 font-medium">
+                            {b.price ? `$${Number(b.price).toFixed(2)}` : "N/A"}
+                          </td>
+                          <td className="px-4 py-2">
+                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                              Paid
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            <button
+                              onClick={() => navigate(`/execution/${b.id}`)}
+                              className="bg-green-600 text-white px-4 py-1.5 rounded-full text-sm font-medium hover:bg-green-700 transition"
+                            >
+                              View Execution
+                            </button>
+                           </td>
                         </tr>
                       </thead>
                       <tbody>

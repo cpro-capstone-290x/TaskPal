@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import DocumentUploadField from './DocumentUploadField';
+import UserTerms from './UserTerms';
 
 
 const InputField = ({ label, id, type = 'text', value, onChange, required = false, placeholder = '' }) => (
@@ -24,16 +26,34 @@ const RegisterUser = ({ onSuccess }) => {
     const [formData, setFormData] = useState({
         first_name: '',
         last_name: '',
-        type_of_user: 'senior_citizen', // default value
+        type_of_user: 'senior_citizen',
         email: '',
         password: '',
         confirm_password: '',
         unit_no: '',
         street: '',
         city: '',
-        province: 'Alberta', // default value
+        province: 'Alberta',
         postal_code: '',
+        date_of_birth: '',
+        gender: '',
+        assistance_level: '',
+        living_situation: '',
+        emergency_contact_name: '',
+        emergency_contact_relationship: '',
+        emergency_contact_phone: ''
     });
+
+    const [idFile, setIdFile] = useState(null);
+    const [pwdFile, setPwdFile] = useState(null);
+
+    const [uploading, setUploading] = useState(false);
+
+    const [showTerms, setShowTerms] = useState(false);
+    const [termsAccepted, setTermsAccepted] = useState(false);
+
+
+
 
     // State for handling API status
     const [status, setStatus] = useState({
@@ -52,82 +72,99 @@ const RegisterUser = ({ onSuccess }) => {
 
     const navigate = useNavigate();
 
+    const handleFileUpload = async (file, type) => {
+        if (!file) return;
+
+        setUploading(true);
+
+        const formDataUpload = new FormData();
+        formDataUpload.append("file", file);
+        formDataUpload.append("type", type);
+
+        // ⛔ Requires temporary fake ID before OTP verification
+        const tempUserId = "temp";
+
+        const API = import.meta.env.VITE_API_URL
+            ? `${import.meta.env.VITE_API_URL}/users/${tempUserId}/user-document`
+            : `https://taskpal-14oy.onrender.com/api/users/${tempUserId}/user-document`;
+
+        const res = await fetch(API, {
+            method: "POST",
+            body: formDataUpload,
+        });
+
+        const data = await res.json();
+        setUploading(false);
+
+        if (!data.url) {
+            alert("Upload failed.");
+            return;
+        }
+
+        if (type === "senior_id") {
+            setFormData(prev => ({ ...prev, id_document_url: data.url }));
+        } else {
+            setFormData(prev => ({ ...prev, pwd_document_url: data.url }));
+        }
+    };
+
+
+
     // Function to handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setStatus({ loading: true, error: null, success: false });
+        setStatus({ loading: true, error: null });
 
-        // Basic client-side validation for mandatory fields
-        const requiredFields = ['first_name', 'last_name', 'email', 'password', 'confirm_password', 'type_of_user', 'unit_no', 'street', 'city', 'province', 'postal_code'];
-        const missingFields = requiredFields.filter(field => !formData[field]);
-
-        if (missingFields.length > 0) {
-            setStatus({
-                loading: false,
-                error: `Please fill out all required fields: ${missingFields.join(', ')}`,
-                success: false
-            });
-            return;
-        }
-        
-        if (formData.password !== formData.confirm_password) {
-            setStatus({
-                loading: false,
-                error: "Password and Confirm Password must match.",
-                success: false
-            });
+        // Validate Terms
+        if (!termsAccepted) {
+            setStatus({ loading: false, error: "You must accept the Terms & Conditions." });
             return;
         }
 
+        // Validate documents
+        if (formData.type_of_user === "senior_citizen" && !formData.id_document_url) {
+            setStatus({ loading: false, error: "Please upload a valid Senior ID." });
+            return;
+        }
 
-        const { confirm_password, ...restFormData } = formData;
-        
-        // const API_ENDPOINT = 'http://localhost:5000/api/auth/registerUser';
+        if (formData.type_of_user === "pwd" && !formData.pwd_document_url) {
+            setStatus({ loading: false, error: "Please upload a PWD document." });
+            return;
+        }
+
+        const payload = {
+            ...formData,
+            terms_accepted: termsAccepted,
+            id_document_url: formData.id_document_url || null,
+            pwd_document_url: formData.pwd_document_url || null,
+        };
+
         const API_ENDPOINT = import.meta.env.VITE_API_URL
             ? `${import.meta.env.VITE_API_URL}/auth/registerUser`
             : "https://taskpal-14oy.onrender.com/api/auth/registerUser";
 
-
         try {
             const response = await fetch(API_ENDPOINT, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData),
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
             });
 
             const result = await response.json();
 
             if (!response.ok) {
-                // Handle the specific 'Email already exists' error (400) or general errors (500)
-                const errorMessage = result.error || 'Registration failed due to an unknown error.';
-                setStatus({ loading: false, error: errorMessage, success: false });
+                setStatus({ loading: false, error: result.error });
                 return;
             }
 
-            // Success handling
-            setStatus({ loading: false, error: null, success: true });
-            console.log('User registered successfully:', result.data);
-
-            // Clear form (keeping default user type)
-            setFormData({
-                first_name: '', last_name: '', type_of_user: 'senior_citizen', email: '', password: '', confirm_password: '',
-                unit_no: '', street: '', city: '', province: 'Alberta', postal_code: '',
-            });
-
-            // ✅ Redirect to OTP page
+            setStatus({ loading: false, success: true });
             onSuccess({ email: formData.email });
 
-        } catch (error) {
-            console.error('Network or unexpected error:', error);
-            setStatus({
-                loading: false,
-                error: 'Could not connect to the server. Please check your connection.',
-                success: false
-            });
+        } catch (err) {
+            setStatus({ loading: false, error: "Network error occurred." });
         }
     };
+
 
     return (
         <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 font-sans">
@@ -227,6 +264,92 @@ const RegisterUser = ({ onSuccess }) => {
                         </div>
                     </div>
 
+                    {/* Upload Section – Show only for the selected user type */}
+                    {formData.type_of_user === "senior_citizen" && (
+                        <DocumentUploadField
+                        label="Senior Valid ID (Date of Birth Visible)"
+                        description="Accepted: Government-issued ID with visible date of birth (e.g., Passport, Driver’s License, National ID)"
+                        id="senior_id_file"
+                        required
+                        onChange={(e) => handleFileUpload(e.target.files[0], "senior_id")}
+                    />
+
+                    )}
+
+                    {formData.type_of_user === "pwd" && (
+                        <DocumentUploadField
+                        label="PWD Documents"
+                        description="Accepted: PWD ID, medical certification, supporting disability documents."
+                        id="pwd_documents"
+                        required
+                        onChange={(e) => handleFileUpload(e.target.files[0], "pwd_document")}
+                    />
+
+                    )}
+
+
+                    <hr className="my-6 border-t border-gray-200" />
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <InputField
+                            label="Date of Birth"
+                            id="date_of_birth"
+                            type="date"
+                            value={formData.date_of_birth}
+                            onChange={handleChange}
+                            required
+                        />
+
+                        <div className="flex flex-col">
+                            <label className="text-sm font-semibold text-gray-600 mb-1 tracking-wide">
+                                Gender
+                            </label>
+                            <select
+                                id="gender"
+                                name="gender"
+                                value={formData.gender}
+                                onChange={handleChange}
+                                className="w-full p-3 border border-gray-300 rounded-xl bg-white shadow-inner"
+                            >
+                                <option value="">Select...</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="non_binary">Non-Binary</option>
+                                <option value="prefer_not">Prefer Not to Say</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col mt-4">
+                        <label className="text-sm font-semibold text-gray-600 mb-1 tracking-wide">
+                            Level of Assistance Required
+                        </label>
+                        <select
+                            id="assistance_level"
+                            name="assistance_level"
+                            value={formData.assistance_level}
+                            onChange={handleChange}
+                            className="w-full p-3 border border-gray-300 rounded-xl bg-white shadow-inner"
+                        >
+                            <option value="">Select...</option>
+                            <option value="low">Low</option>
+                            <option value="moderate">Moderate</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+
+
+                    <div className="mt-4">
+                        <InputField
+                            label="Living Situation"
+                            id="living_situation"
+                            value={formData.living_situation}
+                            onChange={handleChange}
+                            placeholder="e.g., Lives alone, with family, assisted living"
+                            required
+                        />
+                    </div>
+
+
                     <hr className="my-6 border-t border-gray-200" />
                     <p className="text-sm text-gray-600 text-center">Please fill in your address details below:</p>
 
@@ -276,7 +399,7 @@ const RegisterUser = ({ onSuccess }) => {
                         <select
                             id="province"
                             name="province"
-                            value="AB"
+                            value={formData.province}
                             onChange={handleChange}
                             required
                             disabled
@@ -285,11 +408,63 @@ const RegisterUser = ({ onSuccess }) => {
                             <option value="AB">Alberta</option>
                         </select>
                     </div>
+                    <hr className="my-6 border-t border-gray-200" />
+                    <p className="text-sm text-gray-600 text-center">In Case of Emergency</p>
+
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <InputField
+                            label="Emergency Contact Full Name"
+                            id="emergency_contact_name"
+                            value={formData.emergency_contact_name}
+                            onChange={handleChange}
+                            required
+                        />
+
+                        <InputField
+                            label="Relationship"
+                            id="emergency_contact_relationship"
+                            value={formData.emergency_contact_relationship}
+                            onChange={handleChange}
+                            required
+                        />
+                    </div>
+
+                    <InputField
+                        label="Emergency Contact Phone Number"
+                        id="emergency_contact_phone"
+                        type="tel"
+                        value={formData.emergency_contact_phone}
+                        onChange={handleChange}
+                        required
+                        placeholder="e.g., 587-555-1234"
+                    />
+
+                    <div className="flex items-center gap-3 mt-4">
+                    <input
+                        type="checkbox"
+                        checked={termsAccepted}
+                        onChange={(e) => {
+                        if (e.target.checked) setShowTerms(true);
+                        else setTermsAccepted(false);
+                        }}
+                        className="w-5 h-5"
+                    />
+                    <label className="text-gray-700 font-medium">
+                        I have read and agree to the{" "}
+                        <button
+                        type="button"
+                        onClick={() => setShowTerms(true)}
+                        className="text-sky-600 underline hover:text-sky-800"
+                        >
+                        Terms & Conditions
+                        </button>
+                    </label>
+                    </div>
 
                     {/* Submit Button */}
                     <button
                         type="submit"
-                        disabled={status.loading}
+                        disabled={status.loading || uploading || !termsAccepted}
                         className="w-full py-3 mt-10 bg-sky-600 text-white font-extrabold text-lg rounded-xl shadow-lg shadow-sky-300/50 hover:bg-sky-700 disabled:bg-sky-400 transition-all duration-300 ease-in-out transform hover:scale-[1.01] hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-sky-500 focus:ring-opacity-70"
                     >
                         {status.loading ? (
@@ -305,8 +480,20 @@ const RegisterUser = ({ onSuccess }) => {
                         )}
                     </button>
                 </form>
-            </div>
-        </div>
+                </div>
+
+                {/* ⭐ Terms & Conditions Modal */}
+                <UserTerms
+                open={showTerms}
+                onClose={() => setShowTerms(false)}
+                onAccept={() => {
+                    setTermsAccepted(true);
+                    setShowTerms(false);
+                }}
+                />
+
+                </div>
+
     );
 };
 

@@ -8,6 +8,7 @@ const AdminLayout = ({ currentView, onNavigate, children }) => {
         { key: 'pending-providers', label: 'Provider Approvals' },
         { key: 'all-providers', label: 'All Providers' },
         { key: 'clients', label: 'Client Management' },
+        { key: "scheduled-announcement", label: "Maintenance Notice" }
         // ... other sections
     ];
 

@@ -22,6 +22,7 @@ import executionRoutes from "./routes/executionRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
 import accessibilityRoutes from "./routes/accessibilityRoutes.js";
+import announcementRoutes from "./routes/announcementRoutes.js";
 
 import { protect } from "./middleware/authMiddleware.js";
 import { sql } from "./config/db.js";
@@ -107,6 +108,7 @@ app.use("/api/execution", executionRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/accessibility", accessibilityRoutes); // ← keep only this (no pp.use duplicate)
+app.use("/api/announcements", announcementRoutes);
 
 // ✅ Blob test route (unchanged)
 app.get("/test-upload", async (req, res) => {

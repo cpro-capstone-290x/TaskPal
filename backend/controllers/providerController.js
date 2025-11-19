@@ -9,6 +9,21 @@ function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+// In providerController.js (at the top, near imports)
+
+// Helper function to create safe filenames
+const slugify = (text) => {
+  if (!text) return "";
+  return text
+    .toString()
+    .toLowerCase()
+    .replace(/\s+/g, "-") // Replace spaces with -
+    .replace(/[^\w-]+/g, "") // Remove all non-word chars
+    .replace(/--+/g, "-") // Replace multiple - with single -
+    .replace(/^-+/, "") // Trim - from start
+    .replace(/-+$/, ""); // Trim - from end
+};
+
 export const getProviders = async (req, res) => {
     try {
         const provider = await sql`
@@ -45,65 +60,86 @@ export const updateProvider = async (req, res) => {
     license_id,
     email,
     phone,
+    postal_code,
     document,
     status,
-    password, // only update if changed
     profile_picture_url,
     note,
+    password, // Get the password, if it was sent
   } = req.body;
 
   try {
-    // 🔐 Authorization check
-    if (!req.user || (req.user.role !== "admin" && req.user.id !== parseInt(id))) {
-      return res
-        .status(403)
-        .json({ error: "Forbidden: You are not allowed to edit this provider." });
-    }
-
-    // ✅ Dynamic update fields
-    const updates = [];
-    const params = [];
-
-    if (name !== undefined) updates.push(`name = $${params.push(name)}`);
-    if (provider_type !== undefined) updates.push(`provider_type = $${params.push(provider_type)}`);
-    if (service_type !== undefined) updates.push(`service_type = $${params.push(service_type)}`);
-    if (license_id !== undefined) updates.push(`license_id = $${params.push(license_id)}`);
-    if (email !== undefined) updates.push(`email = $${params.push(email)}`);
-    if (phone !== undefined) updates.push(`phone = $${params.push(phone)}`);
-    if (document !== undefined) updates.push(`document = $${params.push(document)}`);
-    if (status !== undefined) updates.push(`status = $${params.push(status)}`);
-    if (profile_picture_url !== undefined) updates.push(`profile_picture_url = $${params.push(profile_picture_url)}`);
-    if (note !== undefined) updates.push(`note = $${params.push(note)}`);
-
-    // ✅ Hash password only if provided and non-empty
-    if (password && password.trim() !== "") {
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-      updates.push(`password = $${params.push(hashedPassword)}`);
-    }
-
-    if (updates.length === 0) {
-      return res.status(400).json({ error: "No valid fields provided to update" });
-    }
-
-    // ✅ Add updated_at
-    const query = `
-      UPDATE providers
-      SET ${updates.join(", ")}, updated_at = NOW()
-      WHERE id = $${params.push(id)}
-      RETURNING *;
+    // 1. Get the current provider data (for password fallback)
+    const [existingProvider] = await sql`
+      SELECT password FROM providers WHERE id = ${id}
     `;
 
-    // 🧠 With Neon’s tagged client, use parameterized query
-    const result = await sql.unsafe(query, params);
-
-    if (!result || result.length === 0) {
+    if (!existingProvider) {
       return res.status(404).json({ error: "Provider not found" });
     }
 
+    // 2. Handle password update
+    let passwordHash = existingProvider.password; // Default to the old, existing hash
+    
+    // Only if a new, non-empty password was provided, hash it.
+    if (password && password.trim() !== "") {
+      const salt = await bcrypt.genSalt(10);
+      passwordHash = await bcrypt.hash(password, salt);
+      console.log(`Password updated for provider ${id}`);
+    }
+
+    // 🔹 Validate Red Deer postal codes
+    if (postal_code) {
+      const cleanPostal = postal_code.toUpperCase().replace(/\s+/g, "");
+
+      if (
+        !(
+          cleanPostal.startsWith("T4N") ||
+          cleanPostal.startsWith("T4P") ||
+          cleanPostal.startsWith("T4R")
+        )
+      ) {
+        return res.status(400).json({
+          error: "TaskPal only supports Red Deer providers. Postal code must start with T4N, T4P, or T4R.",
+        });
+      }
+    }
+
+
+    // 3. Run the simple, explicit update query
+    const result = await sql`
+      UPDATE providers
+      SET
+        name = ${name},
+        provider_type = ${provider_type},
+        service_type = ${service_type},
+        license_id = ${license_id},
+        email = ${email},
+        phone = ${phone},
+        postal_code = ${postal_code},
+        document = ${document},
+        status = ${status},
+        profile_picture_url = ${profile_picture_url},
+        note = ${note},
+        password = ${passwordHash}, 
+        updated_at = NOW()
+      WHERE id = ${id}
+      RETURNING *;
+    `;
+
+    if (!result || result.length === 0) {
+      // This shouldn't happen if the first check passed, but it's good practice
+      return res.status(404).json({ error: "Provider not found during update" });
+    }
+
+    // Return 200 OK with the newly updated data
     return res.status(200).json({ success: true, data: result[0] });
+
   } catch (error) {
     console.error("❌ Failed to update provider:", error);
+    if (error.code === '23505') { // Handle unique email constraint
+      return res.status(409).json({ error: `Failed to update: ${error.detail}` });
+    }
     res.status(500).json({ error: "Failed to update provider" });
   }
 };
@@ -196,7 +232,7 @@ export const getProvidersByServiceType = async (req, res) => {
 };
 
 export const uploadProviderProfilePicture = async (req, res) => {
-  const { providerId } = req.params;
+  const { id } = req.params;
   const file = req.file;
 
   if (!file) {
@@ -208,7 +244,7 @@ export const uploadProviderProfilePicture = async (req, res) => {
     const [provider] = await sql`
       SELECT id, name, profile_picture_url
       FROM providers
-      WHERE id = ${providerId};
+      WHERE id = ${id};
     `;
 
     if (!provider) {
@@ -233,7 +269,7 @@ export const uploadProviderProfilePicture = async (req, res) => {
       : "provider";
 
     // ✅ Step 4: Upload new file to Vercel Blob with provider info
-    const fileName = `Provider-Profile/${providerId}-${safeName}-${Date.now()}-${file.originalname}`;
+    const fileName = `Provider-Profile/${id}-${safeName}-${Date.now()}-${file.originalname}`;
     const blob = await put(fileName, file.buffer, {
       access: "public",
       contentType: file.mimetype,
@@ -243,10 +279,10 @@ export const uploadProviderProfilePicture = async (req, res) => {
     await sql`
       UPDATE providers
       SET profile_picture_url = ${blob.url}, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${providerId};
+      WHERE id = ${id};
     `;
 
-    console.log(`✅ Uploaded new profile picture for provider #${providerId}`);
+    console.log(`✅ Uploaded new profile picture for provider #${id}`);
 
     return res.json({
       success: true,
@@ -256,5 +292,150 @@ export const uploadProviderProfilePicture = async (req, res) => {
   } catch (error) {
     console.error("❌ Upload failed:", error);
     return res.status(500).json({ success: false, message: "Upload failed" });
+  }
+};
+
+// 👇 ADD THIS NEW FUNCTION
+export const uploadValidId = async (req, res) => {
+  try {
+    // 1. Check for .env variable
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      console.error("❌ BLOB_READ_WRITE_TOKEN is not set in .env file!");
+      return res.status(500).json({ error: "Server upload configuration error" });
+    }
+    
+    // 2. Check for file
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    // 3. Get the name and ID details from req.body (sent from the form)
+    const { name, id_type, id_number } = req.body;
+
+    // 4. Create "safe" versions of the text using your slugify helper
+    const safeName = slugify(name || "provider");
+    const safeIdType = slugify(id_type || "id");
+    const safeIdNumber = slugify(id_number || Date.now()); // Use timestamp as fallback
+
+    // 5. Get the original file extension (e.g., "pdf" or "jpg")
+    const originalName = req.file.originalname || "file.dat";
+    const extension = originalName.split(".").pop() || "dat";
+
+    // 6. Create the new filename
+    const fileName = `Provider-ValidID/${safeName}_${safeIdType}_${safeIdNumber}.${extension}`;
+
+    // 7. Upload to Vercel Blob
+    const blob = await put(
+      fileName, // Use the new descriptive filename
+      req.file.buffer,
+      {
+        access: "public",
+        contentType: req.file.mimetype,
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      }
+    );
+
+    // 8. Return the new URL
+    return res.json({ success: true, url: blob.url });
+  } catch (err) {
+    console.error("❌ Upload failed:", err);
+    return res.status(500).json({ error: "Upload failed" });
+  }
+};
+
+export const uploadCompanyDocuments = async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: "No files uploaded" });
+    }
+
+    const { name, email } = req.body;
+
+    const safeName = slugify(name || email || "company");
+    const folder = `Provider-Company-Additional-Documents/${safeName}`;
+
+    const urls = [];
+
+    for (const file of req.files) {
+      const originalName = file.originalname || "document";
+      const ext = originalName.split(".").pop();
+      const fileName = `${folder}/${Date.now()}-${slugify(originalName)}.${ext}`;
+
+      const blob = await put(fileName, file.buffer, {
+        access: "public",
+        contentType: file.mimetype,
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      });
+
+      urls.push(blob.url);
+    }
+
+    return res.json({
+      success: true,
+      urls,
+      message: "Documents uploaded successfully",
+    });
+
+  } catch (err) {
+    console.error("❌ Multi-doc upload failed:", err);
+    return res.status(500).json({ error: "Upload failed" });
+  }
+};
+
+export const uploadBackgroundCheck = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const { name, email } = req.body;
+
+    const safeName = slugify(name || email || "provider");
+    const ext = req.file.originalname.split(".").pop();
+    const fileName = `Provider-Background-Checks/${safeName}-${Date.now()}.${ext}`;
+
+    const blob = await put(fileName, req.file.buffer, {
+      access: "public",
+      contentType: req.file.mimetype,
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+    });
+
+    return res.json({
+      success: true,
+      url: blob.url,
+      message: "Background check uploaded successfully.",
+    });
+  } catch (err) {
+    console.error("❌ Background check upload failed:", err);
+    return res.status(500).json({ error: "Upload failed" });
+  }
+};
+
+export const uploadInsuranceDocument = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const { name, email } = req.body;
+
+    const safeName = slugify(name || email || "provider");
+    const ext = req.file.originalname.split(".").pop();
+    const fileName = `Provider-Insurance/${safeName}-${Date.now()}.${ext}`;
+
+    const blob = await put(fileName, req.file.buffer, {
+      access: "public",
+      contentType: req.file.mimetype,
+      token: process.env.BLOB_READ_WRITE_TOKEN
+    });
+
+    return res.json({
+      success: true,
+      url: blob.url,
+      message: "Insurance document uploaded successfully."
+    });
+  } catch (err) {
+    console.error("❌ Insurance upload failed:", err);
+    return res.status(500).json({ error: "Upload failed" });
   }
 };

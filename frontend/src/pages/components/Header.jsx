@@ -250,12 +250,36 @@ const Header = () => {
 
   useEffect(() => {
     if (isLoggedIn && userId) {
-      const socket = io(import.meta.env.VITE_API_URL, {
-        transports: ['websocket', 'polling'],
-        withCredentials: true,
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 2000,
+      // 1. FETCH EXISTING NOTIFICATIONS
+      // This is where you'd call your API
+      // fetch(`/api/notifications/user/${userId}`)
+      //   .then(res => res.json())
+      //   .then(data => setNotifications(data))
+      //   .catch(err => console.error("Failed to fetch notifications:", err));
+
+      // Making an initial load for demo purposes (remove this in production)
+      // setNotifications([
+      //   {
+      //     id: 1,
+      //     type: 'message',
+      //     title: 'Welcome!',
+      //     message: 'This is your notification center.',
+      //     timestamp: new Date().toISOString(),
+      //     read: false,
+      //   },
+      // ]);
+
+      // 2. SET UP WEBSOCKET LISTENER
+      // This is where you connect to Socket.IO or your WebSocket server
+      const socketUrl = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
+      socketRef.current = io(socketUrl, {
+        transports: ['websocket', 'polling']
+      });
+      const socket = socketRef.current;
+
+      socket.on('connect', () => {
+        console.log("🔔 Connected to notification socket:", socket.id);
+        socket.emit('join_notification_room', { userId });
       });
 
       socketRef.current = socket;

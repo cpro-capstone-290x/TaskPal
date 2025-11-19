@@ -198,13 +198,48 @@ export const getPublicUserById = async (req, res) => {
     }
 
     const user = result[0];
-    user.profile_picture =
+
+    // ✅ Correct fallback chain
+    user.profile_picture_url =
       user.profile_picture ||
       "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
     res.status(200).json({ data: user });
+
   } catch (err) {
     console.error("❌ Error fetching public user:", err);
     res.status(500).json({ message: "Server error fetching user profile" });
   }
+};
+
+
+export const uploadUserDocument = async (req, res) => {
+    try {
+        const file = req.file;
+        const { type } = req.body; // "senior_id" or "pwd_document"
+
+        if (!file) return res.status(400).json({ error: "No file uploaded" });
+
+        const timestamp = Date.now();
+        const ext = file.originalname.split(".").pop();
+
+        const folder = type === "senior_id"
+            ? "senior-ids"
+            : "pwd-documents";
+
+        const filePath = `User-Documents/${folder}/${timestamp}.${ext}`;
+
+        const blob = await put(filePath, file.buffer, {
+            access: "public",
+            contentType: file.mimetype,
+            token: process.env.BLOB_READ_WRITE_TOKEN,
+            addRandomSuffix: false,
+        });
+
+        return res.json({ success: true, url: blob.url });
+
+    } catch (error) {
+        console.error("❌ Error uploading document:", error);
+        res.status(500).json({ error: "Upload failed" });
+    }
 };

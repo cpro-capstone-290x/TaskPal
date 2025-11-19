@@ -1,28 +1,80 @@
-// src/pages/profile/Provider/hooks/useProviderBookings.js
 import { useEffect, useState } from "react";
-import { getProviderBookingsWithClientNames } from "../../../services/bookingService";
+import api from "../../../../api";
 
-export const useProviderBookings = (providerId, shouldFetch) => {
+export const useProviderBookings = (providerId) => {
   const [bookings, setBookings] = useState([]);
+  const [ongoingJobs, setOngoingJobs] = useState([]);
+  const [historyJobs, setHistoryJobs] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!providerId || !shouldFetch) return;
+    if (!providerId) return;
+
     let isMounted = true;
 
     const loadBookings = async () => {
       setLoading(true);
-      setError("");
 
       try {
-        const data = await getProviderBookingsWithClientNames(providerId);
+        const res = await api.get(`/bookings?provider_id=${providerId}`);
+
         if (!isMounted) return;
-        setBookings(data || []);
+
+        let data = Array.isArray(res.data)
+          ? res.data
+          : Array.isArray(res.data?.data)
+          ? res.data.data
+          : [];
+
+        // Normalize status
+        data = data.map((b) => ({
+          ...b,
+          status: b.status ? String(b.status).trim() : "",
+          completedclient:
+            b.completedclient?.trim().toLowerCase() || "",
+          completedprovider:
+            b.completedprovider?.trim().toLowerCase() || "",
+        }));
+
+        setBookings(data);
+
+        // ---------------------------
+        // ONGOING FILTER (IDENTICAL TO CLIENT)
+        // ---------------------------
+        const ongoing = data.filter((b) => {
+          const s = b.status;
+
+          const finished =
+            s === "Completed" ||
+            s === "Cancelled" ||
+            b.completedclient === "completed" ||
+            b.completedprovider === "completed";
+
+          if (finished) return false;
+
+          return (
+            s === "Paid" ||
+            s === "Confirmed" ||
+            s === "Pending" ||
+            s === "Negotiating"
+          );
+        });
+
+        // HISTORY
+        const history = data.filter((b) => {
+          const s = b.status;
+          return (
+            s === "Completed" ||
+            s === "Cancelled" ||
+            b.completedclient === "completed" ||
+            b.completedprovider === "completed"
+          );
+        });
+
+        setOngoingJobs(ongoing);
+        setHistoryJobs(history);
       } catch (err) {
-        console.error("Error loading provider bookings:", err);
-        if (!isMounted) return;
-        setError("Failed to load bookings.");
+        console.error("Provider booking load error:", err);
         setBookings([]);
       } finally {
         if (isMounted) setLoading(false);
@@ -34,7 +86,7 @@ export const useProviderBookings = (providerId, shouldFetch) => {
     return () => {
       isMounted = false;
     };
-  }, [providerId, shouldFetch]);
+  }, [providerId]);
 
-  return { bookings, loading, error };
+  return { bookings, ongoingJobs, historyJobs, loading };
 };

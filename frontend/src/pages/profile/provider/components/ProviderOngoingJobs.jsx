@@ -13,12 +13,53 @@ export const ProviderOngoingJobsSkeleton = () => (
   </div>
 );
 
+// ⭐ SAME COLOR LOGIC AS CLIENT-SIDE
+const statusClass = (status) => {
+  switch (status) {
+    case "Paid":
+      return "bg-emerald-100 text-emerald-700"; // teal
+    case "Confirmed":
+      return "bg-green-100 text-green-700"; // green
+    case "Negotiating":
+      return "bg-orange-100 text-orange-700"; // orange
+    case "Pending":
+      return "bg-yellow-100 text-yellow-700"; // yellow
+    case "Completed":
+      return "bg-blue-100 text-blue-700"; // blue
+    case "Cancelled":
+      return "bg-red-100 text-red-700"; // red
+    default:
+      return "bg-gray-100 text-gray-700";
+  }
+};
+
 const ProviderOngoingJobs = ({ ongoingJobs, loading }) => {
   const navigate = useNavigate();
 
   if (loading) return <ProviderOngoingJobsSkeleton />;
 
-  if (!ongoingJobs || ongoingJobs.length === 0) {
+  // Filter ongoing based on status logic
+  const activeJobs = ongoingJobs.filter((b) => {
+    const status = b.status;
+
+    const finished =
+      status === "Completed" ||
+      status === "Cancelled" ||
+      b.completedclient === "completed" ||
+      b.completedprovider === "completed";
+
+    if (finished) return false;
+
+    return (
+      status === "Paid" ||
+      status === "Confirmed" ||
+      status === "Pending" ||
+      status === "Negotiating"
+    );
+  });
+
+  // ❌ No active / ongoing
+  if (activeJobs.length === 0) {
     return (
       <div className="w-full max-w-6xl bg-white rounded-2xl shadow-sm border p-4 sm:p-6 lg:p-8">
         <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">
@@ -49,26 +90,36 @@ const ProviderOngoingJobs = ({ ongoingJobs, loading }) => {
           </thead>
 
           <tbody>
-            {ongoingJobs.map((b) => (
+            {activeJobs.map((b) => (
               <tr
                 key={b.id}
                 className="border-b hover:bg-green-50 cursor-pointer"
               >
                 <td className="px-3 sm:px-4 py-2 font-medium">#{b.id}</td>
+
                 <td className="px-3 sm:px-4 py-2">{b.client_name}</td>
+
                 <td className="px-3 sm:px-4 py-2">
                   {b.scheduled_date
                     ? new Date(b.scheduled_date).toLocaleDateString()
                     : "Not set"}
                 </td>
+
                 <td className="px-3 sm:px-4 py-2 text-green-700">
                   {b.price ? "$" + Number(b.price).toFixed(2) : "N/A"}
                 </td>
+
+                {/* ⭐ Updated Status Badge */}
                 <td className="px-3 sm:px-4 py-2">
-                  <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-[10px] sm:text-xs">
-                    Paid
+                  <span
+                    className={`px-3 py-1 rounded-full text-[10px] sm:text-xs font-medium ${statusClass(
+                      b.status
+                    )}`}
+                  >
+                    {b.status}
                   </span>
                 </td>
+
                 <td className="px-3 sm:px-4 py-2 text-right">
                   <button
                     onClick={() => navigate(`/execution/${b.id}`)}

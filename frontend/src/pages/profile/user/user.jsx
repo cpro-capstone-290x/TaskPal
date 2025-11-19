@@ -1,5 +1,5 @@
 // src/pages/profile/User/User.jsx
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import Sidebar from "./components/Sidebar";
@@ -29,6 +29,7 @@ const User = () => {
   // ⭐ NEW — Upload success popup state
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
+  // USER DETAILS HOOK
   const {
     user,
     loading: userLoading,
@@ -37,8 +38,15 @@ const User = () => {
     setUser,
   } = useUserDetails(id);
 
-  const { bookings, loading: bookingLoading } = useBookings(id);
+  // ⭐ BOOKING HOOK — NOW HAS ongoingBookings + historyBookings
+  const {
+    bookings,
+    ongoingBookings,
+    historyBookings,
+    loading: bookingLoading,
+  } = useBookings(id);
 
+  // AUTHORIZED USER HOOK
   const {
     authorizedUser,
     loading: loadingAuth,
@@ -47,23 +55,13 @@ const User = () => {
     refreshAuthorizedUser,
   } = useAuthorizedUser(id);
 
-  const ongoingBookings = useMemo(
-    () =>
-      bookings.filter(
-        (b) =>
-          b.status === "Paid" &&
-          (!b.completedclient ||
-            b.completedclient.toLowerCase() !== "completed")
-      ),
-    [bookings]
-  );
-
+  // LOGOUT HANDLER
   const handleLogout = () => {
     localStorage.removeItem("authToken");
     navigate("/login");
   };
 
-  // 🔥 Correct upload logic for your backend route
+  // PROFILE PICTURE UPLOAD FINAL LOGIC
   const onConfirmUpload = async () => {
     if (!newProfilePicture) return;
 
@@ -90,7 +88,7 @@ const User = () => {
 
       setNewProfilePicture(null);
 
-      // ⭐ NEW — Trigger success popup
+      // ⭐ NEW POPUP
       setUploadSuccess(true);
       setTimeout(() => setUploadSuccess(false), 2500);
 
@@ -102,10 +100,7 @@ const User = () => {
     }
   };
 
-  // ------------------------------
-  //         RENDER LOGIC
-  // ------------------------------
-
+  // LOADING / ERROR STATES
   if (userLoading) {
     return <p className="text-center mt-10 text-gray-500">Loading...</p>;
   }
@@ -120,7 +115,7 @@ const User = () => {
 
   return (
     <>
-      {/* ⭐ SUCCESS POPUP */}
+      {/* SUCCESS POPUP */}
       {uploadSuccess && (
         <div className="fixed top-4 right-4 bg-green-100 text-green-700 border border-green-300 px-4 py-2 rounded-lg shadow flex items-center gap-2 z-50">
           <span className="font-semibold">✓ Profile picture updated!</span>
@@ -137,7 +132,7 @@ const User = () => {
         </button>
       )}
 
-      {/* Layout */}
+      {/* PAGE LAYOUT */}
       <div className="min-h-screen bg-gray-50 flex">
         <Sidebar
           user={user}
@@ -150,6 +145,7 @@ const User = () => {
         />
 
         <main className="flex-1 p-10">
+          {/* PROFILE TAB */}
           {activeTab === "profile" && (
             <ProfileView
               user={user}
@@ -160,10 +156,15 @@ const User = () => {
             />
           )}
 
+          {/* BOOKING HISTORY TAB */}
           {activeTab === "bookings" && (
-            <BookingHistory bookings={bookings} loading={bookingLoading} />
+            <BookingHistory
+              bookings={historyBookings}
+              loading={bookingLoading}
+            />
           )}
 
+          {/* ONGOING BOOKINGS TAB */}
           {activeTab === "ongoing" && (
             <OngoingBookings
               ongoingBookings={ongoingBookings}
@@ -171,6 +172,7 @@ const User = () => {
             />
           )}
 
+          {/* AUTHORIZED USER TAB */}
           {activeTab === "authorized" && (
             <AuthorizedUserSection
               user={user}
@@ -186,6 +188,7 @@ const User = () => {
         </main>
       </div>
 
+      {/* EDIT PROFILE MODAL */}
       {editMode && (
         <EditProfileModal
           user={user}

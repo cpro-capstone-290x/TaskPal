@@ -3,16 +3,14 @@ import { useParams } from "react-router-dom";
 import Header from "../components/Header";
 import ExecutionPage from "./components/executionPage";
 import ExecutionPageProvider from "./components/executionPageProvider";
-import api from "../../api";
 
 const Execution = () => {
   const { bookingId } = useParams();
   const [userRole, setUserRole] = useState(null);
 
   useEffect(() => {
-    // 🧩 Role check (you can replace this with actual login session)
     const storedRole = localStorage.getItem("userRole");
-    setUserRole(storedRole || "client"); // default to client if not set
+    setUserRole(storedRole || "client");
   }, []);
 
   if (!userRole) {
@@ -26,10 +24,11 @@ const Execution = () => {
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       <Header />
+
       {userRole === "provider" ? (
-        <ExecutionPageProvider key={bookingId} />
+        <ExecutionPageProvider key={bookingId} bookingId={bookingId} />
       ) : (
-        <ExecutionPage key={bookingId} />
+        <ExecutionPage key={bookingId} bookingId={bookingId} />
       )}
     </div>
   );

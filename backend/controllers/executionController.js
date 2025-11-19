@@ -100,39 +100,60 @@ export const createExecutionIfMissing = async (req, res) => {
 /* Update a single execution field                                            */
 /* -------------------------------------------------------------------------- */
 export const updateExecutionField = async (req, res) => {
-  const { bookingId } = req.params;
-  const { field } = req.body;
-
-  const allowed = ["validatedcredential", "completedprovider", "completedclient"];
-  if (!allowed.includes(field))
-    return res.status(400).json({
-      success: false,
-      error: "Invalid field",
-    });
-
   try {
-    const [updated] = await sql`
-      UPDATE execution
-      SET ${sql(field)} = 'completed'
-      WHERE booking_id = ${bookingId}
-      RETURNING *
-    `;
+    const { field } = req.body;
+    const { bookingId } = req.params;
 
-    // If provider + client both completed → mark booking done
-    if (
-      updated.completedprovider === "completed" &&
-      updated.completedclient === "completed"
-    ) {
-      await sql`
-        UPDATE bookings
-        SET status = 'Completed'
-        WHERE id = ${bookingId}
+    console.log(`Create Request Received: ID=${bookingId}, Field=${field}`); // 🔍 Debug Log 1
+
+    const allowedFields = ['validatedcredential', 'completedprovider', 'completedclient'];
+
+    if (!allowedFields.includes(field)) {
+      return res.status(400).json({ error: "Invalid field." });
+    }
+
+    let updated;
+
+    if (field === 'validatedcredential') {
+      updated = await sql`
+        UPDATE execution
+        SET validatedcredential = 'completed'
+        WHERE booking_id = ${bookingId}
+        RETURNING *;
+      `;
+    } 
+    else if (field === 'completedprovider') {
+      updated = await sql`
+        UPDATE execution
+        SET completedprovider = 'completed'
+        WHERE booking_id = ${bookingId}
+        RETURNING *;
+      `;
+    } 
+    // ✅ FIXED: Added the missing handler for 'completedclient'
+    else if (field === 'completedclient') {
+      updated = await sql`
+        UPDATE execution
+        SET completedclient = 'completed'
+        WHERE booking_id = ${bookingId}
+        RETURNING *;
       `;
     }
 
-    res.json({ success: true, data: updated });
-  } catch (err) {
-    console.error("❌ Error updating execution:", err);
-    res.status(500).json({ success: false, error: err.message });
+    // Check if the DB actually found and updated the row
+    if (!updated || updated.length === 0) {
+        console.error(`❌ Record not found for booking_id: ${bookingId}`); // 🔍 Debug Log 2
+        return res.status(404).json({ error: "Booking ID not found in Execution table" });
+    }
+
+    console.log("✅ Update successful:", updated[0]);
+    return res.json({ success: true, data: updated[0] });
+
+  } catch (error) {
+    console.error("❌ Execution update error:", error);
+    return res.status(500).json({
+      error: "Failed to update execution field",
+      details: error.message,
+    });
   }
 };

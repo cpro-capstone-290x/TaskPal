@@ -38,7 +38,7 @@ const User = () => {
     setUser,
   } = useUserDetails(id);
 
-  // ⭐ BOOKING HOOK — NOW HAS ongoingBookings + historyBookings
+  // ⭐ BOOKING HOOK — ongoing + history
   const {
     bookings,
     ongoingBookings,
@@ -58,17 +58,23 @@ const User = () => {
   // LOGOUT HANDLER
   const handleLogout = () => {
     localStorage.removeItem("authToken");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("userRole");
     navigate("/login");
   };
 
-  // PROFILE PICTURE UPLOAD FINAL LOGIC
+  // ✅ PROFILE PICTURE UPLOAD CONFIRMATION
   const onConfirmUpload = async () => {
     if (!newProfilePicture) return;
 
     try {
       setIsUploading(true);
-
       const token = localStorage.getItem("authToken");
+      if (!token) {
+        alert("Not authenticated.");
+        return;
+      }
+
       const formData = new FormData();
       formData.append("file", newProfilePicture);
 
@@ -86,12 +92,9 @@ const User = () => {
         }));
       }
 
-      setNewProfilePicture(null);
-
       // ⭐ NEW POPUP
       setUploadSuccess(true);
       setTimeout(() => setUploadSuccess(false), 2500);
-
     } catch (err) {
       console.error("❌ Upload error:", err);
       alert("Failed to upload profile image.");
@@ -133,7 +136,7 @@ const User = () => {
       )}
 
       {/* PAGE LAYOUT */}
-      <div className="min-h-screen bg-gray-50 flex">
+      <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
         <Sidebar
           user={user}
           activeTab={activeTab}
@@ -144,7 +147,8 @@ const User = () => {
           }
         />
 
-        <main className="flex-1 p-10">
+        {/* Main content now uses responsive padding like Provider */}
+        <main className="flex-1 w-full px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
           {/* PROFILE TAB */}
           {activeTab === "profile" && (
             <ProfileView

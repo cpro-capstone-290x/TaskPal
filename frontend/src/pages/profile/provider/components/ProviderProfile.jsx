@@ -245,6 +245,133 @@ const ProviderProfile = ({
             />
           </div>
 
+          {/* ----- VALID ID INFORMATION ----- */}
+            <div className="md:col-span-2 mt-6 border-t pt-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">Valid Government ID</h3>
+
+            <ProfileField
+                label="ID Type"
+                value={isEditing ? formData.id_type : provider.id_type}
+                readOnly={!isEditing}
+                onChange={(e) => onFieldChange("id_type", e.target.value)}
+            />
+
+            <ProfileField
+                label="ID Number"
+                value={isEditing ? formData.id_number : provider.id_number}
+                readOnly={!isEditing}
+                onChange={(e) => onFieldChange("id_number", e.target.value)}
+            />
+
+            <ProfileField
+                label="ID Expiry"
+                type="date"
+                value={isEditing ? formData.id_expiry : provider.id_expiry}
+                readOnly={!isEditing}
+                onChange={(e) => onFieldChange("id_expiry", e.target.value)}
+            />
+
+            {provider.valid_id_url && (
+                <a
+                href={provider.valid_id_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sky-600 underline text-sm inline-block mt-2"
+                >
+                View Uploaded Valid ID
+                </a>
+            )}
+            </div>
+
+            {/* ----- BACKGROUND CHECK ----- */}
+            <div className="md:col-span-2 mt-6 border-t pt-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">Background Check</h3>
+
+            {provider.background_check_url ? (
+                <a
+                href={provider.background_check_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sky-600 underline text-sm"
+                >
+                View Background Check Document
+                </a>
+            ) : (
+                <p className="text-gray-500 text-sm">No background check uploaded.</p>
+            )}
+            </div>
+
+            {/* ----- INSURANCE INFORMATION ----- */}
+            <div className="md:col-span-2 mt-6 border-t pt-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">Insurance Information</h3>
+
+            <ProfileField
+                label="Insurance Provider"
+                value={isEditing ? formData.insurance_provider : provider.insurance_provider}
+                readOnly={!isEditing}
+                onChange={(e) => onFieldChange("insurance_provider", e.target.value)}
+            />
+
+            <ProfileField
+                label="Policy Number"
+                value={
+                isEditing
+                    ? formData.insurance_policy_number
+                    : provider.insurance_policy_number
+                }
+                readOnly={!isEditing}
+                onChange={(e) => onFieldChange("insurance_policy_number", e.target.value)}
+            />
+
+            <ProfileField
+                label="Insurance Expiry"
+                type="date"
+                value={
+                isEditing ? formData.insurance_expiry : provider.insurance_expiry
+                }
+                readOnly={!isEditing}
+                onChange={(e) => onFieldChange("insurance_expiry", e.target.value)}
+            />
+
+            {provider.insurance_document_url && (
+                <a
+                href={provider.insurance_document_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sky-600 underline text-sm mt-2 inline-block"
+                >
+                View Insurance Document
+                </a>
+            )}
+            </div>
+
+            {/* ----- COMPANY DOCUMENTS (FOR BUSINESS PROVIDERS) ----- */}
+            {provider.provider_type === "company" && (
+            <div className="md:col-span-2 mt-6 border-t pt-4">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">Company Documents</h3>
+
+                {provider.company_documents && provider.company_documents.length > 0 ? (
+                <ul className="space-y-2">
+                    {provider.company_documents.map((doc, idx) => (
+                    <li key={idx}>
+                        <a
+                        href={doc}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sky-600 underline text-sm"
+                        >
+                        Document {idx + 1}
+                        </a>
+                    </li>
+                    ))}
+                </ul>
+                ) : (
+                <p className="text-gray-500 text-sm">No company documents uploaded.</p>
+                )}
+            </div>
+            )}
+
+
           {/* Status + Join Date */}
           <div className="md:col-span-2 flex flex-wrap items-center gap-3 pt-4 border-t">
             {provider.status === "Approved" ? (

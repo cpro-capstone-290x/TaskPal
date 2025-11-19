@@ -48,16 +48,26 @@ const Provider = () => {
     }
   }, [provider]);
 
-  const ongoingJobs = useMemo(
-    () =>
-      bookings.filter(
-        (b) =>
-          b.status === "Paid" &&
-          (!b.completedprovider ||
-            b.completedprovider.toLowerCase() !== "completed")
-      ),
-    [bookings]
-  );
+const ongoingJobs = useMemo(() => {
+  return bookings.filter((b) => {
+    const status = String(b.status).trim();
+
+    const finished =
+      status === "Completed" ||
+      status === "Cancelled" ||
+      b.completedclient === "completed" ||
+      b.completedprovider === "completed";
+
+    if (finished) return false;
+
+    return (
+      status === "Paid" ||
+      status === "Confirmed" ||
+      status === "Pending" ||
+      status === "Negotiating"
+    );
+  });
+}, [bookings]);
 
   const handleLogout = () => {
     localStorage.clear();

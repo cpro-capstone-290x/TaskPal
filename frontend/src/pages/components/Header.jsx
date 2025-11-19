@@ -117,7 +117,7 @@ const NotificationBell = ({ notifications, onNotificationClick, onMarkAllAsRead,
     setUnreadIds(ids);
   }, [notifications]);
 
-  const handleNotificationClick = (n) => {
+  const handleNotificationClickInner = (n) => {
     setUnreadIds((prev) => prev.filter((id) => id !== n.id));
     onNotificationClick(n);
     setIsOpen(false);
@@ -184,7 +184,7 @@ const NotificationBell = ({ notifications, onNotificationClick, onMarkAllAsRead,
                   <NotificationCard
                     key={n.id}
                     notification={n}
-                    onClick={() => handleNotificationClick(n)}
+                    onClick={() => handleNotificationClickInner(n)}
                     isRead={!unreadIds.includes(n.id)}
                   />
                 ))}
@@ -250,27 +250,6 @@ const Header = () => {
 
   useEffect(() => {
     if (isLoggedIn && userId) {
-      // 1. FETCH EXISTING NOTIFICATIONS
-      // This is where you'd call your API
-      // fetch(`/api/notifications/user/${userId}`)
-      //   .then(res => res.json())
-      //   .then(data => setNotifications(data))
-      //   .catch(err => console.error("Failed to fetch notifications:", err));
-
-      // Making an initial load for demo purposes (remove this in production)
-      // setNotifications([
-      //   {
-      //     id: 1,
-      //     type: 'message',
-      //     title: 'Welcome!',
-      //     message: 'This is your notification center.',
-      //     timestamp: new Date().toISOString(),
-      //     read: false,
-      //   },
-      // ]);
-
-      // 2. SET UP WEBSOCKET LISTENER
-      // This is where you connect to Socket.IO or your WebSocket server
       const socketUrl = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
       socketRef.current = io(socketUrl, {
         transports: ['websocket', 'polling']
@@ -329,10 +308,18 @@ const Header = () => {
   const handleNotificationClick = (n) => {
     if (!n) return;
     switch (n.type) {
-      case 'message': navigate('/chat'); break;
-      case 'booking': navigate(userRole === 'provider' ? '/profileProvider' : '/bookings'); break;
-      case 'payment': navigate(userRole === 'provider' ? '/profileProvider' : '/payments'); break;
-      default: navigate(userRole === 'provider' ? '/profileProvider' : '/profile'); break;
+      case 'message':
+        navigate('/chat');
+        break;
+      case 'booking':
+        navigate(userRole === 'provider' ? '/profileProvider' : '/bookings');
+        break;
+      case 'payment':
+        navigate(userRole === 'provider' ? '/profileProvider' : '/payments');
+        break;
+      default:
+        navigate(userRole === 'provider' ? '/profileProvider' : '/profile');
+        break;
     }
     setMobileOpen(false);
   };
@@ -376,7 +363,7 @@ const Header = () => {
             </ul>
           </nav>
 
-          {/* Right (desktop): Profile, Bell, Logout */}
+          {/* Right (desktop): Profile, Bell (only when logged in), Logout/Login */}
           <div className="hidden md:flex items-center gap-6">
             <Link
               to={isLoggedIn ? (userRole === 'provider' ? `/profileProvider/${userId}` : `/profile/${userId}`) : '/login'}
@@ -385,12 +372,14 @@ const Header = () => {
               Profile
             </Link>
 
-            <NotificationBell
-              notifications={notifications}
-              onNotificationClick={handleNotificationClick}
-              onMarkAllAsRead={markAllAsRead}
-              className="mr-1"
-            />
+            {isLoggedIn && (
+              <NotificationBell
+                notifications={notifications}
+                onNotificationClick={handleNotificationClick}
+                onMarkAllAsRead={markAllAsRead}
+                className="mr-1"
+              />
+            )}
 
             {isLoggedIn ? (
               <button
@@ -409,13 +398,15 @@ const Header = () => {
             )}
           </div>
 
-          {/* Mobile: bell + hamburger */}
+          {/* Mobile: bell (only when logged in) + hamburger */}
           <div className="md:hidden flex items-center gap-2">
-            <NotificationBell
-              notifications={notifications}
-              onNotificationClick={handleNotificationClick}
-              onMarkAllAsRead={markAllAsRead}
-            />
+            {isLoggedIn && (
+              <NotificationBell
+                notifications={notifications}
+                onNotificationClick={handleNotificationClick}
+                onMarkAllAsRead={markAllAsRead}
+              />
+            )}
             <button
               className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-slate-300 text-slate-900 hover:bg-white/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
               onClick={() => setMobileOpen((v) => !v)}

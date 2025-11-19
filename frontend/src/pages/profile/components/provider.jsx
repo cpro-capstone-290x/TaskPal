@@ -1,4 +1,4 @@
-// ✨ Provider.jsx — FIXED VERSION A (Clean + Valid JSX)
+// ✨ Provider.jsx — Responsive Version
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
@@ -34,7 +34,7 @@ const ProfileField = ({
   } ${className}`;
 
   return (
-    <div>
+    <div className={className.includes("md:col-span") ? className : ""}>
       <label className="block text-gray-600 text-sm font-medium mb-1">
         {label}
       </label>
@@ -103,61 +103,70 @@ const ProviderPayouts = () => {
   return (
     <div className="w-full max-w-4xl">
       {/* Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-green-50 border border-green-200 p-6 rounded-xl">
-          <h3 className="text-lg text-green-700">Total Earned</h3>
-          <p className="text-4xl font-bold text-green-900 mt-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div className="bg-green-50 border border-green-200 p-4 sm:p-6 rounded-xl">
+          <h3 className="text-base sm:text-lg text-green-700">Total Earned</h3>
+          <p className="text-3xl sm:text-4xl font-bold text-green-900 mt-2">
             {formatCurrency(totalEarned)}
           </p>
         </div>
-        <div className="bg-blue-50 border border-blue-200 p-6 rounded-xl">
-          <h3 className="text-lg text-blue-700">Total Completed Bookings</h3>
-          <p className="text-4xl font-bold text-blue-900 mt-2">
+        <div className="bg-blue-50 border border-blue-200 p-4 sm:p-6 rounded-xl">
+          <h3 className="text-base sm:text-lg text-blue-700">
+            Total Completed Bookings
+          </h3>
+          <p className="text-3xl sm:text-4xl font-bold text-blue-900 mt-2">
             {payouts.length}
           </p>
         </div>
       </div>
 
       {/* Table */}
-      <h3 className="text-xl font-semibold text-gray-800 mb-4">
+      <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-3 sm:mb-4">
         Transaction History
       </h3>
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <table className="min-w-full text-sm divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left">Date</th>
-              <th className="px-6 py-3 text-left">Customer</th>
-              <th className="px-6 py-3 text-left">Description</th>
-              <th className="px-6 py-3 text-right">Amount</th>
-            </tr>
-          </thead>
-
-          <tbody className="bg-white divide-y divide-gray-200">
-            {payouts.length === 0 ? (
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-xs sm:text-sm divide-y divide-gray-200">
+            <thead className="bg-gray-50">
               <tr>
-                <td colSpan="4" className="py-12 text-center text-gray-500">
-                  No completed payments found.
-                </td>
+                <th className="px-3 sm:px-6 py-3 text-left">Date</th>
+                <th className="px-3 sm:px-6 py-3 text-left">Customer</th>
+                <th className="px-3 sm:px-6 py-3 text-left">Description</th>
+                <th className="px-3 sm:px-6 py-3 text-right">Amount</th>
               </tr>
-            ) : (
-              payouts.map((p) => (
-                <tr key={p.booking_id}>
-                  <td className="px-6 py-4">{formatDate(p.created_at)}</td>
-                  <td className="px-6 py-4">
-                    {p.customer_first_name} {p.customer_last_name}
-                  </td>
-                  <td className="px-6 py-4">
-                    {p.notes || `Booking #${p.booking_id}`}
-                  </td>
-                  <td className="px-6 py-4 text-green-700 font-semibold text-right">
-                    + {formatCurrency(p.price)}
+            </thead>
+
+            <tbody className="bg-white divide-y divide-gray-200">
+              {payouts.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan="4"
+                    className="py-8 sm:py-12 text-center text-gray-500"
+                  >
+                    No completed payments found.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                payouts.map((p) => (
+                  <tr key={p.booking_id}>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">
+                      {formatDate(p.created_at)}
+                    </td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">
+                      {p.customer_first_name} {p.customer_last_name}
+                    </td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">
+                      {p.notes || `Booking #${p.booking_id}`}
+                    </td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-green-700 font-semibold text-right">
+                      + {formatCurrency(p.price)}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -347,12 +356,12 @@ const Provider = () => {
   if (!provider) return <p>No provider found</p>;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
       {/* ---------------- Sidebar ---------------- */}
-      <aside className="w-64 bg-white border-r border-gray-200 shadow-sm p-6 flex flex-col justify-between">
+      <aside className="w-full lg:w-64 bg-white border-b lg:border-b-0 lg:border-r border-gray-200 shadow-sm p-4 sm:p-6 flex flex-col justify-between">
         <div>
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-16 h-16 rounded-full overflow-hidden border-2">
+          <div className="flex items-center gap-3 mb-6 sm:mb-8">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2">
               {provider.profile_picture_url ? (
                 <img
                   src={provider.profile_picture_url}
@@ -365,9 +374,11 @@ const Provider = () => {
                 </div>
               )}
             </div>
-            <div>
-              <h2 className="font-semibold">{provider.name}</h2>
-              <p className="text-sm text-gray-500 capitalize">
+            <div className="min-w-0">
+              <h2 className="font-semibold text-sm sm:text-base truncate">
+                {provider.name}
+              </h2>
+              <p className="text-xs sm:text-sm text-gray-500 capitalize">
                 {provider.provider_type}
               </p>
             </div>
@@ -378,7 +389,7 @@ const Provider = () => {
               <button
                 key={item.key}
                 onClick={() => setActiveTab(item.key)}
-                className={`w-full text-left px-4 py-2 rounded-lg font-medium transition ${
+                className={`w-full text-left px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium transition ${
                   activeTab === item.key
                     ? "bg-indigo-600 text-white"
                     : "text-gray-700 hover:bg-gray-100"
@@ -395,38 +406,38 @@ const Provider = () => {
             localStorage.clear();
             navigate("/login");
           }}
-          className="w-full mt-6 px-4 py-2 bg-red-100 text-red-700 rounded-lg"
+          className="w-full mt-6 px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm sm:text-base"
         >
           Logout
         </button>
       </aside>
 
       {/* ---------------- Main Content ---------------- */}
-      <main className="flex-1 p-10 overflow-y-auto">
+      <main className="flex-1 w-full px-4 py-6 sm:px-6 lg:px-10 lg:py-10 overflow-y-auto">
         {/* PROFILE TAB */}
         {activeTab === "profile" && (
-          <div className="max-w-4xl mx-auto p-8 bg-white rounded-2xl shadow-xl border border-gray-100">
-            <div className="flex justify-between items-center mb-8 border-b pb-4">
-              <h2 className="text-3xl font-bold text-gray-800">
+          <div className="w-full max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 bg-white rounded-2xl shadow-xl border border-gray-100">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 border-b pb-4">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">
                 Provider Profile
               </h2>
 
               {!isEditing ? (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg flex items-center gap-2"
+                  className="px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-lg flex items-center gap-2 text-sm sm:text-base"
                 >
                   <Edit2 size={18} /> Edit Profile
                 </button>
               ) : (
-                <div className="flex gap-4">
+                <div className="flex flex-wrap gap-3">
                   <button
                     onClick={() => {
                       setIsEditing(false);
                       setFormData(provider);
                       setNewProfilePicture(null);
                     }}
-                    className="px-4 py-2 bg-gray-300 rounded-lg flex items-center gap-2"
+                    className="px-3 sm:px-4 py-2 bg-gray-300 rounded-lg flex items-center gap-2 text-sm sm:text-base"
                   >
                     <X size={18} /> Cancel
                   </button>
@@ -434,7 +445,7 @@ const Provider = () => {
                   <button
                     type="submit"
                     form="provider-profile-form"
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg flex items-center gap-2"
+                    className="px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg flex items-center gap-2 text-sm sm:text-base"
                     disabled={isSaving || isUploading}
                   >
                     {isSaving ? (
@@ -464,12 +475,11 @@ const Provider = () => {
             )}
 
             {/* Profile Picture */}
-            <div className="flex items-center gap-6 mb-6">
-              <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-gray-200">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mb-6">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-gray-200">
                 <img
                   src={
-                    formData.profile_picture_url ||
-                    provider.profile_picture_url
+                    formData.profile_picture_url || provider.profile_picture_url
                   }
                   alt="Profile"
                   className="w-full h-full object-cover"
@@ -492,7 +502,7 @@ const Provider = () => {
                     onClick={() =>
                       document.getElementById("profile-pic").click()
                     }
-                    className="px-3 py-1.5 bg-blue-500 text-white rounded-lg"
+                    className="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-sm"
                   >
                     Choose File
                   </button>
@@ -502,7 +512,7 @@ const Provider = () => {
                       onClick={() =>
                         handlePictureUpload(newProfilePicture)
                       }
-                      className="ml-2 px-3 py-1.5 bg-indigo-600 text-white rounded-lg"
+                      className="ml-2 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-sm"
                     >
                       {isUploading ? "Uploading..." : "Confirm Upload"}
                     </button>
@@ -513,7 +523,7 @@ const Provider = () => {
 
             {/* FORM */}
             <form id="provider-profile-form" onSubmit={handleSave}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <ProfileField
                   label="Business Name"
                   name="name"
@@ -554,17 +564,18 @@ const Provider = () => {
                   readOnly={!isEditing}
                 />
 
-                <ProfileField
-                  label="Email"
-                  name="email"
-                  type="email"
-                  value={isEditing ? formData.email : provider.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
-                  readOnly={!isEditing}
-                  className="md:col-span-2"
-                />
+                <div className="md:col-span-2">
+                  <ProfileField
+                    label="Email"
+                    name="email"
+                    type="email"
+                    value={isEditing ? formData.email : provider.email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
+                    readOnly={!isEditing}
+                  />
+                </div>
 
                 {/* Bio */}
                 <div className="md:col-span-2">
@@ -615,7 +626,7 @@ const Provider = () => {
                   />
                 </div>
 
-                <div className="md:col-span-2 flex items-center gap-3 pt-4 border-t">
+                <div className="md:col-span-2 flex flex-wrap items-center gap-2 sm:gap-3 pt-4 border-t">
                   {provider.status === "Approved" ? (
                     <span className="px-3 py-1 rounded-full text-sm bg-green-100 text-green-700 border border-green-200 flex items-center gap-1">
                       <CheckCircle size={16} />
@@ -643,7 +654,7 @@ const Provider = () => {
               </div>
 
               {isEditing && (
-                <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+                <div className="flex flex-wrap justify-end gap-3 mt-6 pt-4 border-t">
                   <button
                     type="button"
                     onClick={() => {
@@ -651,7 +662,7 @@ const Provider = () => {
                       setFormData(provider);
                       setNewProfilePicture(null);
                     }}
-                    className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg flex items-center gap-2"
+                    className="px-3 sm:px-4 py-2 bg-gray-300 text-gray-800 rounded-lg flex items-center gap-2 text-sm sm:text-base"
                     disabled={isSaving || isUploading}
                   >
                     <X size={18} /> Cancel
@@ -659,7 +670,7 @@ const Provider = () => {
 
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg flex items-center gap-2"
+                    className="px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg flex items-center gap-2 text-sm sm:text-base"
                     disabled={isSaving || isUploading}
                   >
                     {isSaving ? (
@@ -680,8 +691,10 @@ const Provider = () => {
 
         {/* BOOKING HISTORY */}
         {activeTab === "bookings" && (
-          <div className="max-w-6xl bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-            <h2 className="text-2xl font-semibold mb-6">Booking History</h2>
+          <div className="w-full max-w-6xl bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 lg:p-8">
+            <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">
+              Booking History
+            </h2>
 
             {bookingLoading ? (
               <p>Loading...</p>
@@ -689,35 +702,46 @@ const Provider = () => {
               <p>No booking history.</p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full border text-sm">
+                <table className="min-w-full border text-xs sm:text-sm">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-2 text-left">Booking ID</th>
-                      <th className="px-4 py-2 text-left">Client</th>
-                      <th className="px-4 py-2 text-left">Scheduled Date</th>
-                      <th className="px-4 py-2 text-left">Price</th>
-                      <th className="px-4 py-2 text-left">Status</th>
+                      <th className="px-3 sm:px-4 py-2 text-left">
+                        Booking ID
+                      </th>
+                      <th className="px-3 sm:px-4 py-2 text-left">Client</th>
+                      <th className="px-3 sm:px-4 py-2 text-left">
+                        Scheduled Date
+                      </th>
+                      <th className="px-3 sm:px-4 py-2 text-left">Price</th>
+                      <th className="px-3 sm:px-4 py-2 text-left">Status</th>
                     </tr>
                   </thead>
 
                   <tbody>
                     {bookings.map((b) => (
-                      <tr key={b.id} className="border-b hover:bg-gray-50">
-                        <td className="px-4 py-2 font-medium">#{b.id}</td>
-                        <td className="px-4 py-2">{b.client_name}</td>
-                        <td className="px-4 py-2">
+                      <tr
+                        key={b.id}
+                        className="border-b hover:bg-gray-50 transition"
+                      >
+                        <td className="px-3 sm:px-4 py-2 font-medium">
+                          #{b.id}
+                        </td>
+                        <td className="px-3 sm:px-4 py-2">
+                          {b.client_name}
+                        </td>
+                        <td className="px-3 sm:px-4 py-2">
                           {b.scheduled_date
                             ? new Date(
                                 b.scheduled_date
                               ).toLocaleDateString()
                             : "Not set"}
                         </td>
-                        <td className="px-4 py-2">
+                        <td className="px-3 sm:px-4 py-2">
                           {b.price ? "$" + Number(b.price).toFixed(2) : "N/A"}
                         </td>
-                        <td className="px-4 py-2">
+                        <td className="px-3 sm:px-4 py-2">
                           <span
-                            className={`px-3 py-1 rounded-full text-xs ${
+                            className={`px-3 py-1 rounded-full text-[10px] sm:text-xs ${
                               b.status === "Paid"
                                 ? "bg-emerald-100 text-emerald-700"
                                 : b.status === "Confirmed"
@@ -745,8 +769,10 @@ const Provider = () => {
 
         {/* ONGOING JOBS */}
         {activeTab === "ongoing" && (
-          <div className="max-w-6xl bg-white rounded-2xl shadow-sm border p-8">
-            <h2 className="text-2xl font-semibold mb-6">Ongoing Jobs</h2>
+          <div className="w-full max-w-6xl bg-white rounded-2xl shadow-sm border p-4 sm:p-6 lg:p-8">
+            <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">
+              Ongoing Jobs
+            </h2>
 
             {bookingLoading ? (
               <p>Loading ongoing jobs...</p>
@@ -754,15 +780,19 @@ const Provider = () => {
               <p>No ongoing jobs.</p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full border text-sm">
+                <table className="min-w-full border text-xs sm:text-sm">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-2 text-left">Booking ID</th>
-                      <th className="px-4 py-2 text-left">Client</th>
-                      <th className="px-4 py-2 text-left">Scheduled Date</th>
-                      <th className="px-4 py-2 text-left">Price</th>
-                      <th className="px-4 py-2 text-left">Status</th>
-                      <th className="px-4 py-2 text-left">Action</th>
+                      <th className="px-3 sm:px-4 py-2 text-left">
+                        Booking ID
+                      </th>
+                      <th className="px-3 sm:px-4 py-2 text-left">Client</th>
+                      <th className="px-3 sm:px-4 py-2 text-left">
+                        Scheduled Date
+                      </th>
+                      <th className="px-3 sm:px-4 py-2 text-left">Price</th>
+                      <th className="px-3 sm:px-4 py-2 text-left">Status</th>
+                      <th className="px-3 sm:px-4 py-2 text-left">Action</th>
                     </tr>
                   </thead>
 
@@ -772,28 +802,32 @@ const Provider = () => {
                         key={b.id}
                         className="border-b hover:bg-green-50 cursor-pointer"
                       >
-                        <td className="px-4 py-2 font-medium">#{b.id}</td>
-                        <td className="px-4 py-2">{b.client_name}</td>
-                        <td className="px-4 py-2">
+                        <td className="px-3 sm:px-4 py-2 font-medium">
+                          #{b.id}
+                        </td>
+                        <td className="px-3 sm:px-4 py-2">
+                          {b.client_name}
+                        </td>
+                        <td className="px-3 sm:px-4 py-2">
                           {b.scheduled_date
                             ? new Date(
                                 b.scheduled_date
                               ).toLocaleDateString()
                             : "Not set"}
                         </td>
-                        <td className="px-4 py-2 text-green-700">
+                        <td className="px-3 sm:px-4 py-2 text-green-700">
                           {b.price ? "$" + Number(b.price).toFixed(2) : "N/A"}
                         </td>
-                        <td className="px-4 py-2">
-                          <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs">
+                        <td className="px-3 sm:px-4 py-2">
+                          <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-[10px] sm:text-xs">
                             Paid
                           </span>
                         </td>
 
-                        <td className="px-4 py-2 text-right">
+                        <td className="px-3 sm:px-4 py-2 text-right">
                           <button
                             onClick={() => navigate(`/execution/${b.id}`)}
-                            className="bg-green-600 text-white px-4 py-1.5 rounded-full text-sm hover:bg-green-700"
+                            className="bg-green-600 text-white px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm hover:bg-green-700"
                           >
                             View Execution
                           </button>
@@ -809,8 +843,10 @@ const Provider = () => {
 
         {/* TOTAL PAYOUT */}
         {activeTab === "payout" && (
-          <div className="max-w-4xl bg-white rounded-2xl shadow-sm border p-8 mx-auto">
-            <h2 className="text-2xl font-semibold mb-6">Total Payout</h2>
+          <div className="w-full max-w-4xl bg-white rounded-2xl shadow-sm border p-4 sm:p-6 lg:p-8 mx-auto">
+            <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">
+              Total Payout
+            </h2>
             <ProviderPayouts />
           </div>
         )}

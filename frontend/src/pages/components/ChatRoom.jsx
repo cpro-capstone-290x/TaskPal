@@ -254,6 +254,10 @@ const ChatRoom = () => {
     }
   };
 
+  const handleGoOExecution = () => {
+    navigate(`/execution/${bookingId}`);
+  }
+
   const handleCancelBooking = async () => {
     if (!window.confirm("Cancel booking?")) return;
 
@@ -399,6 +403,7 @@ const ChatRoom = () => {
           handleCancelBooking={handleCancelBooking}
           handleDownloadAgreement={handleDownloadAgreement}
           handleProceedToPayment={handleProceedToPayment}
+          handleGoOExecution={handleGoOExecution}
         />
       </div>
 
@@ -417,6 +422,7 @@ const ChatRoom = () => {
               handleCancelBooking={handleCancelBooking}
               handleDownloadAgreement={handleDownloadAgreement}
               handleProceedToPayment={handleProceedToPayment}
+              handleGoOExecution={handleGoOExecution}
             />
 
             <button
@@ -459,6 +465,7 @@ const RightPanel = ({
   handleCancelBooking,
   handleDownloadAgreement,
   handleProceedToPayment,
+  handleGoOExecution,
 }) => (
   <div className="text-sm text-gray-700 space-y-3">
     <p><strong>Booking ID:</strong> {bookingDetails.id}</p>
@@ -544,6 +551,16 @@ const RightPanel = ({
         className="w-full mt-6 bg-purple-600 text-white py-2 rounded"
       >
         💳 Proceed to Payment
+      </button>
+    )}
+
+    {/* Go to Execution */}
+    {bookingDetails.status === "Paid" && role === "provider" && (
+      <button
+        onClick={handleGoOExecution}
+        className="w-full mt-6 bg-blue-600 text-white py-2 rounded"
+      >
+        🚀 Go to Execution
       </button>
     )}
   </div>

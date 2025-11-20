@@ -192,6 +192,64 @@ const ProviderProfile = ({
             onChange={(e) => onFieldChange("service_type", e.target.value)}
           />
 
+          <div className="md:col-span-2 border-t border-gray-100 pt-4 mt-2">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">
+               Service Pricing (CAD)
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-600 text-sm font-medium mb-1">
+                   Minimum Price ($)
+                </label>
+                <input
+                  type={isEditing ? "number" : "text"}
+                  min="0"
+                  step="0.01"
+                  readOnly={!isEditing}
+                  value={
+                    isEditing 
+                      ? (formData.min_price || "") 
+                      : (provider.min_price || "")
+                  }
+                  onChange={(e) => onFieldChange("min_price", e.target.value)}
+                  placeholder="0.00"
+                  className={`w-full px-4 py-2 border rounded-lg ${
+                    !isEditing
+                      ? "bg-gray-50 text-gray-700 border-gray-200"
+                      : "bg-white border-gray-300 text-gray-800 focus:ring-2 focus:ring-indigo-500"
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-600 text-sm font-medium mb-1">
+                   Maximum Price ($)
+                </label>
+                <input
+                  type={isEditing ? "number" : "text"}
+                  min="0"
+                  step="0.01"
+                  readOnly={!isEditing}
+                  value={
+                    isEditing 
+                      ? (formData.max_price || "") 
+                      : (provider.max_price || "")
+                  }
+                  onChange={(e) => onFieldChange("max_price", e.target.value)}
+                  placeholder="0.00"
+                  className={`w-full px-4 py-2 border rounded-lg ${
+                    !isEditing
+                      ? "bg-gray-50 text-gray-700 border-gray-200"
+                      : "bg-white border-gray-300 text-gray-800 focus:ring-2 focus:ring-indigo-500"
+                  }`}
+                />
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 mt-2">
+              * Set a range to give customers an idea of your costs per hour or per job.
+            </p>
+          </div>
+
           <div className="md:col-span-2">
             <ProfileField
               label="Email"
@@ -213,8 +271,8 @@ const ProviderProfile = ({
               onChange={(e) => onFieldChange("note", e.target.value)}
               className={`w-full px-4 py-2 border rounded-lg ${
                 isEditing
-                  ? "bg-white border-gray-300"
-                  : "bg-gray-50 border-gray-200"
+                ? "bg-white border-gray-300 text-gray-800 focus:ring-2 focus:ring-indigo-500"
+                : "bg-gray-50 text-gray-700 border-gray-200"
               }`}
             />
           </div>

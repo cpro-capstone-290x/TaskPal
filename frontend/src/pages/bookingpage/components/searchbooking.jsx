@@ -164,7 +164,7 @@ const SearchBooking = () => {
                     {p.name || `${p.first_name} ${p.last_name}`}
                   </h3>
                   <span className="text-lg font-bold text-gray-800">
-                    ${p.price || 0}/hr
+                    ${p.min_price || 0} - ${p.max_price || 0}/hr
                   </span>
                 </div>
 

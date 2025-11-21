@@ -24,6 +24,7 @@ import contactRoutes from "./routes/contactRoutes.js";
 import accessibilityRoutes from "./routes/accessibilityRoutes.js";
 import announcementRoutes from "./routes/announcementRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import logger from "./utils/logger.js";
 
 import { protect } from "./middleware/authMiddleware.js";
 import { sql } from "./config/db.js";
@@ -111,6 +112,12 @@ app.use("/api/contact", contactRoutes);
 app.use("/api/accessibility", accessibilityRoutes); // ← keep only this (no pp.use duplicate)
 app.use("/api/announcements", announcementRoutes);
 app.use("/api/notifications", notificationRoutes);
+
+app.use(
+  morgan("combined", {
+    stream: { write: (msg) => logger.http ? logger.http(msg.trim()) : logger.info(msg.trim()) }
+  })
+);
 
 // ✅ Blob test route (unchanged)
 app.get("/test-upload", async (req, res) => {

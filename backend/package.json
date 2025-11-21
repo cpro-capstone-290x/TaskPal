@@ -5,7 +5,7 @@
   "main": "server.js",
   "type": "module",
   "license": "ISC",
-"scripts": {
+  "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
     "reset-db": "node resetDB.js",
@@ -16,8 +16,7 @@
     "UnitTest": "cross-env NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
     "UnitOnly": "cross-env NODE_ENV=test jest --runInBand test/tests/.unit.test.js",
     "IntOnly": "cross-env NODE_ENV=test jest --runInBand test/tests/.int.test.js"
-
-},
+  },
   "dependencies": {
     "@arcjet/node": "^1.0.0-beta.12",
     "@getbrevo/brevo": "^3.0.1",
@@ -35,7 +34,8 @@
     "nodemailer": "^6.9.14",
     "pdfkit": "^0.17.2",
     "socket.io": "^4.8.1",
-    "stripe": "^14.22.0"
+    "stripe": "^14.22.0",
+    "winston": "^3.18.3"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

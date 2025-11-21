@@ -1,6 +1,9 @@
 // controllers/paymentController.js
+import crypto from "crypto";
 import Stripe from "stripe";
 import { sql } from "../config/db.js";
+import { logAudit } from "../utils/auditLogger.js";
+import logger from "../utils/logger.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -10,24 +13,56 @@ const host = process.env.FRONTEND_URL || "localhost:5173";
 const successUrl = `${protocol}://${host}/payment-success?session_id={CHECKOUT_SESSION_ID}`;
 const cancelUrl = `${protocol}://${host}/payment-cancel`;
 
-// ✅ Create Stripe Checkout Session
+/* -------------------------------------------------------------------------- */
+/* Helpers                                                                    */
+/* -------------------------------------------------------------------------- */
+
+const getTraceId = (req) =>
+  req.traceId ||
+  req.headers["x-request-id"] ||
+  crypto.randomUUID();
+
+/* -------------------------------------------------------------------------- */
+/* ✅ Create Stripe Checkout Session                                          */
+/* -------------------------------------------------------------------------- */
+
 export const createPaymentIntent = async (req, res) => {
+  const traceId = getTraceId(req);
   const { bookingId } = req.params;
-  console.log("💳 Creating PaymentIntent for booking:", bookingId);
+
+  logger.info("Payment intent creation initiated", {
+    traceId,
+    bookingId,
+  });
 
   try {
     // 1️⃣ Fetch booking info
     const result = await sql`
-      SELECT * FROM bookings WHERE id = ${bookingId};
+      SELECT id, client_id, provider_id, price, notes, status
+      FROM bookings 
+      WHERE id = ${bookingId};
     `;
 
     if (result.length === 0) {
-      console.error("❌ Booking not found in DB");
+      logger.warn("Booking not found for payment intent creation", {
+        traceId,
+        bookingId,
+      });
       return res.status(404).json({ message: "Booking not found" });
     }
 
     const booking = result[0];
-    const price = booking.price ? Number(booking.price) * 100 : 5000; // default to $50 if no price
+    const priceCents = booking.price ? Number(booking.price) * 100 : 5000; // default $50
+
+    logger.info("Booking loaded for payment", {
+      traceId,
+      bookingId: booking.id,
+      client_id: booking.client_id,
+      provider_id: booking.provider_id,
+      price: booking.price,
+      priceCents,
+      status: booking.status,
+    });
 
     // 2️⃣ Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
@@ -41,7 +76,7 @@ export const createPaymentIntent = async (req, res) => {
               name: `TaskPal Service - Booking #${bookingId}`,
               description: booking.notes || "TaskPal booking payment",
             },
-            unit_amount: price, // in cents
+            unit_amount: priceCents, // in cents
           },
           quantity: 1,
         },
@@ -50,13 +85,32 @@ export const createPaymentIntent = async (req, res) => {
       cancel_url: cancelUrl,
       metadata: {
         bookingId: String(bookingId),
-      }
+      },
     });
 
-    console.log("✅ Stripe session created:", session.url);
+    logger.info("Stripe Checkout session created", {
+      traceId,
+      bookingId,
+      stripeSessionId: session.id,
+      mode: session.mode,
+    });
+
+    // Audit: Payment session created
+    await logAudit(booking.client_id, "PAYMENT_SESSION_CREATED", {
+      bookingId,
+      provider_id: booking.provider_id,
+      stripeSessionId: session.id,
+      amount: priceCents / 100,
+    });
+
     return res.json({ url: session.url });
   } catch (err) {
-    console.error("❌ Stripe Payment Error:", err);
+    logger.error("Stripe payment intent creation error", {
+      traceId,
+      bookingId,
+      error: err.message,
+      stack: err.stack,
+    });
     return res.status(500).json({
       message: "Stripe payment failed",
       error: err.message,
@@ -64,45 +118,85 @@ export const createPaymentIntent = async (req, res) => {
   }
 };
 
+/* -------------------------------------------------------------------------- */
+/* ✅ Verify Stripe Checkout Session & Record Payment                         */
+/* -------------------------------------------------------------------------- */
+
 export const verifyPaymentSession = async (req, res) => {
+  const traceId = getTraceId(req);
   const { sessionId } = req.params;
+
+  logger.info("Stripe payment verification initiated", {
+    traceId,
+    sessionId,
+  });
 
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
-    console.log("🔍 Stripe verification session:", session);
+
+    logger.info("Stripe session retrieved", {
+      traceId,
+      sessionId,
+      payment_status: session.payment_status,
+      mode: session.mode,
+    });
 
     if (!session || session.payment_status !== "paid") {
+      logger.warn("Stripe payment not verified or not paid", {
+        traceId,
+        sessionId,
+        payment_status: session?.payment_status,
+      });
       return res.status(400).json({ message: "Payment not verified" });
     }
 
-    // --- ✅ START NEW LOGIC ---
-
-    // 1. Get all necessary data from the session
+    // 1️⃣ Get data from session
     const bookingId = session.metadata?.bookingId;
-    const stripePaymentId = session.payment_intent; // Stripe's payment ID
-    const amountPaid = session.amount_total / 100; // Convert from cents to dollars
+    const stripePaymentId = session.payment_intent;
+    const amountPaid = session.amount_total / 100; // cents → dollars
 
     if (!bookingId) {
-      return res.status(400).json({ message: "No booking reference in session" });
+      logger.error("Payment session missing bookingId in metadata", {
+        traceId,
+        sessionId,
+      });
+      return res
+        .status(400)
+        .json({ message: "No booking reference in session" });
     }
 
-    // 2. Fetch booking details (client_id, provider_id)
+    // 2️⃣ Fetch booking details
     const bookingRows = await sql`
-      SELECT client_id, provider_id 
+      SELECT id, client_id, provider_id 
       FROM bookings
       WHERE id = ${bookingId};
     `;
 
     if (bookingRows.length === 0) {
-      console.error(`❌ Booking ${bookingId} not found in DB after payment.`);
+      logger.error("Booking not found in DB after successful payment", {
+        traceId,
+        bookingId,
+        sessionId,
+      });
       return res.status(404).json({ message: "Booking not found" });
     }
 
     const { client_id, provider_id } = bookingRows[0];
 
-    // 3. Insert or Update the 'payments' table
+    logger.info("Booking loaded for payment verification", {
+      traceId,
+      bookingId,
+      client_id,
+      provider_id,
+      stripePaymentId,
+      amountPaid,
+    });
+
+    // 3️⃣ Insert or Update the 'payments' table
     const existing = await sql`
-      SELECT * FROM payments WHERE booking_id = ${bookingId};
+      SELECT id, status 
+      FROM payments 
+      WHERE booking_id = ${bookingId};
     `;
 
     if (existing.length > 0) {
@@ -114,44 +208,94 @@ export const verifyPaymentSession = async (req, res) => {
             created_at = NOW()
         WHERE booking_id = ${bookingId};
       `;
-    } else {
-      await sql`
-        INSERT INTO payments (booking_id, client_id, provider_id, amount, stripe_payment_id, status)
-        VALUES (${bookingId}, ${client_id}, ${provider_id}, ${amountPaid}, ${stripePaymentId}, 'Paid');
-      `;
-    }
-    console.log(`✅ Payment table updated for booking ${bookingId}.`);
 
-    // 4. Update the 'bookings' table
+      logger.info("Existing payment record updated", {
+        traceId,
+        bookingId,
+        paymentId: existing[0].id,
+        status: "Paid",
+        amount: amountPaid,
+      });
+    } else {
+      const inserted = await sql`
+        INSERT INTO payments (booking_id, client_id, provider_id, amount, stripe_payment_id, status)
+        VALUES (${bookingId}, ${client_id}, ${provider_id}, ${amountPaid}, ${stripePaymentId}, 'Paid')
+        RETURNING id;
+      `;
+
+      logger.info("New payment record inserted", {
+        traceId,
+        bookingId,
+        paymentId: inserted[0].id,
+        status: "Paid",
+        amount: amountPaid,
+      });
+    }
+
+    // 4️⃣ Update the 'bookings' table
     await sql`
       UPDATE bookings 
-      SET status = 'Paid' 
+      SET status = 'Paid', updated_at = NOW()
       WHERE id = ${bookingId};
     `;
-    console.log(`✅ Booking table status updated for ${bookingId}.`);
-    
-    // --- 🔼 END NEW LOGIC ---
+
+    logger.info("Booking status updated to Paid", {
+      traceId,
+      bookingId,
+      client_id,
+      provider_id,
+    });
+
+    // 🧾 Audit logs: payment success
+    await logAudit(client_id, "PAYMENT_SUCCESS", {
+      bookingId,
+      amount: amountPaid,
+      stripePaymentId,
+      as: "client",
+    });
+    await logAudit(provider_id, "PAYMENT_SUCCESS_PROVIDER", {
+      bookingId,
+      amount: amountPaid,
+      stripePaymentId,
+      as: "provider",
+    });
 
     res.json({ bookingId, message: "Payment verified and recorded" });
   } catch (error) {
-    console.error("❌ Stripe verification error:", error);
+    logger.error("Stripe verification error", {
+      traceId,
+      sessionId,
+      error: error.message,
+      stack: error.stack,
+    });
     res.status(500).json({ message: "Stripe verification failed" });
   }
 };
 
-// 🌟 NEW: Get Payout History for Logged-in Provider
+/* -------------------------------------------------------------------------- */
+/* 🌟 Get Payout History for Logged-in Provider                               */
+/* -------------------------------------------------------------------------- */
+
 export const getProviderPaymentHistory = async (req, res) => {
+  const traceId = getTraceId(req);
+
   try {
-    // ❗ This assumes you have auth middleware that adds `req.user`
-    //    (e.g., from a JWT) with `req.user.id` being the provider's ID.
-    const providerId = req.user.id; 
+    const providerId = req.user?.id;
 
     if (!providerId) {
-      return res.status(401).json({ message: "Not authorized. No user ID." });
+      logger.warn("Provider payment history request without auth", {
+        traceId,
+      });
+      return res
+        .status(401)
+        .json({ message: "Not authorized. No user ID." });
     }
 
-    // Fetch all 'paid' bookings linked to this provider
-    // We also select the user (customer) info to show who booked
+    logger.info("Provider payment history requested", {
+      traceId,
+      providerId,
+    });
+
     const payouts = await sql`
       SELECT 
         b.id as booking_id, 
@@ -170,9 +314,24 @@ export const getProviderPaymentHistory = async (req, res) => {
         b.created_at DESC;
     `;
 
+    logger.info("Provider payment history fetched", {
+      traceId,
+      providerId,
+      totalRecords: payouts.length,
+    });
+
+    // (Optional) Audit: provider viewed payout history
+    await logAudit(providerId, "PAYOUT_HISTORY_VIEWED", {
+      records: payouts.length,
+    });
+
     res.json(payouts);
   } catch (err) {
-    console.error("❌ Error fetching provider payment history:", err);
+    logger.error("Error fetching provider payment history", {
+      traceId,
+      error: err.message,
+      stack: err.stack,
+    });
     res.status(500).json({
       message: "Failed to fetch payment history",
       error: err.message,

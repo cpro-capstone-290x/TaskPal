@@ -14,6 +14,7 @@ const ProviderSidebar = ({
     { key: "bookings", label: "Booking History" },
     { key: "ongoing", label: "Ongoing Job" },
     { key: "payout", label: "Total Payout" },
+    { key: "reviews", label: "Reviews" }
   ];
 
   return (

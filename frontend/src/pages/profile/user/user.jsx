@@ -122,7 +122,8 @@ const User = () => {
       {activeTab === "profile" && !editMode && (
         <button
           onClick={() => setEditMode(true)}
-          className="fixed bottom-6 right-6 px-4 py-2 rounded-full shadow-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+          className="fixed bottom-6 right-6 z-50 px-4 py-2 rounded-full shadow-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+
         >
           Edit Profile
         </button>

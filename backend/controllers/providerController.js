@@ -66,6 +66,8 @@ export const updateProvider = async (req, res) => {
     profile_picture_url,
     note,
     password, // Get the password, if it was sent
+    min_price,
+    max_price,
   } = req.body;
 
   try {
@@ -127,6 +129,8 @@ export const updateProvider = async (req, res) => {
         profile_picture_url = ${profile_picture_url},
         note = ${note},
         password = ${passwordHash},
+        min_price = ${min_price || null},
+        max_price = ${max_price || null},
         updated_at = NOW()
       WHERE id = ${id}
       RETURNING *;

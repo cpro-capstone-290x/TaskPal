@@ -7,9 +7,11 @@ import ProviderProfile, { ProviderProfileSkeleton } from "./components/ProviderP
 import ProviderBookingHistory from "./components/ProviderBookingHistory";
 import ProviderOngoingJobs from "./components/ProviderOngoingJobs";
 import ProviderPayouts from "./components/ProviderPayout";
+import ProviderReview from "./components/ProviderReview";
 
 import { useProviderDetails } from "./hooks/useProviderDetails";
 import { useProviderBookings } from "./hooks/useProviderBookings";
+import { useProviderReviews } from "./hooks/useProviderReviews";
 import { Menu } from "lucide-react";
 
 const Provider = () => {
@@ -23,6 +25,7 @@ const Provider = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({});
   const [newProfilePicture, setNewProfilePicture] = useState(null);
+  const { reviews, loading: reviewsLoading } = useProviderReviews(id);
 
   // ⭐ MOBILE SIDEBAR TOGGLE
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -196,6 +199,11 @@ const Provider = () => {
           )}
 
           {activeTab === "payout" && <ProviderPayouts />}
+
+          {activeTab === "reviews" && (
+            <ProviderReview reviews={reviews} loading={reviewsLoading} />
+          )}
+
         </main>
       </div>
     </>

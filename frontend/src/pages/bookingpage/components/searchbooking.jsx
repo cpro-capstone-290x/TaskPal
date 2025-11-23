@@ -82,8 +82,14 @@ const SearchBooking = () => {
 
         {/* Price Range */}
         <div>
-          <h3 className="font-semibold text-gray-800 mb-2">Price</h3>
+          <label
+            htmlFor="priceRange"
+            className="font-semibold text-gray-800 mb-2 block"
+          >
+            Price
+          </label>
           <input
+            id="priceRange"
             type="range"
             min="10"
             max="150"
@@ -168,12 +174,13 @@ const SearchBooking = () => {
                   </span>
                 </div>
 
-                <p className="text-yellow-500 text-sm">
+                <p className="text-yellow-700 text-sm">
                   ⭐ {p.rating || 5.0}{" "}
                   <span className="text-gray-500 text-sm">
                     ({p.review_count || 0} reviews)
                   </span>
                 </p>
+
                 <p className="text-gray-600 text-sm mb-2">
                   {p.completed_tasks || 0} Tasks Completed
                 </p>
@@ -191,7 +198,7 @@ const SearchBooking = () => {
               <div className="flex flex-col items-center justify-center md:w-1/5 w-full mt-4 md:mt-0">
                 <button
                   onClick={() => handleSelectProvider(p.id)}
-                  className="px-6 py-2 rounded-full bg-sky-600 text-white font-semibold hover:bg-sky-700 transition"
+                  className="px-6 py-2 rounded-full bg-sky-800 text-white font-semibold hover:bg-sky-900 transition"
                 >
                   Select & Continue
                 </button>

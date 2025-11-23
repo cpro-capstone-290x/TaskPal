@@ -2,7 +2,6 @@
 import React, { useState } from "react";
 import { CheckCircle } from "lucide-react";
 
-/* Reusable read-only field */
 const ProfileField = ({ label, value }) => (
   <div className="flex flex-col gap-1">
     <label className="text-gray-600 text-sm font-medium">{label}</label>
@@ -15,16 +14,12 @@ const ProfileField = ({ label, value }) => (
   </div>
 );
 
-/* Bulletproof image resolver */
-const getUserImage = (user) => {
-  return (
-    user?.profile_picture_url?.url ||
-    user?.profile_picture_url ||
-    user?.profile_picture ||
-    user?.avatar_url ||
-    "/default-user.png"
-  );
-};
+const getUserImage = (user) =>
+  user?.profile_picture_url?.url ||
+  user?.profile_picture_url ||
+  user?.profile_picture ||
+  user?.avatar_url ||
+  "/default-user.png";
 
 const ProfileView = ({
   user,
@@ -45,7 +40,7 @@ const ProfileView = ({
     <div className="w-full flex justify-center md:justify-start">
       <div className="relative w-full max-w-3xl lg:max-w-4xl bg-white rounded-2xl shadow-xl border border-gray-100 p-5 sm:p-7 md:p-8">
 
-        {/* Success popup */}
+        {/* SUCCESS POPUP */}
         {uploadSuccess && (
           <div className="absolute top-4 right-4 bg-green-100 text-green-700 border border-green-300 px-4 py-2 rounded-lg shadow flex items-center gap-2 z-20">
             <CheckCircle size={18} />
@@ -53,22 +48,34 @@ const ProfileView = ({
           </div>
         )}
 
-        {/* ---------- HEADER ---------- */}
         <div className="mb-6 border-b pb-3">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-800">
             User Profile
           </h2>
         </div>
 
-        {/* ---------- PROFILE PICTURE + NAME ---------- */}
+        {/* PROFILE IMAGE */}
         <div className="flex flex-col items-center text-center gap-4 mb-10">
-
           <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-gray-200 shadow">
-            <img
-              src={getUserImage(user)}
-              alt="User"
-              className="w-full h-full object-cover"
-            />
+            <picture>
+              <source srcSet={`${getUserImage(user)}?format=avif`} type="image/avif" />
+              <source srcSet={`${getUserImage(user)}?format=webp`} type="image/webp" />
+
+              <img
+                src={getUserImage(user)}
+                alt="User"
+                width="128"
+                height="128"
+                className="w-full h-full object-cover"
+                loading="lazy"
+                srcSet={`
+                  ${getUserImage(user)}?w=64 64w,
+                  ${getUserImage(user)}?w=128 128w,
+                  ${getUserImage(user)}?w=256 256w
+                `}
+                sizes="128px"
+              />
+            </picture>
           </div>
 
           <div>
@@ -80,9 +87,8 @@ const ProfileView = ({
             </p>
           </div>
 
-          {/* Upload controls */}
+          {/* FILE UPLOAD BUTTONS */}
           <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
-
             <input
               type="file"
               id="user-profile-pic"
@@ -92,7 +98,6 @@ const ProfileView = ({
             />
 
             <button
-              type="button"
               onClick={() =>
                 document.getElementById("user-profile-pic").click()
               }
@@ -113,12 +118,14 @@ const ProfileView = ({
           </div>
         </div>
 
-        {/* ---------- PROFILE DETAILS GRID ---------- */}
+        {/* REMAINDER OF YOUR FILE (UNCHANGED) */}
+        {/* Everything else stays the same */}
+        {/* ------------------------------- */}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <ProfileField label="First Name" value={user.first_name} />
           <ProfileField label="Last Name" value={user.last_name} />
           <ProfileField label="Email" value={user.email} />
-
           <ProfileField
             label="Date of Birth"
             value={
@@ -129,16 +136,9 @@ const ProfileView = ({
           />
 
           <ProfileField label="Gender" value={user.gender} />
-          <ProfileField
-            label="Assistance Level"
-            value={user.assistance_level}
-          />
-          <ProfileField
-            label="Living Situation"
-            value={user.living_situation}
-          />
+          <ProfileField label="Assistance Level" value={user.assistance_level} />
+          <ProfileField label="Living Situation" value={user.living_situation} />
 
-          {/* -------- ADDRESS (Full width) -------- */}
           <div className="sm:col-span-2 flex flex-col gap-1">
             <label className="text-gray-600 text-sm font-medium">
               Address
@@ -153,26 +153,25 @@ const ProfileView = ({
             />
           </div>
 
-          {/* -------- EMERGENCY CONTACT -------- */}
           <ProfileField
             label="Emergency Contact Name"
             value={user.emergency_contact_name}
           />
+
           <ProfileField
             label="Relationship"
             value={user.emergency_contact_relationship}
           />
+
           <ProfileField
             label="Emergency Contact Phone"
             value={user.emgency_contact_phone}
           />
 
-          {/* -------- DOCUMENTS -------- */}
           <div className="sm:col-span-2 flex flex-col gap-2">
             <label className="text-gray-600 text-sm font-medium">
               Uploaded Documents
             </label>
-
             <div className="space-y-1">
               {user.id_document_url && (
                 <a
@@ -197,14 +196,11 @@ const ProfileView = ({
               )}
 
               {!user.id_document_url && !user.pwd_document_url && (
-                <p className="text-gray-500 text-sm">
-                  No documents uploaded.
-                </p>
+                <p className="text-gray-500 text-sm">No documents uploaded.</p>
               )}
             </div>
           </div>
 
-          {/* -------- VERIFICATION BADGE -------- */}
           <div className="sm:col-span-2 flex flex-wrap items-center gap-3 pt-4 border-t">
             <span
               className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -226,7 +222,6 @@ const ProfileView = ({
             </span>
           </div>
         </div>
-
       </div>
     </div>
   );

@@ -16,7 +16,6 @@ import { useAuthorizedUser } from "./hooks/useAuthorizedUser";
 import api from "../../../api";
 
 // ⭐ UTILITY: Compress and resize image before upload
-// This converts images to WebP and resizes them to max 500px width
 const compressImage = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -26,9 +25,8 @@ const compressImage = (file) => {
       img.src = event.target.result;
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        const MAX_WIDTH = 500; // 500px is plenty for a profile picture
-        
-        // Calculate new height to maintain aspect ratio
+        const MAX_WIDTH = 500;
+
         let width = img.width;
         let height = img.height;
 
@@ -43,14 +41,12 @@ const compressImage = (file) => {
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Convert to WebP at 80% quality
         canvas.toBlob(
           (blob) => {
             if (!blob) {
               reject(new Error("Canvas is empty"));
               return;
             }
-            // Create a new file with .webp extension
             const newName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
             const compressedFile = new File([blob], newName, {
               type: "image/webp",
@@ -109,7 +105,6 @@ const User = () => {
     navigate("/login");
   };
 
-  // ✅ UPDATED: PROFILE PICTURE UPLOAD WITH COMPRESSION
   const onConfirmUpload = async () => {
     if (!newProfilePicture) return;
 
@@ -121,8 +116,6 @@ const User = () => {
         return;
       }
 
-      // 1. Compress the image before sending
-      // This solves the "Resource Size" warning in your report
       const compressedFile = await compressImage(newProfilePicture);
 
       const formData = new FormData();
@@ -143,7 +136,7 @@ const User = () => {
       }
 
       setUploadSuccess(true);
-      setNewProfilePicture(null); // Clear the selection after upload
+      setNewProfilePicture(null);
       setTimeout(() => setUploadSuccess(false), 2500);
     } catch (err) {
       console.error("❌ Upload error:", err);
@@ -154,21 +147,24 @@ const User = () => {
   };
 
   if (userLoading) {
-    return <p className="text-center mt-10 text-gray-500">Loading...</p>;
+    return <p className="text-center mt-10 text-gray-700">Loading...</p>;
   }
 
   if (userError) {
-    return <p className="text-center text-red-500 mt-10">{userError}</p>;
+    return <p className="text-center text-red-600 mt-10">{userError}</p>;
   }
 
   if (!user) {
-    return <p className="text-center mt-10">User not found.</p>;
+    return <p className="text-center mt-10 text-gray-700">User not found.</p>;
   }
 
   return (
     <>
       {uploadSuccess && (
-        <div className="fixed top-4 right-4 bg-green-100 text-green-700 border border-green-300 px-4 py-2 rounded-lg shadow flex items-center gap-2 z-50">
+        <div
+          role="status"
+          className="fixed top-4 right-4 bg-green-100 text-green-800 border border-green-300 px-4 py-2 rounded-lg shadow flex items-center gap-2 z-50"
+        >
           ✓ Profile picture updated!
         </div>
       )}
@@ -176,6 +172,7 @@ const User = () => {
       {activeTab === "profile" && !editMode && (
         <button
           onClick={() => setEditMode(true)}
+          aria-label="Edit profile information"
           className="fixed bottom-6 right-6 z-50 px-4 py-2 rounded-full shadow-lg bg-blue-600 text-white hover:bg-blue-700 transition"
         >
           Edit Profile
@@ -183,20 +180,22 @@ const User = () => {
       )}
 
       {/* MOBILE HEADER */}
-      <div className="md:hidden flex items-center justify-between p-4 bg-white border-b shadow-sm">
+      <header className="md:hidden flex items-center justify-between p-4 bg-white border-b shadow-sm">
         <button
           onClick={() => setMobileMenuOpen(true)}
+          aria-label="Open mobile menu"
           className="p-2 bg-gray-100 border rounded-lg"
         >
           ☰
         </button>
 
         <h2 className="text-2xl font-semibold text-gray-800">
-          Profile <span className="bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">
+          Profile{" "}
+          <span className="bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">
             Dashboard
           </span>
         </h2>
-      </div>
+      </header>
 
       {/* PAGE LAYOUT */}
       <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
@@ -212,7 +211,10 @@ const User = () => {
           setMobileMenuOpen={setMobileMenuOpen}
         />
 
-        <main className="flex-1 w-full px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
+        <main
+          className="flex-1 w-full px-4 py-6 sm:px-6 lg:px-10 lg:py-10"
+          role="main"
+        >
           {activeTab === "profile" && (
             <ProfileView
               user={user}
@@ -224,7 +226,10 @@ const User = () => {
           )}
 
           {activeTab === "bookings" && (
-            <BookingHistory bookings={historyBookings} loading={bookingLoading} />
+            <BookingHistory
+              bookings={historyBookings}
+              loading={bookingLoading}
+            />
           )}
 
           {activeTab === "ongoing" && (

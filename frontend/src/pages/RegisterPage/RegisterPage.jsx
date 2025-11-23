@@ -58,7 +58,7 @@ const AuthPage = () => {
                     <div>
                         <Link 
                             to="/" 
-                            className="text-sm text-sky-500 hover:text-sky-600 mb-4 inline-block"
+                            className="text-sm text-sky-800 hover:text-sky-900 mb-4 inline-block underline"
                         >
                             ← Back to Selection
                         </Link>

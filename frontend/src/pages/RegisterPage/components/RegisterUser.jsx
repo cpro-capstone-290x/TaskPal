@@ -300,7 +300,7 @@ const RegisterUser = ({ onSuccess }) => {
                         />
 
                         <div className="flex flex-col">
-                            <label className="text-sm font-semibold text-gray-600 mb-1 tracking-wide">
+                            <label htmlFor="gender" className="text-sm font-semibold text-gray-600 mb-1 tracking-wide">
                                 Gender
                             </label>
                             <select
@@ -320,7 +320,7 @@ const RegisterUser = ({ onSuccess }) => {
                     </div>
 
                     <div className="flex flex-col mt-4">
-                        <label className="text-sm font-semibold text-gray-600 mb-1 tracking-wide">
+                         <label htmlFor="assistance_level" className="text-sm font-semibold text-gray-600 mb-1 tracking-wide">
                             Level of Assistance Required
                         </label>
                         <select
@@ -393,7 +393,7 @@ const RegisterUser = ({ onSuccess }) => {
                         />
                     </div>
                     <div className="flex flex-col">
-                        <label htmlFor="type_of_user" className="text-sm font-semibold text-gray-600 mb-1 tracking-wide">
+                        <label htmlFor="province" className="text-sm font-semibold text-gray-600 mb-1 tracking-wide">
                             Province <span className="text-red-500">*</span>
                         </label>
                         <select
@@ -444,19 +444,20 @@ const RegisterUser = ({ onSuccess }) => {
                         type="checkbox"
                         checked={termsAccepted}
                         onChange={(e) => {
-                        if (e.target.checked) setShowTerms(true);
-                        else setTermsAccepted(false);
+                            if (e.target.checked) setShowTerms(true);
+                            else setTermsAccepted(false);
                         }}
+                        aria-label="I have read and agree to the Terms and Conditions"
                         className="w-5 h-5"
                     />
                     <label className="text-gray-700 font-medium">
                         I have read and agree to the{" "}
                         <button
-                        type="button"
-                        onClick={() => setShowTerms(true)}
-                        className="text-sky-600 underline hover:text-sky-800"
+                            type="button"
+                            onClick={() => setShowTerms(true)}
+                            className="text-sky-800 underline hover:text-sky-900"
                         >
-                        Terms & Conditions
+                            Terms & Conditions
                         </button>
                     </label>
                     </div>

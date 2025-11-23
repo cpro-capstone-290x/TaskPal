@@ -10,10 +10,10 @@ const ProfileField = ({
   type = "text",
   onChange,
 }) => (
-  <div>
-    <label className="block text-gray-600 text-sm font-medium mb-1">
+  <label className="block">
+    <span className="block text-gray-600 text-sm font-medium mb-1">
       {label}
-    </label>
+    </span>
     <input
       type={type}
       readOnly={readOnly}
@@ -25,7 +25,7 @@ const ProfileField = ({
           : "bg-white border-gray-300 text-gray-800 focus:ring-2 focus:ring-indigo-500"
       }`}
     />
-  </div>
+  </label>
 );
 
 /* ---------------------- Skeleton Loader ---------------------- */
@@ -245,7 +245,7 @@ const ProviderProfile = ({
                 />
               </div>
             </div>
-            <p className="text-xs text-gray-400 mt-2">
+            <p className="text-xs text-gray-500 mt-2">
               * Set a range to give customers an idea of your costs per hour or per job.
             </p>
           </div>
@@ -260,10 +260,10 @@ const ProviderProfile = ({
             />
           </div>
 
-          <div className="md:col-span-2">
-            <label className="block text-gray-600 text-sm font-medium mb-1">
+          <label className="md:col-span-2 block">
+            <span className="block text-gray-600 text-sm font-medium mb-1">
               Personal Note / Bio
-            </label>
+            </span>
             <textarea
               readOnly={!isEditing}
               rows="5"
@@ -271,11 +271,11 @@ const ProviderProfile = ({
               onChange={(e) => onFieldChange("note", e.target.value)}
               className={`w-full px-4 py-2 border rounded-lg ${
                 isEditing
-                ? "bg-white border-gray-300 text-gray-800 focus:ring-2 focus:ring-indigo-500"
-                : "bg-gray-50 text-gray-700 border-gray-200"
+                  ? "bg-white border-gray-300 text-gray-800 focus:ring-2 focus:ring-indigo-500"
+                  : "bg-gray-50 text-gray-700 border-gray-200"
               }`}
             />
-          </div>
+          </label>
 
           <ProfileField
             label="Phone Number"
@@ -285,8 +285,8 @@ const ProviderProfile = ({
             onChange={(e) => onFieldChange("phone", e.target.value)}
           />
 
-          <div>
-            <label className="block mb-1 text-gray-600 text-sm">Rating</label>
+          <label className="block">
+            <span className="block mb-1 text-gray-600 text-sm">Rating</span>
             <input
               type="text"
               readOnly
@@ -295,7 +295,7 @@ const ProviderProfile = ({
               }
               className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg"
             />
-          </div>
+          </label>
 
           {/* VALID ID */}
           <div className="md:col-span-2 mt-6 border-t pt-4">

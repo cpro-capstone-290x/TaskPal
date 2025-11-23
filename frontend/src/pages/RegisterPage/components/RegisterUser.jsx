@@ -168,7 +168,7 @@ const RegisterUser = ({ onSuccess }) => {
 
     return (
         <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 font-sans">
-            <div className="w-full max-w-2xl bg-white shadow-2xl hover:shadow-3xl border border-gray-100 rounded-3xl p-8 md:p-10 transition-all duration-500">
+            <div className="w-full max-w-2xl bg-white shadow-xl hover:shadow-2xl border border-gray-300 rounded-3xl p-8 md:p-10">
                 <header className="text-center mb-10 pb-4 border-b border-sky-100">
                     <h1 className="text-4xl font-black text-sky-700 mb-1 tracking-tight">
                         Create Account
@@ -300,41 +300,51 @@ const RegisterUser = ({ onSuccess }) => {
                         />
 
                         <div className="flex flex-col">
-                            <label className="text-sm font-semibold text-gray-600 mb-1 tracking-wide">
-                                Gender
-                            </label>
-                            <select
-                                id="gender"
-                                name="gender"
-                                value={formData.gender}
-                                onChange={handleChange}
-                                className="w-full p-3 border border-gray-300 rounded-xl bg-white shadow-inner"
-                            >
-                                <option value="">Select...</option>
-                                <option value="male">Male</option>
-                                <option value="female">Female</option>
-                                <option value="non_binary">Non-Binary</option>
-                                <option value="prefer_not">Prefer Not to Say</option>
-                            </select>
+                        <label 
+                        htmlFor="gender"
+                        className="text-sm font-semibold text-gray-600 mb-1 tracking-wide"
+                        >
+                        Gender
+                        </label>
+
+                        <select
+                        id="gender"
+                        name="gender"
+                        value={formData.gender}
+                        onChange={handleChange}
+                        className="w-full p-3 border border-gray-300 rounded-xl bg-white shadow-inner"
+                        aria-label="Select your gender"
+                        >
+                        <option value="">Select...</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="non_binary">Non-Binary</option>
+                        <option value="prefer_not">Prefer Not to Say</option>
+                        </select>
                         </div>
                     </div>
 
                     <div className="flex flex-col mt-4">
-                        <label className="text-sm font-semibold text-gray-600 mb-1 tracking-wide">
-                            Level of Assistance Required
-                        </label>
-                        <select
-                            id="assistance_level"
-                            name="assistance_level"
-                            value={formData.assistance_level}
-                            onChange={handleChange}
-                            className="w-full p-3 border border-gray-300 rounded-xl bg-white shadow-inner"
-                        >
-                            <option value="">Select...</option>
-                            <option value="low">Low</option>
-                            <option value="moderate">Moderate</option>
-                            <option value="high">High</option>
-                        </select>
+                    <label
+                    htmlFor="assistance_level"
+                    className="text-sm font-semibold text-gray-600 mb-1 tracking-wide"
+                    >
+                    Level of Assistance Required
+                    </label>
+
+                    <select
+                    id="assistance_level"
+                    name="assistance_level"
+                    value={formData.assistance_level}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-xl bg-white shadow-inner"
+                    aria-label="Select your level of assistance"
+                    >
+                    <option value="">Select...</option>
+                    <option value="low">Low</option>
+                    <option value="moderate">Moderate</option>
+                    <option value="high">High</option>
+                    </select>
                     </div>
 
 
@@ -393,20 +403,26 @@ const RegisterUser = ({ onSuccess }) => {
                         />
                     </div>
                     <div className="flex flex-col">
-                        <label htmlFor="type_of_user" className="text-sm font-semibold text-gray-600 mb-1 tracking-wide">
-                            Province <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                            id="province"
-                            name="province"
-                            value={formData.province}
-                            onChange={handleChange}
-                            required
-                            disabled
-                            className="w-full p-3 border border-gray-300 rounded-xl bg-white focus:ring-4 focus:ring-sky-200 focus:border-sky-500 shadow-inner transition duration-200 ease-in-out text-gray-800"
-                        >
-                            <option value="AB">Alberta</option>
-                        </select>
+                    <label
+                    htmlFor="province"
+                    className="text-sm font-semibold text-gray-600 mb-1 tracking-wide"
+                    >
+                    Province <span className="text-red-500">*</span>
+                    </label>
+
+                    <select
+                    id="province"
+                    name="province"
+                    value={formData.province}
+                    onChange={handleChange}
+                    disabled
+                    required
+                    aria-label="Province is fixed as Alberta"
+                    className="w-full p-3 border border-gray-300 rounded-xl bg-white focus:ring-4 focus:ring-sky-200 focus:border-sky-500 shadow-inner transition duration-200 ease-in-out text-gray-800"
+                    >
+                    <option value="AB">Alberta</option>
+                    </select>
+
                     </div>
                     <hr className="my-6 border-t border-gray-200" />
                     <p className="text-sm text-gray-600 text-center">In Case of Emergency</p>
@@ -440,45 +456,80 @@ const RegisterUser = ({ onSuccess }) => {
                     />
 
                     <div className="flex items-center gap-3 mt-4">
-                    <input
+                        <input
+                        id="terms_accept"
                         type="checkbox"
                         checked={termsAccepted}
                         onChange={(e) => {
-                        if (e.target.checked) setShowTerms(true);
-                        else setTermsAccepted(false);
+                            if (e.target.checked) setShowTerms(true);
+                            else setTermsAccepted(false);
                         }}
                         className="w-5 h-5"
-                    />
-                    <label className="text-gray-700 font-medium">
+                        aria-required="true"
+                        />
+
+                        <label 
+                        htmlFor="terms_accept"
+                        className="text-gray-700 font-medium cursor-pointer"
+                        >
                         I have read and agree to the{" "}
                         <button
-                        type="button"
-                        onClick={() => setShowTerms(true)}
-                        className="text-sky-600 underline hover:text-sky-800"
+                            type="button"
+                            onClick={() => setShowTerms(true)}
+                            className="text-sky-700 underline hover:text-sky-900"
+                            aria-label="Read the Terms and Conditions"
                         >
-                        Terms & Conditions
+                            Terms & Conditions
                         </button>
-                    </label>
+                        </label>
+
                     </div>
 
                     {/* Submit Button */}
                     <button
                         type="submit"
+                        aria-label={status.loading ? "Registering your account" : "Create My Account"}
                         disabled={status.loading || uploading || !termsAccepted}
-                        className="w-full py-3 mt-10 bg-sky-600 text-white font-extrabold text-lg rounded-xl shadow-lg shadow-sky-300/50 hover:bg-sky-700 disabled:bg-sky-400 transition-all duration-300 ease-in-out transform hover:scale-[1.01] hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-sky-500 focus:ring-opacity-70"
-                    >
+                        className="
+                            w-full py-3 mt-10
+                            bg-sky-700 text-white font-extrabold text-lg
+                            rounded-xl shadow-lg shadow-sky-300/50
+                            hover:bg-sky-800 disabled:bg-sky-500
+                            transition-all duration-300 ease-in-out
+                            transform hover:scale-[1.01] hover:shadow-xl
+                            focus:outline-none focus:ring-4 focus:ring-sky-900 focus:ring-opacity-70
+                        "
+                        >
                         {status.loading ? (
                             <div className="flex items-center justify-center">
-                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Registering...
+                            <svg
+                                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                            >
+                                <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                                ></circle>
+                                <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
+                            </svg>
+                            Registering...
                             </div>
                         ) : (
-                            'Create My Account'
+                            "Create My Account"
                         )}
-                    </button>
+                        </button>
+
                 </form>
                 </div>
 

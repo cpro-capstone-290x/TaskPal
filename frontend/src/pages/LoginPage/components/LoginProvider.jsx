@@ -176,7 +176,9 @@ const LoginProvider = ({ onSuccess }) => {
         <button
           type="submit"
           disabled={status.loading}
-          className="w-full py-3 mt-6 bg-sky-600 text-white font-extrabold text-lg rounded-xl shadow-lg shadow-sky-300/50 hover:bg-sky-700 disabled:bg-sky-400 transition-all duration-300 ease-in-out transform hover:scale-[1.01] hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-sky-500 focus:ring-opacity-70"
+          // Changed bg-sky-600 -> bg-sky-700
+          // Changed hover:bg-sky-700 -> hover:bg-sky-800
+          className="w-full py-3 mt-6 bg-sky-700 text-white font-extrabold text-lg rounded-xl shadow-lg shadow-sky-300/50 hover:bg-sky-800 disabled:bg-sky-400 transition-all duration-300 ease-in-out transform hover:scale-[1.01] hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-sky-500 focus:ring-opacity-70"
         >
           {status.loading ? (
             <div className="flex items-center justify-center">

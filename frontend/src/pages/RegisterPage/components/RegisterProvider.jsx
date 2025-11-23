@@ -400,10 +400,14 @@ if (
             />
 
             <div className="flex flex-col">
-              <label className="text-sm font-semibold text-gray-600 mb-1">
+              <label
+                htmlFor="provider_type"
+                className="text-sm font-semibold text-gray-600 mb-1"
+              >
                 Provider Type <span className="text-red-500">*</span>
               </label>
               <select
+                id="provider_type"
                 name="provider_type"
                 value={formData.provider_type}
                 onChange={handleChange}
@@ -419,8 +423,14 @@ if (
           {/* service type + license */}
           <div className="grid md:grid-cols-2 gap-6">
             <div className="flex flex-col">
-              <label className="text-sm font-semibold text-gray-600 mb-1">Service Type *</label>
+              <label
+                htmlFor="service_type"
+                className="text-sm font-semibold text-gray-600 mb-1"
+              >
+                Service Type *
+              </label>
               <select
+                id="service_type"
                 name="service_type"
                 value={formData.service_type}
                 onChange={handleChange}
@@ -526,8 +536,15 @@ if (
               required
             />
 
-            <label className="text-sm font-semibold text-gray-600 mt-3 mb-1">Upload Valid ID (Image/PDF) *</label>
+            <label
+              htmlFor="valid_id_file"
+              className="text-sm font-semibold text-gray-600 mt-3 mb-1"
+            >
+              Upload Valid ID (Image/PDF) *
+            </label>
             <input
+              id="valid_id_file"
+              name="valid_id_file"
               type="file"
               accept="image/*,application/pdf"
               onChange={handleValidIDFile}
@@ -553,6 +570,7 @@ if (
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, background_check_file: e.target.files[0] }))
               }
+              aria-label="Background Check Document"
               className="w-full p-3 border border-gray-300 rounded-xl bg-white"
             />
           </div>
@@ -596,6 +614,7 @@ if (
               type="file"
               accept="image/*,application/pdf"
               onChange={handleInsuranceFile}
+              aria-label="Proof of Liability Insurance"
               className="w-full p-3 border border-gray-300 rounded-xl bg-white"
               required
             />
@@ -625,20 +644,26 @@ if (
 
           {/* TERMS */}
           <div className="flex items-center gap-3 pt-4">
-            <input
-              type="checkbox"
-              className="w-5 h-5 cursor-pointer"
-              checked={termsAccepted}
-              onChange={() => {
-                if (!termsAccepted) setShowTermsModal(true);
-                else setTermsAccepted(false);
-              }}
-            />
-            <span className="text-gray-700 text-sm cursor-pointer" onClick={() => setShowTermsModal(true)}>
-              I agree to the <span className="text-sky-600 underline">Terms & Conditions</span>
+          <input
+            type="checkbox"
+            className="w-5 h-5 cursor-pointer"
+            checked={termsAccepted}
+            onChange={() => {
+              if (!termsAccepted) setShowTermsModal(true);
+              else setTermsAccepted(false);
+            }}
+            aria-label="I agree to the Terms and Conditions"
+          />
+          <span
+            className="text-gray-700 text-sm cursor-pointer"
+            onClick={() => setShowTermsModal(true)}
+          >
+            I agree to the{" "}
+            <span className="text-sky-800 underline hover:text-sky-900">
+              Terms & Conditions
             </span>
+          </span>
           </div>
-
           <button
             type="submit"
             disabled={status.loading || !termsAccepted}

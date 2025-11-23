@@ -1,6 +1,59 @@
 // src/pages/profile/Provider/components/ProviderProfile.jsx
-import React from "react";
+import React, { useState } from "react";
 import { CheckCircle, Clock } from "lucide-react";
+
+/* ---------------------- Image Compression Helper ---------------------- */
+// ⭐ NEW: Compresses and resizes image to max 500px width (WebP)
+// This solves the "Resource Size" and "Modern Image Format" LCP warnings.
+const compressImage = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 500; // ample quality for a 128px avatar
+        
+        let width = img.width;
+        let height = img.height;
+
+        // Resize logic
+        if (width > MAX_WIDTH) {
+          height = Math.round((height * MAX_WIDTH) / width);
+          width = MAX_WIDTH;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert to WebP at 80% quality
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error("Canvas is empty"));
+              return;
+            }
+            const newName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+            const compressedFile = new File([blob], newName, {
+              type: "image/webp",
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          },
+          "image/webp",
+          0.8
+        );
+      };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+};
 
 /* ---------------------- Image Optimization Helper ---------------------- */
 const getOptimizedImageUrls = (url) => {
@@ -84,10 +137,29 @@ const ProviderProfile = ({
   setNewProfilePicture,
   onConfirmUpload,
 }) => {
+  const [isCompressing, setIsCompressing] = useState(false); // UI state for compression
+  
   const profileImageUrl =
     formData.profile_picture_url || provider.profile_picture_url || "";
   const optimizedImage = getOptimizedImageUrls(profileImageUrl);
   const providerName = provider.name || "Provider";
+
+  // ⭐ NEW: Handle file selection with compression
+  const handleImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setIsCompressing(true);
+      const compressedFile = await compressImage(file);
+      setNewProfilePicture(compressedFile);
+    } catch (error) {
+      console.error("Compression failed:", error);
+      alert("Failed to process image. Please try a different file.");
+    } finally {
+      setIsCompressing(false);
+    }
+  };
 
   return (
     <div className="w-full max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 bg-white rounded-2xl shadow-xl border border-gray-100">
@@ -142,7 +214,7 @@ const ProviderProfile = ({
 
       {/* ---------------------- Profile Picture + Upload ---------------------- */}
       <div className="flex flex-col items-center text-center gap-4 mb-8">
-        <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-gray-200 bg-gray-100">
+        <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-gray-200 bg-gray-100 relative">
           {profileImageUrl ? (
             <picture>
               {optimizedImage.avif && (
@@ -166,6 +238,13 @@ const ProviderProfile = ({
               No photo
             </div>
           )}
+          
+          {/* Overlay loader when compressing */}
+          {isCompressing && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+              <div className="animate-spin h-6 w-6 border-2 border-white border-t-transparent rounded-full"></div>
+            </div>
+          )}
         </div>
 
         <div>
@@ -184,7 +263,7 @@ const ProviderProfile = ({
               id="provider-profile-pic"
               className="hidden"
               accept="image/*"
-              onChange={(e) => setNewProfilePicture(e.target.files[0])}
+              onChange={handleImageChange} // ⭐ Changed from inline to handler
             />
 
             <button
@@ -193,8 +272,9 @@ const ProviderProfile = ({
                 document.getElementById("provider-profile-pic").click()
               }
               className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition"
+              disabled={isCompressing}
             >
-              Change Profile Photo
+              {isCompressing ? "Processing..." : "Change Profile Photo"}
             </button>
 
             {newProfilePicture && (
@@ -202,7 +282,7 @@ const ProviderProfile = ({
                 type="button"
                 onClick={onConfirmUpload}
                 className="px-4 py-2 bg-indigo-700 text-white rounded-lg text-sm hover:bg-indigo-800 transition disabled:opacity-60"
-                disabled={isUploading}
+                disabled={isUploading || isCompressing}
               >
                 {isUploading ? "Uploading..." : "Confirm Upload"}
               </button>
@@ -245,14 +325,12 @@ const ProviderProfile = ({
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                {/* FIX: Added htmlFor */}
                 <label 
                   htmlFor="min_price" 
                   className="block text-gray-700 text-sm font-medium mb-1"
                 >
                   Minimum Price ($)
                 </label>
-                {/* FIX: Added id */}
                 <input
                   id="min_price"
                   type={isEditing ? "number" : "text"}
@@ -275,14 +353,12 @@ const ProviderProfile = ({
               </div>
 
               <div>
-                {/* FIX: Added htmlFor */}
                 <label 
                   htmlFor="max_price"
                   className="block text-gray-700 text-sm font-medium mb-1"
                 >
                   Maximum Price ($)
                 </label>
-                {/* FIX: Added id */}
                 <input
                   id="max_price"
                   type={isEditing ? "number" : "text"}
@@ -312,7 +388,7 @@ const ProviderProfile = ({
 
           <div className="md:col-span-2">
             <ProfileField
-              id="email" // FIX: Was missing
+              id="email"
               label="Email"
               type="email"
               value={isEditing ? formData.email : provider.email}
@@ -322,14 +398,12 @@ const ProviderProfile = ({
           </div>
 
           <div className="md:col-span-2">
-            {/* FIX: Added htmlFor */}
             <label 
               htmlFor="bio_note"
               className="block text-gray-700 text-sm font-medium mb-1"
             >
               Personal Note / Bio
             </label>
-            {/* FIX: Added id */}
             <textarea
               id="bio_note"
               readOnly={!isEditing}
@@ -345,7 +419,7 @@ const ProviderProfile = ({
           </div>
 
           <ProfileField
-            id="phone_number" // FIX: Was missing
+            id="phone_number"
             label="Phone Number"
             type="tel"
             value={isEditing ? formData.phone : provider.phone}
@@ -354,14 +428,12 @@ const ProviderProfile = ({
           />
 
           <div>
-            {/* FIX: Added htmlFor */}
             <label 
               htmlFor="rating_display"
               className="block mb-1 text-gray-700 text-sm font-medium"
             >
               Rating
             </label>
-            {/* FIX: Added id */}
             <input
               id="rating_display"
               type="text"
@@ -380,7 +452,7 @@ const ProviderProfile = ({
             </h3>
 
             <ProfileField
-              id="id_type" // FIX: Was missing
+              id="id_type"
               label="ID Type"
               value={isEditing ? formData.id_type : provider.id_type}
               readOnly={!isEditing}
@@ -388,7 +460,7 @@ const ProviderProfile = ({
             />
 
             <ProfileField
-              id="id_number" // FIX: Was missing
+              id="id_number"
               label="ID Number"
               value={isEditing ? formData.id_number : provider.id_number}
               readOnly={!isEditing}
@@ -396,7 +468,7 @@ const ProviderProfile = ({
             />
 
             <ProfileField
-              id="id_expiry" // FIX: Was missing
+              id="id_expiry"
               label="ID Expiry"
               type="date"
               value={isEditing ? formData.id_expiry : provider.id_expiry}
@@ -445,7 +517,7 @@ const ProviderProfile = ({
             </h3>
 
             <ProfileField
-              id="insurance_provider" // FIX: Was missing
+              id="insurance_provider"
               label="Insurance Provider"
               value={
                 isEditing
@@ -459,7 +531,7 @@ const ProviderProfile = ({
             />
 
             <ProfileField
-              id="insurance_policy" // FIX: Was missing
+              id="insurance_policy"
               label="Policy Number"
               value={
                 isEditing
@@ -473,7 +545,7 @@ const ProviderProfile = ({
             />
 
             <ProfileField
-              id="insurance_expiry" // FIX: Was missing
+              id="insurance_expiry"
               label="Insurance Expiry"
               type="date"
               value={

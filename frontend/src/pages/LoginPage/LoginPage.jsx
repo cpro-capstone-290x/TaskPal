@@ -51,7 +51,7 @@ const LoginPage = () => {
                 <div className="mb-4 text-center">
                     <Link 
                         to={loginType === 'provider' ? '/login?type=user' : '/login?type=provider'} 
-                        className="text-sm text-sky-500 hover:text-sky-600 mb-4 inline-block font-medium"
+                        className="text-sm text-sky-800 hover:text-sky-900 mb-4 inline-block font-medium underline"
                     >
                         {loginType === 'provider' 
                             ? '→ Log in as a Regular User' 
@@ -67,7 +67,7 @@ const LoginPage = () => {
                     Don't have an account? 
                     <Link 
                         to={`/register?type=${loginType}`} 
-                        className="text-sky-500 hover:text-sky-600 font-semibold ml-1"
+                        className="text-sky-800 hover:text-sky-900 font-semibold ml-1 underline"
                     >
                         Sign up now
                     </Link>

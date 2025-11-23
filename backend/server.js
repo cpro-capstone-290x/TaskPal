@@ -46,10 +46,12 @@ try {
 
 // ✅ Allowed Origins (Local + Production)
 const allowedOrigins = [
-  "http://localhost:5173",
+  "http://localhost:5173",   // Vite dev
+  "http://localhost:4173",   // Vite preview (npm run preview)
   "https://task-pal-zeta.vercel.app",
   "https://taskpal-14oy.onrender.com",
 ];
+
 
 // ✅ Core middlewares
 app.use(express.json());

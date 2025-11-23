@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ProviderTerms from "./ProviderTerms";
 
-const InputField = ({ label, id, type = "text", value, onChange, required = false, placeholder = "" }) => (
+const InputField = ({ label, id, name, type = "text", value, onChange, required = false, placeholder = "", readOnly = false }) => (
   <div className="flex flex-col">
     <label htmlFor={id} className="text-sm font-semibold text-gray-600 mb-1 tracking-wide">
       {label} {required && <span className="text-red-500">*</span>}
@@ -10,15 +10,17 @@ const InputField = ({ label, id, type = "text", value, onChange, required = fals
     <input
       type={type}
       id={id}
-      name={id}
+      name={name || id}
       value={value}
       onChange={onChange}
       required={required}
+      readOnly={readOnly}
       placeholder={placeholder}
       className="w-full p-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-sky-200 focus:border-sky-500 transition duration-200 ease-in-out shadow-inner placeholder-gray-400 text-black bg-white"
     />
   </div>
 );
+
 
 const RegisterProvider = ({ onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -369,7 +371,7 @@ if (
 
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 font-sans">
-      <div className="w-full max-w-2xl bg-white shadow-2xl border border-gray-100 rounded-3xl p-8 md:p-10">
+        <div className="w-full max-w-2xl bg-white shadow-2xl border border-gray-300 rounded-3xl p-8 md:p-10">
         <header className="text-center mb-10 pb-4 border-b border-sky-100">
           <h1 className="text-4xl font-black text-sky-700">Register as a Provider</h1>
           <p className="text-gray-500 text-lg">Join TaskPal and start offering your services.</p>
@@ -400,15 +402,16 @@ if (
             />
 
             <div className="flex flex-col">
-              <label className="text-sm font-semibold text-gray-600 mb-1">
-                Provider Type <span className="text-red-500">*</span>
-              </label>
+            <label htmlFor="provider_type" className="text-sm font-semibold text-gray-600 mb-1">
+              Provider Type <span className="text-red-500">*</span>
+            </label>
               <select
+                id="provider_type"
                 name="provider_type"
+                className="p-3 border border-gray-300 rounded-xl bg-white"
                 value={formData.provider_type}
                 onChange={handleChange}
                 required
-                className="p-3 border border-gray-300 rounded-xl bg-white"
               >
                 <option value="individual">Individual</option>
                 <option value="company">Company / Business</option>
@@ -419,14 +422,19 @@ if (
           {/* service type + license */}
           <div className="grid md:grid-cols-2 gap-6">
             <div className="flex flex-col">
-              <label className="text-sm font-semibold text-gray-600 mb-1">Service Type *</label>
+              <label htmlFor="service_type" className="text-sm font-semibold text-gray-600 mb-1">
+                Service Type <span className="text-red-500">*</span>
+              </label>
+
               <select
+                id="service_type"
                 name="service_type"
                 value={formData.service_type}
                 onChange={handleChange}
                 required
                 className="p-3 border border-gray-300 rounded-xl bg-white"
               >
+
                 <option value="Moving">Moving</option>
                 <option value="Cleaning">Cleaning</option>
                 <option value="Gardening">Gardening</option>
@@ -460,9 +468,12 @@ if (
           <InputField
             label="Service Area (Auto-Set)"
             id="service_area"
+            name="service_area"
             value={formData.service_area}
             onChange={() => {}}
+            readOnly
           />
+
         </div>
 
 
@@ -476,16 +487,18 @@ if (
           {/* supporting document — SHOW ONLY IF COMPANY */}
           {formData.provider_type === "company" && (
             <div className="p-4 border border-gray-300 rounded-xl bg-gray-50">
-              <label className="text-sm font-semibold text-gray-600 mb-1">
+              <label htmlFor="company_documents" className="text-sm font-semibold text-gray-600 mb-1">
                 Business Supporting Document (Required for Company Providers)
               </label>
 
               <input
+                id="company_documents"
+                name="company_documents"
                 type="file"
                 multiple
                 onChange={(e) => setFormData({ ...formData, documents: [...e.target.files] })}
+                className="w-full p-3 border border-gray-300 rounded-xl bg-white"
               />
-
               <p className="text-xs text-gray-500 mt-2">
                 Upload business permit, certification, or related legal documents.
               </p>
@@ -526,14 +539,23 @@ if (
               required
             />
 
-            <label className="text-sm font-semibold text-gray-600 mt-3 mb-1">Upload Valid ID (Image/PDF) *</label>
+            <label
+              htmlFor="valid_id_file"
+              className="text-sm font-semibold text-gray-600 mt-3 mb-1"
+            >
+              Upload Valid ID (Image/PDF) *
+            </label>
+
             <input
+              id="valid_id_file"
+              name="valid_id_file"
               type="file"
               accept="image/*,application/pdf"
               onChange={handleValidIDFile}
               className="w-full p-3 border border-gray-300 rounded-xl bg-white"
               required
             />
+
           </div>
 
           {/* BACKGROUND CHECK SECTION */}
@@ -546,7 +568,13 @@ if (
               Accepted: Police clearance, vulnerable sector check, or any official background verification.
             </p>
 
+            <label htmlFor="background_check_file" className="text-sm font-semibold text-gray-600 mt-3 mb-1">
+              Upload Background Check Document *
+            </label>
+
             <input
+              id="background_check_file"
+              name="background_check_file"
               type="file"
               required
               accept="image/*,application/pdf"
@@ -555,6 +583,7 @@ if (
               }
               className="w-full p-3 border border-gray-300 rounded-xl bg-white"
             />
+
           </div>
 
           {/* INSURANCE SECTION */}
@@ -587,18 +616,20 @@ if (
               onChange={handleChange}
               required
             />
-
-            <label className="text-sm font-semibold text-gray-600 mt-3 mb-1">
+            <label htmlFor="insurance_document" className="text-sm font-semibold text-gray-600 mt-3 mb-1">
               Upload Proof of Insurance (PDF or Image) *
             </label>
 
             <input
+              id="insurance_document"
+              name="insurance_document"
               type="file"
               accept="image/*,application/pdf"
               onChange={handleInsuranceFile}
               className="w-full p-3 border border-gray-300 rounded-xl bg-white"
               required
             />
+                          
           </div>
 
 
@@ -626,6 +657,7 @@ if (
           {/* TERMS */}
           <div className="flex items-center gap-3 pt-4">
             <input
+              id="agree_terms"
               type="checkbox"
               className="w-5 h-5 cursor-pointer"
               checked={termsAccepted}
@@ -633,10 +665,19 @@ if (
                 if (!termsAccepted) setShowTermsModal(true);
                 else setTermsAccepted(false);
               }}
+              aria-required="true"
             />
-            <span className="text-gray-700 text-sm cursor-pointer" onClick={() => setShowTermsModal(true)}>
-              I agree to the <span className="text-sky-600 underline">Terms & Conditions</span>
-            </span>
+
+            <label
+              htmlFor="agree_terms"
+              className="text-gray-800 text-sm cursor-pointer"
+              onClick={() => setShowTermsModal(true)}
+            >
+              I agree to the{" "}
+              <span className="text-sky-900 underline font-semibold">
+                Terms & Conditions
+              </span>
+            </label>
           </div>
 
           <button

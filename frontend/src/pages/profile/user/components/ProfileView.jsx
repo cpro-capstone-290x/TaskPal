@@ -109,14 +109,13 @@ const ProfileView = ({
             />
 
             <button
-              onClick={() =>
-                document.getElementById("user-profile-pic").click()
-              }
+              onClick={() => document.getElementById("user-profile-pic").click()}
               aria-label="Choose a new profile picture"
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm shadow hover:bg-blue-600"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm shadow hover:bg-blue-700 focus:ring-2 focus:ring-blue-300"
             >
               Choose File
             </button>
+
 
             {newProfilePicture && (
               <button

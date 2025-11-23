@@ -15,18 +15,69 @@ import { useAuthorizedUser } from "./hooks/useAuthorizedUser";
 
 import api from "../../../api";
 
+// ⭐ UTILITY: Compress and resize image before upload
+// This converts images to WebP and resizes them to max 500px width
+const compressImage = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 500; // 500px is plenty for a profile picture
+        
+        // Calculate new height to maintain aspect ratio
+        let width = img.width;
+        let height = img.height;
+
+        if (width > MAX_WIDTH) {
+          height = Math.round((height * MAX_WIDTH) / width);
+          width = MAX_WIDTH;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert to WebP at 80% quality
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error("Canvas is empty"));
+              return;
+            }
+            // Create a new file with .webp extension
+            const newName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+            const compressedFile = new File([blob], newName, {
+              type: "image/webp",
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          },
+          "image/webp",
+          0.8
+        );
+      };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+};
+
 const User = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState("profile");
   const [editMode, setEditMode] = useState(false);
-
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [newProfilePicture, setNewProfilePicture] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
-
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
   const {
@@ -37,7 +88,6 @@ const User = () => {
     setUser,
   } = useUserDetails(id);
 
-  // ⭐ BOOKING HOOK — ongoing + history
   const {
     ongoingBookings,
     historyBookings,
@@ -59,7 +109,7 @@ const User = () => {
     navigate("/login");
   };
 
-  // ✅ PROFILE PICTURE UPLOAD CONFIRMATION
+  // ✅ UPDATED: PROFILE PICTURE UPLOAD WITH COMPRESSION
   const onConfirmUpload = async () => {
     if (!newProfilePicture) return;
 
@@ -71,8 +121,12 @@ const User = () => {
         return;
       }
 
+      // 1. Compress the image before sending
+      // This solves the "Resource Size" warning in your report
+      const compressedFile = await compressImage(newProfilePicture);
+
       const formData = new FormData();
-      formData.append("file", newProfilePicture);
+      formData.append("file", compressedFile);
 
       const res = await api.post(`/users/${id}/profile-picture`, formData, {
         headers: {
@@ -88,8 +142,8 @@ const User = () => {
         }));
       }
 
-      // ⭐ NEW POPUP
       setUploadSuccess(true);
+      setNewProfilePicture(null); // Clear the selection after upload
       setTimeout(() => setUploadSuccess(false), 2500);
     } catch (err) {
       console.error("❌ Upload error:", err);
@@ -123,7 +177,6 @@ const User = () => {
         <button
           onClick={() => setEditMode(true)}
           className="fixed bottom-6 right-6 z-50 px-4 py-2 rounded-full shadow-lg bg-blue-600 text-white hover:bg-blue-700 transition"
-
         >
           Edit Profile
         </button>
@@ -143,8 +196,6 @@ const User = () => {
             Dashboard
           </span>
         </h2>
-
-
       </div>
 
       {/* PAGE LAYOUT */}
@@ -157,15 +208,11 @@ const User = () => {
           onProfilePictureUpdate={(newPhoto) =>
             setUser((prev) => ({ ...prev, profile_picture_url: newPhoto }))
           }
-          
           mobileMenuOpen={mobileMenuOpen}
           setMobileMenuOpen={setMobileMenuOpen}
         />
 
-
-        {/* Main content now uses responsive padding like Provider */}
         <main className="flex-1 w-full px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
-          {/* PROFILE TAB */}
           {activeTab === "profile" && (
             <ProfileView
               user={user}

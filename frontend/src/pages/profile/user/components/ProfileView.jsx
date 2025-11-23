@@ -4,15 +4,15 @@ import { CheckCircle } from "lucide-react";
 
 /* Reusable read-only field */
 const ProfileField = ({ label, value }) => (
-  <div className="flex flex-col gap-1">
-    <label className="text-gray-600 text-sm font-medium">{label}</label>
+  <label className="flex flex-col gap-1">
+    <span className="text-gray-600 text-sm font-medium">{label}</span>
     <input
       type="text"
       readOnly
       value={value || "N/A"}
       className="w-full px-4 py-2 bg-gray-50 border border-gray-200 text-gray-700 rounded-lg"
     />
-  </div>
+  </label>
 );
 
 /* Bulletproof image resolver */
@@ -96,7 +96,7 @@ const ProfileView = ({
               onClick={() =>
                 document.getElementById("user-profile-pic").click()
               }
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm shadow hover:bg-blue-600"
+              className="px-4 py-2 bg-blue-700 text-white rounded-lg text-sm shadow hover:bg-blue-800"
             >
               Choose File
             </button>
@@ -139,20 +139,19 @@ const ProfileView = ({
           />
 
           {/* -------- ADDRESS (Full width) -------- */}
-          <div className="sm:col-span-2 flex flex-col gap-1">
-            <label className="text-gray-600 text-sm font-medium">
+          <label className="sm:col-span-2 flex flex-col gap-1">
+            <span className="text-gray-600 text-sm font-medium">
               Address
-            </label>
+            </span>
             <textarea
               readOnly
               rows="3"
               className="w-full px-4 py-2 bg-gray-50 border border-gray-200 text-gray-700 rounded-lg"
-              value={`${user.unit_no || ""} ${user.street || ""}, ${
-                user.city || ""
-              }, ${user.province || ""}, ${user.postal_code || ""}`}
+              value={`${user.unit_no || ""} ${user.street || ""}, ${user.city || ""}, ${
+                user.province || ""
+              }, ${user.postal_code || ""}`}
             />
-          </div>
-
+          </label>
           {/* -------- EMERGENCY CONTACT -------- */}
           <ProfileField
             label="Emergency Contact Name"

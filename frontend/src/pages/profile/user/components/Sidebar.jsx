@@ -49,7 +49,7 @@ const Sidebar = ({
               key={item.key}
               className={`w-full text-left px-4 py-2 rounded-lg text-sm font-medium transition ${
                 activeTab === item.key
-                  ? "bg-green-600 text-white"
+                  ? "bg-green-700 text-white"
                   : "text-gray-700 hover:bg-gray-100"
               }`}
               onClick={() => {
@@ -78,7 +78,7 @@ const Sidebar = ({
               key={item.key}
               className={`w-full text-left px-4 py-2 rounded-lg text-sm font-medium transition ${
                 activeTab === item.key
-                  ? "bg-green-600 text-white"
+                  ? "bg-green-700 text-white"
                   : "text-gray-700 hover:bg-gray-100"
               }`}
               onClick={() => setActiveTab(item.key)}

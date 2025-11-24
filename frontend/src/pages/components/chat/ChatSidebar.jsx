@@ -79,14 +79,14 @@ const ChatSidebar = ({
                 <div className="flex items-center gap-1 mt-1 text-yellow-500 text-sm">
                   ⭐{" "}
                   <span className="text-gray-600">{averageRating}</span>
-                  <span className="text-gray-400">
+                  <span className="text-gray-600">
                     ({reviews.length} review{reviews.length !== 1 ? "s" : ""})
                   </span>
                 </div>
 
                 <button
                   onClick={onViewProfile}
-                  className="mt-4 px-5 py-2 rounded-full text-sm font-medium bg-sky-600 text-white hover:bg-sky-700 transition"
+                  className="mt-4 px-5 py-2 rounded-full text-sm font-medium bg-sky-800 text-white hover:bg-sky-900 transition"
                 >
                   View Profile
                 </button>
@@ -142,7 +142,7 @@ const ChatSidebar = ({
         </p>
       )}
 
-      <div className="text-xs text-gray-400 mt-6 border-t border-gray-200 pt-4">
+      <div className="text-xs text-gray-600 mt-6 border-t border-gray-200 pt-4">
         {isProvider
           ? "All clients are verified and validated by TaskPal."
           : "All TaskPals are background-checked and verified."}

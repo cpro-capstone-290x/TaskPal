@@ -512,14 +512,14 @@ const RightPanel = ({
 
         <button
           onClick={handleProposePrice}
-          className="w-full bg-sky-600 text-white py-2 rounded"
+          className="w-full bg-sky-800 text-white py-2 rounded hover:bg-sky-900"
         >
           💬 Propose Price
         </button>
 
         <button
           onClick={handleAgreePrice}
-          className="w-full bg-green-600 text-white py-2 rounded"
+          className="w-full bg-green-800 text-white py-2 rounded hover:bg-green-900"
         >
           ✅ Agree
         </button>

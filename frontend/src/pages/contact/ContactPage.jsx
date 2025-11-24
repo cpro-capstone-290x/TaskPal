@@ -133,11 +133,11 @@ const ContactPage = () => {
             {/* ✅ Submit Button */}
             <button
               type="submit"
-              className={`w-full text-xl font-semibold py-3 rounded-lg transition focus:ring-4 focus:ring-green-300 
+              className={`w-full text-xl font-semibold py-3 rounded-lg transition focus:ring-4 focus:ring-green-300 text-white 
                 ${
                   status === "sending"
-                    ? "bg-green-400 cursor-not-allowed"
-                    : "bg-green-600 hover:bg-green-700 text-white"
+                    ? "bg-green-700 cursor-not-allowed"
+                    : "bg-green-800 hover:bg-green-900"
                 }`}
               disabled={status === "sending"}
             >

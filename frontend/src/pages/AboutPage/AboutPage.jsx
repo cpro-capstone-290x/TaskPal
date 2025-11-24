@@ -94,23 +94,24 @@ const AboutPage = () => {
               {
                 name: "Justin Mangawang",
                 role: "Project Manager",
-                img: "https://via.placeholder.com/110",
+                img: "/default-avatar.png",
               },
               {
                 name: "John Carlo Sinoy",
                 role: "Lead Developer",
-                img: "https://via.placeholder.com/110",
+                img: "/default-avatar.png",
               },
               {
                 name: "Sikandeer Kingdra",
                 role: "Frontend/Backend Developer",
-                img: "https://via.placeholder.com/110",
+                img: "/default-avatar.png",
               },
               {
                 name: "John Gerardo",
                 role: "Documentation/Tester",
-                img: "https://via.placeholder.com/110",
+                img: "/default-avatar.png",
               },
+
             ].map((member) => (
               <div
                 key={member.name}

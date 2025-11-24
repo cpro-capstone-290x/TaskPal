@@ -526,6 +526,16 @@ const Header = () => {
                   Profile
                 </Link>
               </li>
+
+              {/* About Us - right of Profile */}
+              <li>
+                <Link
+                  to="/about"
+                  className="inline-flex items-center h-12 px-3 text-lg lg:text-xl font-semibold text-gray-900 hover:text-sky-700"
+                >
+                  About Us
+                </Link>
+              </li>
             </ul>
           </nav>
 
@@ -569,7 +579,7 @@ const Header = () => {
 
             {/* Hamburger */}
             <button
-              className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-slate-300 text-slate-900 hover:bg-white/60"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-slate-300 text-slate-900 hover:bg:white/60"
               onClick={() => setMobileOpen((v) => !v)}
             >
               <svg width="22" height="22" viewBox="0 0 24 24"
@@ -632,6 +642,17 @@ const Header = () => {
                   Login
                 </Link>
               )}
+
+              {/* About Us - very bottom of hamburger */}
+              <div className="mt-3">
+                <Link
+                  to="/about"
+                  onClick={() => setMobileOpen(false)}
+                  className="block text-center px-3 py-2 text-[14px] font-semibold text-slate-700 hover:text-sky-700"
+                >
+                  About Us
+                </Link>
+              </div>
             </div>
           </div>
         )}

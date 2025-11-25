@@ -17,17 +17,25 @@ function Home() {
     <>
       <Header />
 
-      <div className="App flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center">
-        <div className="my-12">
+      <div className="App flex flex-col items-center min-h-screen bg-gray-50 text-center py-10">
+
+        {/* --- Section 1: Icons --- */}
+        <div className="mt-12 mb-6">
           <SelectionIcons />
+        </div>
+
+        {/* --- Section 2: QR Code --- */}
+        <div className="mb-10">
           <InstallQR />
         </div>
 
-        {/* Show IntroContent if NOT logged in */}
-        {!isAuthenticated && <IntroContent />}
+        {/* --- Section 3: Intro Content (only for guests) --- */}
+        {!isAuthenticated && (
+            <IntroContent />
+        )}
       </div>
 
-      {/* ✅ Added install helper (Android install button + iOS banner) */}
+      {/* --- Install Banner/Prompt --- */}
       <InstallPrompt />
     </>
   );

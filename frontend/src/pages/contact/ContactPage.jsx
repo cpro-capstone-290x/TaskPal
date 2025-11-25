@@ -136,8 +136,8 @@ const ContactPage = () => {
               className={`w-full text-xl font-semibold py-3 rounded-lg transition focus:ring-4 focus:ring-green-300 text-white 
                 ${
                   status === "sending"
-                    ? "bg-green-700 cursor-not-allowed"
-                    : "bg-green-800 hover:bg-green-900"
+                    ? "bg-green-400 cursor-not-allowed text-white" // Keep text-white explicit here if you want consistency
+                    : "bg-green-700 hover:bg-green-800 text-white" // ✅ Changed from 600/700 to 700/800
                 }`}
               disabled={status === "sending"}
             >

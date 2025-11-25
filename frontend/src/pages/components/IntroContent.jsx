@@ -11,7 +11,7 @@ const IntroContent = () => {
                 {/* Link to AuthPage with type=user query parameter */}
                 <Link
                     to="/register?type=user" // <-- Key change: Add the query string
-                    className="block w-full py-4 bg-sky-500 text-white font-bold text-lg rounded-xl hover:bg-sky-600 transition shadow-lg"
+                    className="block w-full py-4 bg-sky-700 text-white font-bold text-lg rounded-xl hover:bg-sky-800 transition shadow-lg"
                 >
                     Sign up as a User
                 </Link>
@@ -28,7 +28,7 @@ const IntroContent = () => {
                 {/* Link to AuthPage with type=provider query parameter */}
                 <Link
                     to="/register?type=provider" // <-- Key change: Add the query string
-                    className="block w-full py-4 bg-lime-500 text-white font-bold text-lg rounded-xl hover:bg-lime-600 transition shadow-lg"
+                   className="block w-full py-4 bg-green-700 text-white font-bold text-lg rounded-xl hover:bg-green-800 transition shadow-lg"
                 >
                     Sign up as a Provider
                 </Link>

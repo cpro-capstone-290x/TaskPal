@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import AdminLayout from './components/adminLayout'; 
 import DashboardHome from './components/DashboardHome';
 import ApprovalQueueView from './components/ApprovalQueueView'; 
+import AllProvidersView from './components/AllProvidersView';
+import AllClientsView from './components/AllClientsView';
 import ScheduledAnnouncement from './components/ScheduledAnnouncement';
 
 const AdminHome = () => {
@@ -32,10 +34,10 @@ const AdminHome = () => {
                 return <ApprovalQueueView />;
 
             case 'all-providers':
-                return <PlaceholderView title="All Providers List/Management" />;
+                return <AllProvidersView />;
 
             case 'clients':
-                return <PlaceholderView title="Client Management" />;
+                return <AllClientsView />;
 
             case 'scheduled-announcement':
                 return <ScheduledAnnouncement />; // ✅ FIXED HERE

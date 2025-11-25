@@ -109,6 +109,32 @@ export const getPendingProviders = async (req, res) => {
     }
 }
 
+export const getAllProviders = async (req, res) => {
+    try {
+        const providers = await sql`
+            SELECT * FROM providers
+            ORDER BY created_at DESC
+        `;
+        res.status(200).json({ success: true, data: providers });
+    } catch (error) {
+        console.error("❌ Failed to fetch provider directory:", error);
+        res.status(500).json({ error: 'Failed to fetch provider directory' });
+    }
+}
+
+export const getAllUsers = async (req, res) => {
+    try {
+        const users = await sql`
+            SELECT * FROM users
+            ORDER BY created_at DESC
+        `;
+        res.status(200).json({ success: true, data: users });
+    } catch (error) {
+        console.error("❌ Failed to fetch user directory:", error);
+        res.status(500).json({ error: 'Failed to fetch user directory' });
+    }
+}
+
 // B. Get Full Details of a Single Provider for Review
 export const getProviderForAdmin = async (req, res) => {
     const { id } = req.params;

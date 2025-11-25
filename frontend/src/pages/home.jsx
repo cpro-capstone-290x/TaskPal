@@ -25,9 +25,9 @@ function Home() {
         </div>
 
         {/* --- Section 2: QR Code --- */}
-        <div className="mb-10">
+        {/* <div className="mb-10">
           <InstallQR />
-        </div>
+        </div> */}
 
         {/* --- Section 3: Intro Content (only for guests) --- */}
         {!isAuthenticated && (

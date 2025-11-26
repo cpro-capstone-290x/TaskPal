@@ -17,10 +17,11 @@ const cancelUrl = `${protocol}://${host}/payment-cancel`;
 /* Helpers                                                                    */
 /* -------------------------------------------------------------------------- */
 
-const getTraceId = (req) =>
+const getTraceId = (req = {}) =>
   req.traceId ||
-  req.headers["x-request-id"] ||
+  req.headers?.["x-request-id"] ||
   crypto.randomUUID();
+
 
 /* -------------------------------------------------------------------------- */
 /* ✅ Create Stripe Checkout Session                                          */

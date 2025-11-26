@@ -2,7 +2,9 @@ import express from "express";
 import bodyParser from "body-parser";
 import multer from "multer";
 import cors from "cors";
-import {mockAuth} from "./middleware/mockAuth.js";
+import { mockAuth } from "./middleware/mockAuth.js";
+import { protect } from "./middleware/authMiddleware.js";
+
 
 // 🧩 Controllers
 import {
@@ -35,9 +37,11 @@ import {
   verifyPaymentSession,
 } from "./controllers/paymentController.js";
 
-import { 
-    createExecution, 
-    updateExecutionStatus } from "./controllers/executionController.js"; 
+import {
+  getExecutionByBooking,
+  createExecutionIfMissing,
+  updateExecutionField
+} from "./controllers/executionController.js";
 
 import {
   bookTask,
@@ -77,9 +81,21 @@ import {
   getProviderForAdmin,
 } from "./controllers/adminController.js";
 
+// Import the Announcement Controller
+import {
+  createAnnouncement,
+  getActiveAnnouncement,
+  getAllAnnouncements,
+  activateAnnouncement,
+  completeAnnouncement,
+  deleteAnnouncement
+} from "./controllers/announcementController.js";
 
-
-
+import {
+  getNotifications,
+  markAllAsRead,
+  markOneAsRead
+} from "./controllers/notificationController.js";
 
 // 🚀 Initialize Express app
 const app = express();
@@ -103,7 +119,7 @@ app.post("/api/users/:id/profile-picture", upload.single("file"), uploadProfileP
 app.get("/api/public/users/:id", getPublicUserById);
 
 /* -------------------------------------------------------------------------- */
-/* 🧑‍🔧 PROVIDER ROUTES                                                      */
+/* 🧑‍🔧 PROVIDER ROUTES                                                       */
 /* -------------------------------------------------------------------------- */
 app.get("/api/providers", getProviders);
 app.get("/api/providers/:id", getProvider);
@@ -114,25 +130,28 @@ app.get("/api/providers/service_type/:service_type", getProvidersByServiceType);
 app.post("/api/providers/:providerId/upload", upload.single("file"), uploadProviderProfilePicture);
 
 /* -------------------------------------------------------------------------- */
-/* 🗒️ REVIEW ROUTES                                                          */
+/* 🗒️ REVIEW ROUTES                                                           */
 /* -------------------------------------------------------------------------- */
 app.post("/api/reviews", mockAuth, createReview);
 app.get("/api/reviews/booking/:bookingId", getReviewByBooking);
 app.get("/api/reviews/provider/:providerId", getReviewsByProvider);
 
 /* -------------------------------------------------------------------------- */
-/* 💳 PAYMENT ROUTES                                                         */
+/* 💳 PAYMENT ROUTES                                                          */
 /* -------------------------------------------------------------------------- */
 app.post("/api/payments/:bookingId", createPaymentIntent);
 app.get("/api/payments/verify/:sessionId", verifyPaymentSession);
 
 /* -------------------------------------------------------------------------- */
-/* ⚙️ EXECUTION ROUTES                                                        */
+/* ⚙️ EXECUTION ROUTES                                                         */
 /* -------------------------------------------------------------------------- */
-app.post("/api/execution", createExecution); // ✅ Create execution record
-app.put("/api/execution/:execution_id", updateExecutionStatus); // ✅ Update execution status
+app.post("/api/execution", createExecutionIfMissing);
+app.put("/api/execution/:execution_id", updateExecutionField);
+app.get("/api/execution/booking/:bookingId", getExecutionByBooking);
 
-
+/* -------------------------------------------------------------------------- */
+/* 📅 BOOKING ROUTES                                                          */
+/* -------------------------------------------------------------------------- */
 app.post("/api/bookings", bookTask);
 app.get("/api/bookings/:id", getBookingById);
 app.put("/api/bookings/:id/price", updateBookingPrice);
@@ -141,7 +160,17 @@ app.get("/api/bookings/:id/download", downloadAgreement);
 app.put("/api/bookings/:id/cancel", cancelBooking);
 
 /* -------------------------------------------------------------------------- */
-/* 🔐 Authentication Routes                                                  */
+/* 📢 SYSTEM ANNOUNCEMENT ROUTES                                              */
+/* -------------------------------------------------------------------------- */
+app.post("/api/announcements", createAnnouncement);
+app.get("/api/announcements", getAllAnnouncements);
+app.get("/api/announcements/active", getActiveAnnouncement);
+app.put("/api/announcements/:id/activate", activateAnnouncement);
+app.put("/api/announcements/:id/complete", completeAnnouncement);
+app.delete("/api/announcements/:id", deleteAnnouncement);
+
+/* -------------------------------------------------------------------------- */
+/* 🔐 Authentication Routes                                                   */
 /* -------------------------------------------------------------------------- */
 
 // 🧭 Login routes
@@ -181,6 +210,10 @@ app.delete("/api/admins/:id", deleteAdmin);
 app.get("/api/admins/providers/pending", getPendingProviders);
 app.get("/api/admins/providers/:id", getProviderForAdmin);
 
+app.get("/api/notifications/:userId", getNotifications);
+app.put("/api/notifications/:userId/read-all", markAllAsRead);
+app.put("/api/notification/:id/read-one", protect, markOneAsRead);
+
 /* -------------------------------------------------------------------------- */
 /* 🧩 HEALTH CHECK (Optional)                                                 */
 /* -------------------------------------------------------------------------- */
@@ -189,7 +222,7 @@ app.get("/health", (req, res) => {
 });
 
 /* -------------------------------------------------------------------------- */
-/* ✅ EXPORT FOR TESTING                                                     */
+/* ✅ EXPORT FOR TESTING                                                      */
 /* -------------------------------------------------------------------------- */
 
 // 404 Handler

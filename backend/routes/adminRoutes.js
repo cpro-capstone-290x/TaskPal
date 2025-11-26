@@ -9,11 +9,16 @@ import {
   getPendingProviders,
   getProviderForAdmin,
   getAllProviders,
-  getAllUsers
+  getAllUsers,
+  getAllBookings,
+  getDashboardStats
 } from '../controllers/adminController.js';
 
 const router = express.Router();
 
+
+router.route("/stats")
+  .get(protect, adminAuth, getDashboardStats);
 // 1. SPECIFIC PROVIDER ROUTES (Must come BEFORE /:id)
 router.route("/providers")
   .get(protect, adminAuth, getAllProviders);
@@ -26,6 +31,9 @@ router.route("/providers/:id/review")
 
 router.route("/users")
   .get(protect, adminAuth, getAllUsers);
+
+router.route("/bookings")
+.get(protect, adminAuth, getAllBookings);
 
 
 // 2. ADMIN COLLECTION ROUTES

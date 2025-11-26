@@ -6,6 +6,7 @@ import ApprovalQueueView from './components/ApprovalQueueView';
 import AllProvidersView from './components/AllProvidersView';
 import AllClientsView from './components/AllClientsView';
 import ScheduledAnnouncement from './components/ScheduledAnnouncement';
+import AllBookingsView from './components/AllBookingsView';
 
 const AdminHome = () => {
     const [currentView, setCurrentView] = useState('dashboard');
@@ -38,6 +39,9 @@ const AdminHome = () => {
 
             case 'clients':
                 return <AllClientsView />;
+
+            case 'bookings':
+                return <AllBookingsView />;
 
             case 'scheduled-announcement':
                 return <ScheduledAnnouncement />; // ✅ FIXED HERE

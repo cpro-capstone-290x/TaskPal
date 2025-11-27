@@ -97,7 +97,8 @@ export const getPendingProviders = async (req, res) => {
                 service_type, 
                 email, 
                 phone, 
-                created_at 
+                created_at,
+                profile_picture_url
             FROM providers
             WHERE status = 'Pending' 
             ORDER BY created_at ASC

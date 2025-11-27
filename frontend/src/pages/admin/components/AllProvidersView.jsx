@@ -164,11 +164,27 @@ const AllProvidersView = () => {
                       {/* Name & Email */}
                       <td>
                         <div className="flex items-center gap-3">
-                          <div className="avatar placeholder">
-                            <div className="bg-gray-100 text-gray-600 rounded-xl w-10 h-10 flex items-center justify-center font-bold border border-gray-200">
+                        <div className="avatar">
+                          {provider.profile_picture_url ? (
+                            <div className="w-10 h-10 rounded-xl overflow-hidden border border-gray-300 shadow-sm cursor-pointer"
+                                onClick={() => openDetails(provider)}>
+                              <img
+                                src={provider.profile_picture_url}
+                                alt="Profile"
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.onerror = null;
+                                  e.currentTarget.src = "/default-avatar.png"; // optional fallback
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <div className="bg-gray-100 text-gray-600 rounded-xl w-10 h-10 flex items-center justify-center font-bold border border-gray-200 cursor-pointer"
+                                onClick={() => openDetails(provider)}>
                               {provider.name ? provider.name.substring(0, 2).toUpperCase() : 'NA'}
                             </div>
-                          </div>
+                          )}
+                        </div>
                           <div>
                             <div className="font-bold text-gray-900">{provider.name}</div>
                             <div className="text-xs text-gray-500 font-medium">{provider.email}</div>

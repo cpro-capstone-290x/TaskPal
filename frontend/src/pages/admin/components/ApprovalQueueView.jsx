@@ -136,11 +136,25 @@ const ApprovalQueueView = () => {
                       <td>
                         <div className="flex items-center gap-3">
                           {/* Avatar Placeholder */}
-                          <div className="avatar placeholder">
-                            <div className="bg-indigo-100 text-indigo-700 rounded-xl w-10 h-10 flex items-center justify-center font-bold border border-indigo-200">
-                              {provider.name ? provider.name.substring(0, 2).toUpperCase() : 'NA'}
-                            </div>
+                          <div className="avatar">
+                            {provider.profile_picture_url ? (
+                              <div className="w-10 h-10 rounded-xl overflow-hidden border border-indigo-200">
+                                <img
+                                  src={provider.profile_picture_url}
+                                  alt="Profile Picture"
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = "none"; // hide broken img
+                                  }}
+                                />
+                              </div>
+                            ) : (
+                              <div className="bg-indigo-100 text-indigo-700 rounded-xl w-10 h-10 flex items-center justify-center font-bold border border-indigo-200">
+                                {provider.name ? provider.name.substring(0, 2).toUpperCase() : "NA"}
+                              </div>
+                            )}
                           </div>
+
                           <div>
                             <div className="font-bold text-gray-900">{provider.name}</div>
                             <div className="text-xs text-gray-500 font-medium">{provider.email || 'No email provided'}</div>

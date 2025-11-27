@@ -11,10 +11,11 @@ import logger from "../utils/logger.js";
 /* Helpers: traceId + notifications                                           */
 /* -------------------------------------------------------------------------- */
 
-const getTraceId = (req) =>
+const getTraceId = (req = {}) =>
   req.traceId ||
-  req.headers["x-request-id"] ||
+  req.headers?.["x-request-id"] ||
   crypto.randomUUID();
+
 
 // 🔥 Helper to save notifications to DB
 async function saveNotification({ userId, type, title, message, bookingId, traceId }) {

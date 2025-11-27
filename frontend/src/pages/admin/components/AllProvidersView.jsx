@@ -1,11 +1,21 @@
 // src/pages/Admin/AllProvidersView.jsx
 import React, { useState, useEffect } from 'react';
+import ProviderDetailsModal from '../components/ProviderDetailsModal.jsx';
 
 const AllProvidersView = () => {
   const [providers, setProviders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedProvider, setSelectedProvider] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+
+  const openDetails = (provider) => {
+  setSelectedProvider(provider);
+  setShowDetailsModal(true);
+  };
+
+
 
   // Fetch Logic
   const fetchAllProviders = async () => {
@@ -187,7 +197,10 @@ const AllProvidersView = () => {
 
                       {/* Action - Simplified for Directory */}
                       <td className="text-right">
-                        <button className="btn btn-ghost btn-xs text-gray-500 hover:text-indigo-600">
+                        <button
+                          className="btn btn-ghost btn-xs text-gray-500 hover:text-indigo-600"
+                          onClick={() => openDetails(provider)}
+                        >
                           Details
                         </button>
                       </td>
@@ -212,6 +225,13 @@ const AllProvidersView = () => {
         </div>
 
       </div>
+      {/* Provider Details Modal */}
+      {showDetailsModal && selectedProvider && (
+        <ProviderDetailsModal
+          provider={selectedProvider}
+          onClose={() => setShowDetailsModal(false)}
+        />
+      )}
     </div>
   );
 };

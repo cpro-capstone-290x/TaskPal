@@ -23,6 +23,7 @@ import reviewRoutes from "./routes/reviewRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
 import accessibilityRoutes from "./routes/accessibilityRoutes.js";
 import announcementRoutes from "./routes/announcementRoutes.js";
+import addressRoutes from "./routes/addressRoutes.js";
 
 import { protect } from "./middleware/authMiddleware.js";
 import { sql } from "./config/db.js";
@@ -59,7 +60,13 @@ app.use(
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // ← include PATCH
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
-    allowedHeaders: ["Content-Type", "Authorization", "Cache-Control", "X-Requested-With", "Accept"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Cache-Control",
+      "X-Requested-With",
+      "Accept",
+    ],
   })
 );
 app.use(helmet());
@@ -109,14 +116,19 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/accessibility", accessibilityRoutes); // ← keep only this (no pp.use duplicate)
 app.use("/api/announcements", announcementRoutes);
+app.use("/api/address", addressRoutes); // For address validation
 
 // ✅ Blob test route (unchanged)
 app.get("/test-upload", async (req, res) => {
   try {
-    const { url } = await put("Client-Provider-Agreement/test.txt", "Hello Blob!", {
-      access: "public",
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-    });
+    const { url } = await put(
+      "Client-Provider-Agreement/test.txt",
+      "Hello Blob!",
+      {
+        access: "public",
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      }
+    );
     console.log("✅ Uploaded to Blob:", url);
     res.json({ success: true, url });
   } catch (err) {
@@ -184,7 +196,9 @@ io.on("connection", (socket) => {
     try {
       await sql`
         UPDATE chat_messages
-        SET messages = coalesce(messages, '[]'::jsonb) || ${JSON.stringify([fullMessage])}::jsonb,
+        SET messages = coalesce(messages, '[]'::jsonb) || ${JSON.stringify([
+          fullMessage,
+        ])}::jsonb,
             updated_at = NOW()
         WHERE booking_id = ${bookingId};
       `;

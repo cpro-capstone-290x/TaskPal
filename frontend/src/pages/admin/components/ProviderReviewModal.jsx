@@ -67,7 +67,6 @@ const ProviderReviewModal = ({ providerSummary, onClose, onActionSuccess }) => {
   return (
     <dialog ref={modalRef} className="modal" onClose={onClose}>
       <div className="modal-box max-w-2xl bg-white">
-        
         {/* Modal header */}
         <h3 className="text-xl font-bold border-b pb-3">
           Reviewing: {providerSummary.name}
@@ -83,18 +82,75 @@ const ProviderReviewModal = ({ providerSummary, onClose, onActionSuccess }) => {
             <div className="mt-4 bg-gray-50 border rounded-lg p-4">
               <p><strong>Email:</strong> {details.email}</p>
               <p><strong>License ID:</strong> {details.license_id}</p>
-              <p>
-                <strong>Document:</strong>
-                <a
-                  href={details.document}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ml-2 text-blue-600 underline"
-                >
-                  View file
-                </a>
+
+              {/* Documents Section */}
+              <div className="mt-3">
+                <p className="font-semibold mb-2">Uploaded Documents:</p>
+
+                <ul className="space-y-2 pl-2">
+                  {/* Valid ID */}
+                  {details.valid_id_url ? (
+                    <li>
+                      <strong>Valid ID:</strong>
+                      <a
+                        href={details.valid_id_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-2 text-blue-600 underline"
+                      >
+                        View file
+                      </a>
+                    </li>
+                  ) : (
+                    <li className="text-red-500">
+                      <strong>Valid ID:</strong> Missing
+                    </li>
+                  )}
+
+                  {/* Background Check */}
+                  {details.background_check_url ? (
+                    <li>
+                      <strong>Background Check:</strong>
+                      <a
+                        href={details.background_check_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-2 text-blue-600 underline"
+                      >
+                        View file
+                      </a>
+                    </li>
+                  ) : (
+                    <li className="text-red-500">
+                      <strong>Background Check:</strong> Missing
+                    </li>
+                  )}
+
+                  {/* Insurance Document */}
+                  {details.insurance_document_url ? (
+                    <li>
+                      <strong>Insurance Document:</strong>
+                      <a
+                        href={details.insurance_document_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-2 text-blue-600 underline"
+                      >
+                        View file
+                      </a>
+                    </li>
+                  ) : (
+                    <li className="text-red-500">
+                      <strong>Insurance Document:</strong> Missing
+                    </li>
+                  )}
+                </ul>
+              </div>
+
+
+              <p className="mt-3">
+                <strong>Category:</strong> {details.provider_type} / {details.service_type}
               </p>
-              <p><strong>Category:</strong> {details.provider_type} / {details.service_type}</p>
             </div>
           )
         )}
@@ -106,14 +162,16 @@ const ProviderReviewModal = ({ providerSummary, onClose, onActionSuccess }) => {
           </div>
         )}
 
-        {/* Status & Reason Field */}
+        {/* Status & Reason */}
         <div className="mt-6">
           <label className="font-semibold">Set Status</label>
           <div className="flex gap-3 mt-2">
             {Object.keys(STATUS_STYLES).map((s) => (
               <button
                 key={s}
-                className={`btn ${actionStatus === s ? STATUS_STYLES[s] : 'btn-outline'}`}
+                className={`btn ${
+                  actionStatus === s ? STATUS_STYLES[s] : "btn-outline"
+                }`}
                 onClick={() => setActionStatus(s)}
               >
                 {s}
@@ -124,7 +182,7 @@ const ProviderReviewModal = ({ providerSummary, onClose, onActionSuccess }) => {
 
         <div className="mt-4">
           <label className="font-semibold">
-            Reason {actionStatus === 'Approved' ? '(optional)' : '(required)'}
+            Reason {actionStatus === "Approved" ? "(optional)" : "(required)"}
           </label>
           <textarea
             className="textarea textarea-bordered w-full"
@@ -139,14 +197,19 @@ const ProviderReviewModal = ({ providerSummary, onClose, onActionSuccess }) => {
           <button
             className={`btn ${STATUS_STYLES[actionStatus]}`}
             onClick={handleSubmit}
-            disabled={loading || ((actionStatus !== 'Approved') && !reason.trim())}
+            disabled={
+              loading || (actionStatus !== "Approved" && !reason.trim())
+            }
           >
             Confirm {actionStatus}
           </button>
 
-          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn btn-ghost" onClick={onClose}>
+            Cancel
+          </button>
         </div>
       </div>
+
 
       {/* Close on backdrop click */}
       <form method="dialog" className="modal-backdrop" onClick={onClose}>

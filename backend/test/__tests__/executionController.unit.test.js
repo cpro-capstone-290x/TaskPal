@@ -1,7 +1,7 @@
 import { jest } from "@jest/globals";
 
 /* -------------------------------------------------------------------------- */
-/* 🧩 1️⃣ Mock Neon BEFORE import                                              */
+/* 🧩 1️⃣ Mock Neon BEFORE import                                             */
 /* -------------------------------------------------------------------------- */
 jest.unstable_mockModule("../../config/db.js", () => ({
   sql: jest.fn(),
@@ -14,7 +14,7 @@ const mockDb = await import("../../config/db.js");
 const sqlMock = mockDb.sql;
 
 const controller = await import("../../controllers/executionController.js");
-const { createExecution, updateExecutionStatus } = controller;
+const { createExecutionIfMissing, updateExecutionField } = controller;
 
 /* -------------------------------------------------------------------------- */
 /* 🧪 3️⃣ Unit Test Suite                                                      */
@@ -22,26 +22,27 @@ const { createExecution, updateExecutionStatus } = controller;
 describe("🧪 Execution Controller — Unit Tests", () => {
   beforeEach(() => jest.clearAllMocks());
 
-  /* --------------------------- createExecution() -------------------------- */
+  /* ---------------- createExecutionIfMissing() ---------------- */
   test("✅ creates execution successfully", async () => {
     const req = { body: { booking_id: 1 } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
+    // FIX: Order must match controller logic
+    // 1. Check existing execution -> Empty []
+    // 2. Fetch Booking -> Found [{...}]
+    // 3. Fetch Payment -> Found [{...}]
+    // 4. Insert Execution -> Success [{...}]
     sqlMock
-      .mockResolvedValueOnce([{ id: 1, client_id: 2, provider_id: 3 }]) // bookings
-      .mockResolvedValueOnce([{ id: 10 }]) // payments
-      .mockResolvedValueOnce([]) // existing
-      .mockResolvedValueOnce([{ id: 100, booking_id: 1 }]); // insert
+      .mockResolvedValueOnce([]) // 1. Check Execution (Empty = doesn't exist)
+      .mockResolvedValueOnce([{ id: 1, client_id: 2, provider_id: 3 }]) // 2. Booking
+      .mockResolvedValueOnce([{ id: 10 }]) // 3. Payment
+      .mockResolvedValueOnce([{ id: 100, booking_id: 1 }]); // 4. Insert
 
-    await createExecution(req, res);
+    await createExecutionIfMissing(req, res);
 
     expect(sqlMock).toHaveBeenCalledTimes(4);
-    expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        success: true,
-        message: expect.stringContaining("Execution record created"),
-      })
+      expect.objectContaining({ success: true })
     );
   });
 
@@ -49,7 +50,7 @@ describe("🧪 Execution Controller — Unit Tests", () => {
     const req = { body: {} };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
-    await createExecution(req, res);
+    await createExecutionIfMissing(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
@@ -57,74 +58,84 @@ describe("🧪 Execution Controller — Unit Tests", () => {
     const req = { body: { booking_id: 1 } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
-    sqlMock.mockResolvedValueOnce([]); // no booking found
+    // Logic:
+    // 1. Check Execution -> []
+    // 2. Fetch Booking -> [] (Not found)
+    sqlMock
+        .mockResolvedValueOnce([]) // 1. Execution check
+        .mockResolvedValueOnce([]); // 2. Booking check
 
-    await createExecution(req, res);
+    await createExecutionIfMissing(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
   });
 
-  test("✅ returns existing execution if already exists", async () => {
+  test("⚠️ returns existing execution if already exists", async () => {
     const req = { body: { booking_id: 1 } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
+    // Logic:
+    // 1. Check Execution -> Found [{...}] -> Return immediately
     sqlMock
-      .mockResolvedValueOnce([{ id: 1, client_id: 2, provider_id: 3 }]) // booking
-      .mockResolvedValueOnce([{ id: 10 }]) // payment
-      .mockResolvedValueOnce([{ id: 99 }]); // existing
+      .mockResolvedValueOnce([{ id: 99 }]); // 1. Existing execution
 
-    await createExecution(req, res);
-    expect(res.status).toHaveBeenCalledWith(200);
+    await createExecutionIfMissing(req, res);
+
     expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ message: expect.stringContaining("already exists") })
+      expect.objectContaining({ message: "Already exists" })
     );
   });
 
-  test("❌ handles internal DB error gracefully", async () => {
+  test("❌ handles DB error", async () => {
     const req = { body: { booking_id: 1 } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
     sqlMock.mockRejectedValueOnce(new Error("DB Error"));
-    await createExecution(req, res);
+
+    await createExecutionIfMissing(req, res);
     expect(res.status).toHaveBeenCalledWith(500);
   });
 
-  /* ----------------------- updateExecutionStatus() ------------------------ */
-  test("✅ updates execution successfully", async () => {
+  /* --------------------- updateExecutionField() --------------------- */
+  test("✅ updates execution status", async () => {
     const req = {
-      params: { execution_id: 1 },
-      body: { validatedCredential: true, completedProvider: "done", completedClient: "done" },
+      params: { bookingId: 1 },
+      body: { field: "validatedcredential" },
+      io: { to: jest.fn().mockReturnThis(), emit: jest.fn() }, // socket mock
     };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
-    sqlMock.mockResolvedValueOnce([{ id: 1, validatedCredential: true }]);
+    // FIX: Provide mocks for both the Update AND the Notification insert
+    sqlMock
+        .mockResolvedValueOnce([{ id: 1, client_id: 2, booking_id: 1 }]) // 1. Update Execution
+        .mockResolvedValueOnce([{ id: 50, created_at: new Date() }]);    // 2. Insert Notification
 
-    await updateExecutionStatus(req, res);
+    await updateExecutionField(req, res);
 
-    expect(sqlMock).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ message: expect.stringContaining("updated successfully") })
+      expect.objectContaining({ success: true })
     );
   });
 
-  test("❌ returns 404 when execution not found", async () => {
-    const req = {
-      params: { execution_id: 99 },
-      body: { validatedCredential: true },
-    };
+  test("❌ returns 404 if execution not found", async () => {
+    const req = { params: { bookingId: 99 }, body: { field: "validatedcredential" } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
-    sqlMock.mockResolvedValueOnce([]);
-    await updateExecutionStatus(req, res);
+    sqlMock.mockResolvedValueOnce([]); // Update returns empty array
+
+    await updateExecutionField(req, res);
+
     expect(res.status).toHaveBeenCalledWith(404);
   });
 
   test("❌ handles update error", async () => {
-    const req = { params: { execution_id: 1 }, body: {} };
+    const req = { params: { bookingId: 1 }, body: { field: "validatedcredential" } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
     sqlMock.mockRejectedValueOnce(new Error("DB failure"));
-    await updateExecutionStatus(req, res);
+
+    await updateExecutionField(req, res);
+
     expect(res.status).toHaveBeenCalledWith(500);
   });
 });

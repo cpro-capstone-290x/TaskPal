@@ -24,8 +24,8 @@ import contactRoutes from "./routes/contactRoutes.js";
 import accessibilityRoutes from "./routes/accessibilityRoutes.js";
 import announcementRoutes from "./routes/announcementRoutes.js";
 import addressRoutes from "./routes/addressRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 
-import { protect } from "./middleware/authMiddleware.js";
 import { sql } from "./config/db.js";
 
 dotenv.config();
@@ -46,7 +46,8 @@ try {
 
 // ✅ Allowed Origins (Local + Production)
 const allowedOrigins = [
-  "http://localhost:5173",
+  "http://localhost:5173", // Vite dev
+  "http://localhost:4173", // Vite preview (npm run preview)
   "https://task-pal-zeta.vercel.app",
   "https://taskpal-14oy.onrender.com",
 ];
@@ -57,9 +58,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
     origin: allowedOrigins,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // ← include PATCH
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"],
     allowedHeaders: [
       "Content-Type",
       "Authorization",
@@ -84,7 +84,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // ← include PATCH
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
   },
   transports: ["websocket", "polling"],
@@ -114,11 +114,12 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/execution", executionRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/contact", contactRoutes);
-app.use("/api/accessibility", accessibilityRoutes); // ← keep only this (no pp.use duplicate)
+app.use("/api/accessibility", accessibilityRoutes); // keep single accessibility route
 app.use("/api/announcements", announcementRoutes);
 app.use("/api/address", addressRoutes); // For address validation
+app.use("/api/notifications", notificationRoutes);
 
-// ✅ Blob test route (unchanged)
+// ✅ Blob test route
 app.get("/test-upload", async (req, res) => {
   try {
     const { url } = await put(
@@ -214,9 +215,28 @@ io.on("connection", (socket) => {
         type: "message",
         title: "New Message",
         message: message.substring(0, 50) + "...",
+        booking_id: bookingId,
       };
+
+      // 1) Save notification to DB
+      try {
+        await sql`
+          INSERT INTO notifications (user_id, type, title, message, booking_id)
+          VALUES (
+            ${recipientId},
+            ${notificationData.type},
+            ${notificationData.title},
+            ${notificationData.message},
+            ${bookingId}
+          );
+        `;
+      } catch (err) {
+        console.error("❌ Failed to save notification:", err);
+      }
+
+      // 2) Emit realtime notification
       io.to(`user-${recipientId}`).emit("new_message", notificationData);
-      console.log(`🔔 Sent 'new_message' notification to user ${recipientId}`);
+      console.log(`🔔 Sent and saved 'new_message' to user ${recipientId}`);
     }
   });
 
@@ -311,6 +331,31 @@ async function initDB() {
         provider_id INT NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
         rating INT CHECK (rating >= 1 AND rating <= 5),
         comment TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    // Chat messages store (JSONB)
+    await sql`
+      CREATE TABLE IF NOT EXISTS chat_messages (
+        id SERIAL PRIMARY KEY,
+        booking_id INT UNIQUE NOT NULL,
+        messages JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    // Notifications table
+    await sql`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id SERIAL PRIMARY KEY,
+        user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        type VARCHAR(50) NOT NULL,
+        title VARCHAR(255),
+        message TEXT,
+        booking_id INT,
+        is_read BOOLEAN DEFAULT false,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `;

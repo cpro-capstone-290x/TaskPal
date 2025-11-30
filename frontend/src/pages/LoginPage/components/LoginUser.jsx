@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// ✅ Reusable InputField
+// Reusable InputField
 const InputField = ({ label, id, type = 'text', value, onChange, required = false, placeholder = '' }) => (
   <div className="flex flex-col">
     <label htmlFor={id} className="text-sm font-semibold text-gray-600 mb-1 tracking-wide">
@@ -51,7 +51,6 @@ const LoginUser = ({ onSuccess }) => {
         ? `${import.meta.env.VITE_API_URL}/auth/loginUser`
         : "https://taskpal-14oy.onrender.com/api/auth/loginUser";
 
-
     try {
       const response = await fetch(API_ENDPOINT, {
         method: 'POST',
@@ -68,7 +67,7 @@ const LoginUser = ({ onSuccess }) => {
         return;
       }
 
-      // ✅ Extract user info
+      // Extract user info
       const userId = result.data?.user?.id;
       const token = result.data?.token;
 
@@ -82,33 +81,46 @@ const LoginUser = ({ onSuccess }) => {
         return;
       }
 
-      // ✅ Store session info
+      /* ------------------------------------------------------- */
+      /* ✅ STORE TOKENS JUST LIKE PROVIDER LOGIN                */
+      /* ------------------------------------------------------- */
+
+      // Primary token used by all protected routes
+      localStorage.setItem("token", token);
+
+      // Compatibility keys your app previously used
       localStorage.setItem("authToken", token);
+      localStorage.setItem("user_token", token);
+
+      // Store user ID consistently
       localStorage.setItem("userId", userId);
+      localStorage.setItem("clientId", userId); // optional compatibility
+
+      // Store role
       localStorage.setItem("userRole", "user");
 
-      // ✅ Check if there’s a redirect URL saved before login
-      const pendingRedirect = localStorage.getItem("pendingRedirect");
+      /* ------------------------------------------------------- */
+      /* END STORAGE FIXES                                       */
+      /* ------------------------------------------------------- */
 
-      // ✅ Clear it immediately after using it
+      // Check if there’s a redirect URL saved before login
+      const pendingRedirect = localStorage.getItem("pendingRedirect");
       if (pendingRedirect) {
         localStorage.removeItem("pendingRedirect");
       }
 
-      // ✅ Success state
       setStatus({ loading: false, error: null, success: true });
       console.log("✅ User logged in successfully:", result.data);
 
-      // ✅ Redirect logic
+      // Redirect logic
       setTimeout(() => {
         if (pendingRedirect) {
-          // Redirect back to booking flow
           navigate(pendingRedirect);
         } else {
-          // Default redirect
           navigate(`/profile/${userId}`);
         }
       }, 1000);
+
     } catch (error) {
       console.error("Network or unexpected error:", error);
       setStatus({
@@ -119,22 +131,22 @@ const LoginUser = ({ onSuccess }) => {
     }
   };
 
-
   return (
     <div className="space-y-6">
-      {/* ✅ Status Messages */}
+      {/* Status Messages */}
       {status.success && (
         <div className="p-4 bg-green-50 border border-green-300 text-green-700 rounded-xl text-center font-semibold animate-pulse-once">
           ✅ Login Successful! Redirecting to your profile...
         </div>
       )}
+
       {status.error && (
         <div className="p-4 bg-red-50 border border-red-300 text-red-700 rounded-xl text-center font-semibold">
           ❌ Error: {status.error}
         </div>
       )}
 
-      {/* ✅ Login Form */}
+      {/* Login Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
         <InputField
           label="Email Address"
@@ -145,6 +157,7 @@ const LoginUser = ({ onSuccess }) => {
           required
           placeholder="john.doe@example.com"
         />
+
         <InputField
           label="Password"
           id="password"
@@ -155,27 +168,44 @@ const LoginUser = ({ onSuccess }) => {
           placeholder="Your secure password"
         />
 
-        {/* ✅ Submit Button */}
-        <button
-          type="submit"
-          disabled={status.loading}
-          className="w-full py-3 mt-6 bg-sky-600 text-white font-extrabold text-lg rounded-xl shadow-lg shadow-sky-300/50 hover:bg-sky-700 disabled:bg-sky-400 transition-all duration-300 ease-in-out transform hover:scale-[1.01] hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-sky-500 focus:ring-opacity-70"
-        >
-          {status.loading ? (
-            <div className="flex items-center justify-center">
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Logging In...
-            </div>
-          ) : (
-            'Log In'
-          )}
-        </button>
+        {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={status.loading}
+            className="w-full py-3 mt-6 bg-sky-800 text-white font-extrabold text-lg rounded-xl shadow-lg shadow-sky-300/50 hover:bg-sky-900 disabled:bg-sky-500 transition-all duration-300 ease-in-out transform hover:scale-[1.01] hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-sky-700 focus:ring-opacity-70"
+          >
+            {status.loading ? (
+              <div className="flex items-center justify-center">
+                <svg
+                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                Logging In...
+              </div>
+            ) : (
+              'Log In'
+            )}
+          </button>
+
       </form>
 
-      {/* ✅ Forgot Password */}
+      {/* Forgot Password */}
       <div className="text-center pt-2">
         <a
           href="/forgot-password"

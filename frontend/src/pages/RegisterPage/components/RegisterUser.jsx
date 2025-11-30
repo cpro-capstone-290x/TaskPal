@@ -282,7 +282,7 @@ const RegisterUser = ({ onSuccess }) => {
 
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 font-sans">
-      <div className="w-full max-w-2xl bg-white shadow-2xl hover:shadow-3xl border border-gray-100 rounded-3xl p-8 md:p-10 transition-all duration-500">
+      <div className="w-full max-w-2xl bg-white shadow-xl hover:shadow-2xl border border-gray-300 rounded-3xl p-8 md:p-10">
         <header className="text-center mb-10 pb-4 border-b border-sky-100">
           <h1 className="text-4xl font-black text-sky-700 mb-1 tracking-tight">
             Create Account
@@ -414,15 +414,20 @@ const RegisterUser = ({ onSuccess }) => {
             />
 
             <div className="flex flex-col">
-              <label className="text-sm font-semibold text-gray-600 mb-1 tracking-wide">
+              <label
+                htmlFor="gender"
+                className="text-sm font-semibold text-gray-600 mb-1 tracking-wide"
+              >
                 Gender
               </label>
+
               <select
                 id="gender"
                 name="gender"
                 value={formData.gender}
                 onChange={handleChange}
                 className="w-full p-3 border border-gray-300 rounded-xl bg-white shadow-inner"
+                aria-label="Select your gender"
               >
                 <option value="">Select...</option>
                 <option value="male">Male</option>
@@ -434,15 +439,20 @@ const RegisterUser = ({ onSuccess }) => {
           </div>
 
           <div className="flex flex-col mt-4">
-            <label className="text-sm font-semibold text-gray-600 mb-1 tracking-wide">
+            <label
+              htmlFor="assistance_level"
+              className="text-sm font-semibold text-gray-600 mb-1 tracking-wide"
+            >
               Level of Assistance Required
             </label>
+
             <select
               id="assistance_level"
               name="assistance_level"
               value={formData.assistance_level}
               onChange={handleChange}
               className="w-full p-3 border border-gray-300 rounded-xl bg-white shadow-inner"
+              aria-label="Select your level of assistance"
             >
               <option value="">Select...</option>
               <option value="low">Low</option>
@@ -570,6 +580,7 @@ const RegisterUser = ({ onSuccess }) => {
 
           <div className="flex items-center gap-3 mt-4">
             <input
+              id="terms_accept"
               type="checkbox"
               checked={termsAccepted}
               onChange={(e) => {
@@ -577,13 +588,19 @@ const RegisterUser = ({ onSuccess }) => {
                 else setTermsAccepted(false);
               }}
               className="w-5 h-5"
+              aria-required="true"
             />
-            <label className="text-gray-700 font-medium">
+
+            <label
+              htmlFor="terms_accept"
+              className="text-gray-700 font-medium cursor-pointer"
+            >
               I have read and agree to the{" "}
               <button
                 type="button"
                 onClick={() => setShowTerms(true)}
-                className="text-sky-600 underline hover:text-sky-800"
+                className="text-sky-700 underline hover:text-sky-900"
+                aria-label="Read the Terms and Conditions"
               >
                 Terms & Conditions
               </button>
@@ -593,8 +610,19 @@ const RegisterUser = ({ onSuccess }) => {
           {/* Submit Button */}
           <button
             type="submit"
+            aria-label={
+              status.loading ? "Registering your account" : "Create My Account"
+            }
             disabled={status.loading || uploading || !termsAccepted}
-            className="w-full py-3 mt-10 bg-sky-600 text-white font-extrabold text-lg rounded-xl shadow-lg shadow-sky-300/50 hover:bg-sky-700 disabled:bg-sky-400 transition-all duration-300 ease-in-out transform hover:scale-[1.01] hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-sky-500 focus:ring-opacity-70"
+            className="
+                            w-full py-3 mt-10
+                            bg-sky-700 text-white font-extrabold text-lg
+                            rounded-xl shadow-lg shadow-sky-300/50
+                            hover:bg-sky-800 disabled:bg-sky-500
+                            transition-all duration-300 ease-in-out
+                            transform hover:scale-[1.01] hover:shadow-xl
+                            focus:outline-none focus:ring-4 focus:ring-sky-900 focus:ring-opacity-70
+                        "
           >
             {status.loading ? (
               <div className="flex items-center justify-center">
@@ -603,6 +631,7 @@ const RegisterUser = ({ onSuccess }) => {
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <circle
                     className="opacity-25"

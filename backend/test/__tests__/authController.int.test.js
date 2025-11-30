@@ -77,15 +77,20 @@ describe("🔗 AUTH CONTROLLER — FULL INTEGRATION TESTS", () => {
   /* 🧪 AUTHORIZED USER REGISTRATION                                           */
   /* -------------------------------------------------------------------------- */
   test("POST /api/auth/registerAuthorizedUser — register an authorized user", async () => {
-    const res = await request(app).post("/api/auth/registerAuthorizedUser").send({
-      client_id: 1,
-      first_name: "Authorized",
-      last_name: "User",
-      relationship: "son",
-      phone: "4039993333",
-      email: "authorized@example.com",
-      password: "authpass",
-    });
+      const res = await request(app).post("/api/auth/registerUser").send({
+        first_name: "John",
+        last_name: "Doe",
+        type_of_user: "client",
+        email: "test_user@example.com",
+        password: "12345",
+        unit_no: "12",
+        street: "Main St",
+        city: "Red Deer",
+        province: "AB",
+        postal_code: "T4N",
+        terms_accepted: true,   // 🔥 REQUIRED
+      });
+
 
     expect(statusOK).toContain(res.statusCode);
   });

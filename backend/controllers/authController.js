@@ -10,10 +10,11 @@ import logger from "../utils/logger.js";
 /* HELPERS: traceId + masking                                                 */
 /* -------------------------------------------------------------------------- */
 
-const getTraceId = (req) =>
+const getTraceId = (req = {}) =>
   req.traceId ||
-  req.headers["x-request-id"] ||
+  req.headers?.["x-request-id"] ||
   crypto.randomUUID();
+
 
 const maskEmail = (email = "") => {
   if (!email || typeof email !== "string") return "";

@@ -3,45 +3,38 @@ import React, { useState } from 'react';
 import AdminLayout from './components/adminLayout'; 
 import DashboardHome from './components/DashboardHome';
 import ApprovalQueueView from './components/ApprovalQueueView'; 
+import AllProvidersView from './components/AllProvidersView';
+import AllClientsView from './components/AllClientsView';
 import ScheduledAnnouncement from './components/ScheduledAnnouncement';
+import AllBookingsView from './components/AllBookingsView';
 
 const AdminHome = () => {
     const [currentView, setCurrentView] = useState('dashboard');
 
     const renderView = () => {
-        const PlaceholderView = ({ title }) => (
-            <div className="p-6">
-                <h3 className="text-2xl font-semibold mb-4 text-black">{title}</h3>
-                <div className="alert alert-info shadow-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" 
-                        viewBox="0 0 24 24" 
-                        className="stroke-current shrink-0 w-6 h-6">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
-                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>This view is currently a placeholder.</span>
-                </div>
-            </div>
-        );
-
         switch (currentView) {
             case 'dashboard':
-                return <DashboardHome />;
+                // ⬇️ FIX: Pass the function so the cards can click through
+                return <DashboardHome onNavigate={setCurrentView} />;
 
             case 'pending-providers':
                 return <ApprovalQueueView />;
 
             case 'all-providers':
-                return <PlaceholderView title="All Providers List/Management" />;
+                return <AllProvidersView />;
 
             case 'clients':
-                return <PlaceholderView title="Client Management" />;
+                return <AllClientsView />;
+
+            case 'bookings':
+                return <AllBookingsView />;
 
             case 'scheduled-announcement':
-                return <ScheduledAnnouncement />; // ✅ FIXED HERE
+                return <ScheduledAnnouncement />;
 
             default:
-                return <DashboardHome />;
+                // ⬇️ FIX: Pass it here too just in case
+                return <DashboardHome onNavigate={setCurrentView} />;
         }
     };
 

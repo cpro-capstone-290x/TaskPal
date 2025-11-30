@@ -12,6 +12,9 @@ async function notifyExecutionEvent(req, targetUserId, bookingId, title, message
       RETURNING *;
     `;
 
+    // Safety check in case DB insert fails or returns empty
+    if (!saved) return;
+
     const payload = {
       id: saved.id,
       type: "execution",
@@ -23,7 +26,9 @@ async function notifyExecutionEvent(req, targetUserId, bookingId, title, message
     };
 
     // 2️⃣ Send Socket Event
-    req.io.to(`user-${targetUserId}`).emit("execution_update", payload);
+    if (req.io) {
+        req.io.to(`user-${targetUserId}`).emit("execution_update", payload);
+    }
     console.log(`📩 Execution Notification sent to user-${targetUserId}`);
 
   } catch (err) {
@@ -95,7 +100,13 @@ export const getExecutionByBooking = async (req, res) => {
 export const createExecutionIfMissing = async (req, res) => {
   const { booking_id } = req.body;
 
+  // FIX: Added validation to pass the 400 test
+  if (!booking_id) {
+    return res.status(400).json({ error: "booking_id is required" });
+  }
+
   try {
+    // 1. Check if execution exists
     const [exists] = await sql`
       SELECT * FROM execution WHERE booking_id = ${booking_id}
     `;
@@ -103,14 +114,22 @@ export const createExecutionIfMissing = async (req, res) => {
     if (exists)
       return res.json({ success: true, message: "Already exists", data: exists });
 
+    // 2. Fetch booking details
     const [booking] = await sql`
       SELECT client_id, provider_id FROM bookings WHERE id = ${booking_id}
     `;
 
+    // FIX: Added check to pass the 404 test
+    if (!booking) {
+        return res.status(404).json({ error: "Booking not found" });
+    }
+
+    // 3. Fetch payment details
     const [payment] = await sql`
       SELECT id FROM payments WHERE booking_id = ${booking_id}
     `;
 
+    // 4. Create execution
     const [created] = await sql`
       INSERT INTO execution (booking_id, client_id, provider_id, payment_id)
       VALUES (${booking_id}, ${booking.client_id}, ${booking.provider_id}, ${payment?.id || null})
@@ -151,13 +170,15 @@ export const updateExecutionField = async (req, res) => {
       `;
 
       const exec = updated[0];
-      await notifyExecutionEvent(
-        req,
-        exec.client_id,
-        bookingId,
-        "Provider Validated Arrival",
-        "Your provider has validated the service and started the job."
-      );
+      if (exec) {
+        await notifyExecutionEvent(
+            req,
+            exec.client_id,
+            bookingId,
+            "Provider Validated Arrival",
+            "Your provider has validated the service and started the job."
+        );
+      }
     }
 
     // 🟢 PROVIDER marks work completed
@@ -170,13 +191,15 @@ export const updateExecutionField = async (req, res) => {
       `;
 
       const exec = updated[0];
-      await notifyExecutionEvent(
-        req,
-        exec.client_id,
-        bookingId,
-        "Provider Completed the Task",
-        "Your provider has marked the task as completed. Please review and confirm."
-      );
+      if (exec) {
+        await notifyExecutionEvent(
+            req,
+            exec.client_id,
+            bookingId,
+            "Provider Completed the Task",
+            "Your provider has marked the task as completed. Please review and confirm."
+        );
+      }
     }
 
     // 🟣 CLIENT confirms completion
@@ -189,13 +212,15 @@ export const updateExecutionField = async (req, res) => {
       `;
 
       const exec = updated[0];
-      await notifyExecutionEvent(
-        req,
-        exec.provider_id,
-        bookingId,
-        "Client Confirmed Completion",
-        "Your client has confirmed the job as completed."
-      );
+      if (exec) {
+        await notifyExecutionEvent(
+            req,
+            exec.provider_id,
+            bookingId,
+            "Client Confirmed Completion",
+            "Your client has confirmed the job as completed."
+        );
+      }
     }
 
 
@@ -204,7 +229,7 @@ export const updateExecutionField = async (req, res) => {
       return res.status(404).json({ error: "Booking ID not found in Execution table" });
     }
 
-    return res.json({ success: true, data: updated[0] });
+    return res.status(200).json({ success: true, data: updated[0] });
 
   } catch (error) {
     console.error("❌ Execution update error:", error);

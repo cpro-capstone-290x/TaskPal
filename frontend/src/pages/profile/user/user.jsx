@@ -1,6 +1,7 @@
 // src/pages/profile/User/User.jsx
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { Menu } from "lucide-react"; // ⭐ ADDED: For uniform icon
 
 import Sidebar from "./components/Sidebar";
 import ProfileView from "./components/ProfileView";
@@ -70,7 +71,9 @@ const User = () => {
 
   const [activeTab, setActiveTab] = useState("profile");
   const [editMode, setEditMode] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // ⭐ RENAMED: To match Provider logic (was mobileMenuOpen)
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [newProfilePicture, setNewProfilePicture] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -179,26 +182,20 @@ const User = () => {
         </button>
       )}
 
-      {/* MOBILE HEADER */}
-      <header className="md:hidden flex items-center justify-between p-4 bg-white border-b shadow-sm">
-        <button
-          onClick={() => setMobileMenuOpen(true)}
-          aria-label="Open mobile menu"
-          className="p-2 bg-gray-100 border rounded-lg"
-        >
-          ☰
+      {/* ⭐ UNIFORM HEADER: Matches Provider exactly */}
+      <div className="md:hidden flex items-center gap-3 bg-white px-4 py-3 border-b shadow-sm">
+        <button onClick={() => setSidebarOpen(true)}>
+          <Menu size={28} className="text-gray-700" />
         </button>
-
-        <h2 className="text-2xl font-semibold text-gray-800">
-          Profile{" "}
-          <span className="bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">
-            Dashboard
-          </span>
+        <h2 className="text-lg font-semibold text-gray-800">
+          Profile Dashboard
         </h2>
-      </header>
+      </div>
 
-      {/* PAGE LAYOUT */}
-      <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
+      {/* ⭐ UNIFORM LAYOUT: Matches Provider structure */}
+      <div className="min-h-screen bg-gray-50 flex w-full overflow-x-hidden">
+        
+        {/* Sidebar */}
         <Sidebar
           user={user}
           activeTab={activeTab}
@@ -207,50 +204,52 @@ const User = () => {
           onProfilePictureUpdate={(newPhoto) =>
             setUser((prev) => ({ ...prev, profile_picture_url: newPhoto }))
           }
-          mobileMenuOpen={mobileMenuOpen}
-          setMobileMenuOpen={setMobileMenuOpen}
+          // Pass the uniform state names
+          mobileMenuOpen={sidebarOpen}     
+          setMobileMenuOpen={setSidebarOpen} 
         />
 
-        <main
-          className="flex-1 w-full px-4 py-6 sm:px-6 lg:px-10 lg:py-10"
-          role="main"
-        >
-          {activeTab === "profile" && (
-            <ProfileView
-              user={user}
-              newProfilePicture={newProfilePicture}
-              setNewProfilePicture={setNewProfilePicture}
-              onConfirmUpload={onConfirmUpload}
-              isUploading={isUploading}
-            />
-          )}
+        {/* Main Content Area - Updated classes to match Provider */}
+        <main className="flex-1 w-full p-4 md:p-10 flex justify-center overflow-y-auto">
+          <div className="w-full max-w-5xl"> {/* Optional: Container to keep content centered like provider likely is */}
+            
+            {activeTab === "profile" && (
+              <ProfileView
+                user={user}
+                newProfilePicture={newProfilePicture}
+                setNewProfilePicture={setNewProfilePicture}
+                onConfirmUpload={onConfirmUpload}
+                isUploading={isUploading}
+              />
+            )}
 
-          {activeTab === "bookings" && (
-            <BookingHistory
-              bookings={historyBookings}
-              loading={bookingLoading}
-            />
-          )}
+            {activeTab === "bookings" && (
+              <BookingHistory
+                bookings={historyBookings}
+                loading={bookingLoading}
+              />
+            )}
 
-          {activeTab === "ongoing" && (
-            <OngoingBookings
-              ongoingBookings={ongoingBookings}
-              loading={bookingLoading}
-            />
-          )}
+            {activeTab === "ongoing" && (
+              <OngoingBookings
+                ongoingBookings={ongoingBookings}
+                loading={bookingLoading}
+              />
+            )}
 
-          {activeTab === "authorized" && (
-            <AuthorizedUserSection
-              user={user}
-              authorizedUser={authorizedUser}
-              loading={loadingAuth}
-              registerAuthorizedUser={registerAuthorizedUser}
-              removeAuthorizedUser={removeAuthorizedUser}
-              refreshAuthorizedUser={refreshAuthorizedUser}
-              navigate={navigate}
-              setActiveTab={setActiveTab}
-            />
-          )}
+            {activeTab === "authorized" && (
+              <AuthorizedUserSection
+                user={user}
+                authorizedUser={authorizedUser}
+                loading={loadingAuth}
+                registerAuthorizedUser={registerAuthorizedUser}
+                removeAuthorizedUser={removeAuthorizedUser}
+                refreshAuthorizedUser={refreshAuthorizedUser}
+                navigate={navigate}
+                setActiveTab={setActiveTab}
+              />
+            )}
+          </div>
         </main>
       </div>
 

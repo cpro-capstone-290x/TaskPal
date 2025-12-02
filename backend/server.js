@@ -23,10 +23,9 @@ import reviewRoutes from "./routes/reviewRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
 import accessibilityRoutes from "./routes/accessibilityRoutes.js";
 import announcementRoutes from "./routes/announcementRoutes.js";
+import addressRoutes from "./routes/addressRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
-import logger from "./utils/logger.js";
 
-import { protect } from "./middleware/authMiddleware.js";
 import { sql } from "./config/db.js";
 
 dotenv.config();
@@ -47,12 +46,11 @@ try {
 
 // ✅ Allowed Origins (Local + Production)
 const allowedOrigins = [
-  "http://localhost:5173",   // Vite dev
-  "http://localhost:4173",   // Vite preview (npm run preview)
+  "http://localhost:5173", // Vite dev
+  "http://localhost:4173", // Vite preview (npm run preview)
   "https://task-pal-zeta.vercel.app",
   "https://taskpal-14oy.onrender.com",
 ];
-
 
 // ✅ Core middlewares
 app.use(express.json());
@@ -60,10 +58,15 @@ app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
     origin: allowedOrigins,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // ← include PATCH
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"],
-    allowedHeaders: ["Content-Type", "Authorization", "Cache-Control", "X-Requested-With", "Accept"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Cache-Control",
+      "X-Requested-With",
+      "Accept",
+    ],
   })
 );
 app.use(helmet());
@@ -81,7 +84,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // ← include PATCH
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
   },
   transports: ["websocket", "polling"],
@@ -111,23 +114,22 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/execution", executionRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/contact", contactRoutes);
-app.use("/api/accessibility", accessibilityRoutes); // ← keep only this (no pp.use duplicate)
+app.use("/api/accessibility", accessibilityRoutes); // keep single accessibility route
 app.use("/api/announcements", announcementRoutes);
+app.use("/api/address", addressRoutes); // For address validation
 app.use("/api/notifications", notificationRoutes);
 
-app.use(
-  morgan("combined", {
-    stream: { write: (msg) => logger.http ? logger.http(msg.trim()) : logger.info(msg.trim()) }
-  })
-);
-
-// ✅ Blob test route (unchanged)
+// ✅ Blob test route
 app.get("/test-upload", async (req, res) => {
   try {
-    const { url } = await put("Client-Provider-Agreement/test.txt", "Hello Blob!", {
-      access: "public",
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-    });
+    const { url } = await put(
+      "Client-Provider-Agreement/test.txt",
+      "Hello Blob!",
+      {
+        access: "public",
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      }
+    );
     console.log("✅ Uploaded to Blob:", url);
     res.json({ success: true, url });
   } catch (err) {
@@ -195,7 +197,9 @@ io.on("connection", (socket) => {
     try {
       await sql`
         UPDATE chat_messages
-        SET messages = coalesce(messages, '[]'::jsonb) || ${JSON.stringify([fullMessage])}::jsonb,
+        SET messages = coalesce(messages, '[]'::jsonb) || ${JSON.stringify([
+          fullMessage,
+        ])}::jsonb,
             updated_at = NOW()
         WHERE booking_id = ${bookingId};
       `;
@@ -214,7 +218,7 @@ io.on("connection", (socket) => {
         booking_id: bookingId,
       };
 
-      // 🔥 1. Save notification to DB
+      // 1) Save notification to DB
       try {
         await sql`
           INSERT INTO notifications (user_id, type, title, message, booking_id)
@@ -230,11 +234,10 @@ io.on("connection", (socket) => {
         console.error("❌ Failed to save notification:", err);
       }
 
-      // 🔥 2. Emit realtime notification
+      // 2) Emit realtime notification
       io.to(`user-${recipientId}`).emit("new_message", notificationData);
       console.log(`🔔 Sent and saved 'new_message' to user ${recipientId}`);
     }
-
   });
 
   socket.on("disconnect", () => {
@@ -328,6 +331,31 @@ async function initDB() {
         provider_id INT NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
         rating INT CHECK (rating >= 1 AND rating <= 5),
         comment TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    // Chat messages store (JSONB)
+    await sql`
+      CREATE TABLE IF NOT EXISTS chat_messages (
+        id SERIAL PRIMARY KEY,
+        booking_id INT UNIQUE NOT NULL,
+        messages JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    // Notifications table
+    await sql`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id SERIAL PRIMARY KEY,
+        user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        type VARCHAR(50) NOT NULL,
+        title VARCHAR(255),
+        message TEXT,
+        booking_id INT,
+        is_read BOOLEAN DEFAULT false,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `;

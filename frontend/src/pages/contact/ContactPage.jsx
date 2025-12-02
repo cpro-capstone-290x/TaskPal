@@ -1,10 +1,24 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import api from "../../api"; // ✅ centralized axios instance
 
 const ContactPage = () => {
+  const navigate = useNavigate();
+
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [status, setStatus] = useState(null); // null | 'sending' | 'success' | 'error'
+
+  // 🔒 Guard: block logged-in providers from /contact
+  // and redirect them to their own provider profile dashboard
+  useEffect(() => {
+    const role = localStorage.getItem("userRole");
+    const userId = localStorage.getItem("userId");
+
+    if (role === "provider" && userId) {
+      navigate(`/profileProvider/${userId}`, { replace: true });
+    }
+  }, [navigate]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -136,8 +150,8 @@ const ContactPage = () => {
               className={`w-full text-xl font-semibold py-3 rounded-lg transition focus:ring-4 focus:ring-green-300 
                 ${
                   status === "sending"
-                    ? "bg-green-400 cursor-not-allowed text-white" // Keep text-white explicit here if you want consistency
-                    : "bg-green-700 hover:bg-green-800 text-white" // ✅ Changed from 600/700 to 700/800
+                    ? "bg-green-400 cursor-not-allowed text-white"
+                    : "bg-green-700 hover:bg-green-800 text-white"
                 }`}
               disabled={status === "sending"}
             >

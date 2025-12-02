@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Brush, Truck, Sprout } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 
 /*
@@ -18,7 +18,7 @@ const services = [
     description:
       "Professional home cleaning services tailored for your needs. Reliable, affordable, and efficient.",
     icon: <Brush className="w-10 h-10 text-blue-500" />,
-    category: "Cleaning", 
+    category: "Cleaning",
   },
   {
     id: 2,
@@ -44,6 +44,19 @@ const services = [
   - Each card links to /booking?category=<ServiceName>
 */
 const ServicesPage = () => {
+  const navigate = useNavigate();
+
+  // 🔒 Guard: redirect logged-in providers away from /services
+  // and send them to their own provider profile dashboard
+  useEffect(() => {
+    const role = localStorage.getItem("userRole");
+    const userId = localStorage.getItem("userId");
+
+    if (role === "provider" && userId) {
+      navigate(`/profileProvider/${userId}`, { replace: true });
+    }
+  }, [navigate]);
+
   return (
     <>
       <Header />

@@ -148,6 +148,7 @@ const RegisterUser = ({ onSuccess }) => {
         city: "Red Deer", // we know it's valid Red Deer now
         province: "Alberta",
       }));
+      
     } catch (err) {
       console.error("Error validating address:", err);
       setValidationError("Error validating address. Please try again.");

@@ -274,10 +274,21 @@ const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const socketRef = useRef(null);
 
-  const showAccessibility = !pathname.startsWith("/admin") && userRole !== "provider";
+  // Detect provider login view, e.g. /login?type=provider
+  const isProviderLoginView =
+    pathname === "/login" && (search || "").includes("type=provider");
+
+  // Provider mode: logged-in provider OR provider login page
+  const isProvider = userRole === "provider" || isProviderLoginView;
+
+  // Only treat as "provider logged in" when actually authenticated as provider
+  const isProviderLoggedIn = isLoggedIn && userRole === "provider";
+
+  // Accessibility is hidden for admin + provider modes
+  const showAccessibility = !pathname.startsWith("/admin") && !isProvider;
 
 
   /* ---------------------------------------------------------- */
@@ -359,16 +370,13 @@ const Header = () => {
         socket.emit("join_notification_room", { userId });
       });
 
-      // ⭐ These refresh the notification list
       socket.on("new_message", fetchNotifications);
       socket.on("new_booking", fetchNotifications);
       socket.on("payment_agreed", fetchNotifications);
       socket.on("booking_cancelled", fetchNotifications);
-
-      // ⭐ NEW: Real-time execution notifications
       socket.on("execution_update", (data) => {
         console.log("🔥 Execution Update:", data);
-        fetchNotifications();  // instantly reload notifications
+        fetchNotifications();
       });
 
       return () => {
@@ -393,18 +401,12 @@ const Header = () => {
   const handleNotificationClick = (n) => {
     const id = n.booking_id;
 
-    // ⭐ 1. Execution notifications → redirect to execution page
     if (n.type === "execution" && id) {
-      navigate(
-        userRole === "provider"
-          ? `/execution/${id}`
-          : `/execution/${id}`
-      );
+      navigate(`/execution/${id}`);
       setMobileOpen(false);
       return;
     }
 
-    // ⭐ 2. Other booking-based notifications → go to chat
     if (id) {
       navigate(
         userRole === "provider"
@@ -415,14 +417,12 @@ const Header = () => {
       return;
     }
 
-    // ⭐ 3. Message type → generic chat
     if (n.type === "message") {
       navigate("/chat");
       setMobileOpen(false);
       return;
     }
 
-    // ⭐ 4. Fallback → role dashboard
     navigate(userRole === "provider" ? "/provider" : "/user");
     setMobileOpen(false);
   };
@@ -488,20 +488,36 @@ const Header = () => {
         <div className="h-20 flex items-center justify-between gap-6">
           
           {/* Logo */}
-          <button
-            onClick={() => navigate("/")}
-            className="inline-flex items-center gap-2 text-3xl lg:text-4xl font-extrabold tracking-tight text-slate-900"
-          >
-            <span className="px-1 rounded-md bg-transparent">
-              <span className="text-pink-600">Task</span>
-              <span className="text-sky-700">Pal</span>
-            </span>
-          </button>
+          {isProviderLoggedIn ? (
+            // 🔒 Logged-in providers: logo is NOT clickable
+            <div
+              className="inline-flex items-center gap-2 text-3xl lg:text-4xl font-extrabold tracking-tight text-slate-900 select-none"
+              aria-label="TaskPal"
+            >
+              <span className="px-1 rounded-md bg-transparent">
+                <span className="text-pink-600">Task</span>
+                <span className="text-sky-700">Pal</span>
+              </span>
+            </div>
+          ) : (
+            // Everyone else (users, guests): logo navigates to home
+            <button
+              onClick={() => navigate("/")}
+              className="inline-flex items-center gap-2 text-3xl lg:text-4xl font-extrabold tracking-tight text-slate-900"
+              aria-label="TaskPal Home"
+            >
+              <span className="px-1 rounded-md bg-transparent">
+                <span className="text-pink-600">Task</span>
+                <span className="text-sky-700">Pal</span>
+              </span>
+            </button>
+          )}
 
-          {/* Desktop Nav */}
+          {/* Desktop Nav (center) */}
           <nav className="hidden md:flex items-center justify-center flex-1">
             <ul className="flex items-center gap-8 lg:gap-12">
-              {navLinks.map((link) => (
+              {/* Hide nav links for providers */}
+              {!isProvider && navLinks.map((link) => (
                 <li key={link.name}>
                   <Link
                     to={link.path}
@@ -518,19 +534,32 @@ const Header = () => {
                 </li>
               )}
 
-              <li>
-                <Link
-                  to={profilePath}
-                  className="inline-flex items-center h-12 px-3 text-lg lg:text-xl font-semibold text-gray-900 hover:text-sky-700"
-                >
-                  Profile
-                </Link>
-              </li>
+              {/* Profile in center ONLY for non-providers */}
+              {!isProvider && (
+                <li>
+                  <Link
+                    to={profilePath}
+                    className="inline-flex items-center h-12 px-3 text-lg lg:text-xl font-semibold text-gray-900 hover:text-sky-700"
+                  >
+                    Profile
+                  </Link>
+                </li>
+              )}
             </ul>
           </nav>
 
           {/* Desktop Right */}
           <div className="hidden md:flex items-center gap-4 lg:gap-6">
+            {/* For providers: show Profile label on the right, next to bell */}
+            {isLoggedIn && isProvider && (
+              <Link
+                to={profilePath}
+                className="text-lg lg:text-xl font-semibold text-gray-900 hover:text-sky-700"
+              >
+                Profile
+              </Link>
+            )}
+
             {isLoggedIn && (
               <NotificationBell
                 notifications={notifications}
@@ -567,13 +596,12 @@ const Header = () => {
               />
             )}
 
-            {/* Hamburger */}
+            {/* Hamburger (unchanged) */}
             <button
-                className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-slate-300 text-slate-900 hover:bg-white/60"
-                onClick={() => setMobileOpen((v) => !v)}
-                aria-label={mobileOpen ? "Close main menu" : "Open main menu"}
-              >
-
+              className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-slate-300 text-slate-900 hover:bg-white/60"
+              onClick={() => setMobileOpen((v) => !v)}
+              aria-label={mobileOpen ? "Close main menu" : "Open main menu"}
+            >
               <svg width="22" height="22" viewBox="0 0 24 24"
                    fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="3" y1="6" x2="21" y2="6" />
@@ -590,7 +618,8 @@ const Header = () => {
             <div className="rounded-xl border border-slate-200 shadow-sm bg-white p-3">
 
               <nav className="flex flex-col">
-                {navLinks.map((link) => (
+                {/* Hide nav links for providers in mobile as well */}
+                {!isProvider && navLinks.map((link) => (
                   <Link
                     key={link.name}
                     to={link.path}

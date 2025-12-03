@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
@@ -7,7 +7,22 @@
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#0284c7" />
     <title>TaskPal</title>
+
+    <!-- Google Maps JS -->
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=%VITE_GOOGLE_MAPS_KEY%&libraries=places"
+      async
+      defer
+    ></script>
+
+    <!-- NEW: Required for PlaceAutocompleteElement -->
+    <script
+      src="https://unpkg.com/@googlemaps/places-widget-element@^1"
+      async
+      defer
+    ></script>
   </head>
+
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>

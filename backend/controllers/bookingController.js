@@ -66,7 +66,36 @@ export const bookTask = async (req, res) => {
       price,
     });
 
-    // 1️⃣ Create booking
+    /* ------------------------------------------------------------- */
+    /* 1️⃣ CHECK IF USER ALREADY HAS A PENDING BOOKING                */
+    /* ------------------------------------------------------------- */
+    const existingPending = await sql`
+      SELECT id, status
+      FROM bookings
+      WHERE client_id = ${client_id}
+      AND provider_id = ${provider_id} 
+      AND status = 'Pending'
+      LIMIT 1;
+    `;
+
+    if (existingPending.length > 0) {
+      logger.warn("Booking blocked: existing pending booking", {
+        traceId,
+        client_id,
+        existingBookingId: existingPending[0].id,
+      });
+
+      return res.status(409).json({
+        error:
+          "You already have a pending booking. Please wait until it is completed or cancelled.",
+        existingBookingId: existingPending[0].id,
+      });
+    }
+    /* ------------------------------------------------------------- */
+    /* END CHECK                                                     */
+    /* ------------------------------------------------------------- */
+
+    // 2️⃣ Create booking
     const [booking] = await sql`
       INSERT INTO bookings (client_id, provider_id, notes, scheduled_date, price)
       VALUES (${client_id}, ${provider_id}, ${notes}, ${scheduled_date}, ${price})
@@ -82,7 +111,7 @@ export const bookTask = async (req, res) => {
       price: booking.price,
     });
 
-    // 2️⃣ Initialize empty chat record
+    // 3️⃣ Initialize empty chat record
     await sql`
       INSERT INTO chat_messages (booking_id, messages)
       VALUES (${booking.id}, '[]'::jsonb)
@@ -93,7 +122,7 @@ export const bookTask = async (req, res) => {
       bookingId: booking.id,
     });
 
-    // 3️⃣ Socket notification
+    // 4️⃣ Socket notification
     const notificationData = {
       type: "booking",
       title: "New Booking Request",
@@ -103,9 +132,7 @@ export const bookTask = async (req, res) => {
       booking_id: booking.id,
     };
 
-    req.io
-      .to(`user-${booking.provider_id}`)
-      .emit("new_booking", notificationData);
+    req.io.to(`user-${booking.provider_id}`).emit("new_booking", notificationData);
 
     logger.info("Sent 'new_booking' socket notification to provider", {
       traceId,
@@ -113,7 +140,7 @@ export const bookTask = async (req, res) => {
       bookingId: booking.id,
     });
 
-    // 4️⃣ Persistent DB notification
+    // 5️⃣ Persistent DB notification
     await saveNotification({
       userId: booking.provider_id,
       type: "booking",
@@ -123,13 +150,14 @@ export const bookTask = async (req, res) => {
       traceId,
     });
 
-    // 5️⃣ Audit log for booking creation (both parties)
+    // 6️⃣ Audit logs for booking creation
     await logAudit(client_id, "BOOKING_CREATED", {
       bookingId: booking.id,
       provider_id,
       price: booking.price,
       scheduled_date,
     });
+
     await logAudit(provider_id, "BOOKING_ASSIGNED", {
       bookingId: booking.id,
       client_id,
@@ -157,6 +185,7 @@ export const bookTask = async (req, res) => {
     res.status(500).json({ error: "Failed to create booking" });
   }
 };
+
 
 /* -------------------------------------------------------------------------- */
 /* GET BOOKING BY ID                                                          */

@@ -1,7 +1,31 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
-import api from "../../../api";
+import api from "../../../api"; // Ensure this path is correct for your project structure
+
+// Moved outside to prevent re-creation on every render
+const PendingBanner = ({ hasPending, existingBookingId, onNavigate }) => {
+  if (!hasPending) return null;
+
+  return (
+    <div className="w-full max-w-2xl mb-6 p-4 bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-xl shadow animate-fade-in">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <p className="font-bold text-lg">⚠️ Action Required</p>
+          <p className="text-sm mt-1">
+            You already have a <span className="font-semibold">Pending</span> booking. 
+            Please wait for the provider to accept or decline it before making a new request.
+          </p>
+        </div>
+        <button
+          onClick={() => onNavigate(`/chat/${existingBookingId}/user`)}
+          className="shrink-0 bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition font-medium text-sm shadow-sm"
+        >
+          Go to Pending Booking
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const BookingInit = () => {
   const { providerId } = useParams();
@@ -15,13 +39,61 @@ const BookingInit = () => {
   });
   const [loading, setLoading] = useState(false);
 
-  // ✅ Handle input changes
+  /* ------------------------------------------------------ */
+  /* 🚨 PREVENT DUPLICATE BOOKINGS LOGIC                    */
+  /* ------------------------------------------------------ */
+  const [hasPending, setHasPending] = useState(false);
+  const [existingBookingId, setExistingBookingId] = useState(null);
+  // eslint-disable-next-line no-unused-vars
+  const [checkingPending, setCheckingPending] = useState(true);
+
+  useEffect(() => {
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      setCheckingPending(false);
+      return;
+    }
+
+    const fetchPending = async () => {
+      try {
+        const res = await api.get(`/bookings/user/${userId}`);
+        const bookings = Array.isArray(res.data?.data) ? res.data.data : [];
+
+        // ❌ OLD: Finds ANY pending booking
+        // const pending = bookings.find(
+        //   (b) => b.status?.trim().toLowerCase() === "pending"
+        // );
+        
+        // ✅ NEW: Finds pending booking ONLY for this provider
+        // Note: Ensure providerId is a string/number match. 
+        // URLs usually give strings, API might return numbers.
+        const pending = bookings.find(
+          (b) => 
+            b.status?.trim().toLowerCase() === "pending" && 
+            String(b.provider_id) === String(providerId)
+        );
+
+        if (pending) {
+          setHasPending(true);
+          setExistingBookingId(pending.id);
+        }
+      } catch (err) {
+        console.error("Error checking pending bookings:", err);
+      } finally {
+        setCheckingPending(false);
+      }
+    };
+
+    fetchPending();
+  }, []);
+
+  // Handle inputs
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ✅ Step navigation
+  // Step navigation
   const handleNext = () => {
     if (step === 1 && !form.notes.trim()) return alert("Please describe your task.");
     if (step === 2 && !form.scheduled_date) return alert("Please select a valid date and time.");
@@ -31,8 +103,14 @@ const BookingInit = () => {
 
   const handleBack = () => setStep((prev) => prev - 1);
 
-  // ✅ Booking submission
+  // Booking submission
   const handleBookNow = async () => {
+    /* 🚨 Client-side guard */
+    if (hasPending) {
+      alert("You already have a pending booking. Please complete it first.");
+      return navigate(`/chat/${existingBookingId}/user`);
+    }
+
     const token = localStorage.getItem("authToken");
     const userRole = localStorage.getItem("userRole");
     const clientId = localStorage.getItem("userId");
@@ -63,202 +141,197 @@ const BookingInit = () => {
 
       const booking = res.data;
 
-      if (!booking?.bookingId || !booking?.provider_id) {
-        console.error("❌ Invalid booking response:", res.data);
-        alert("Something went wrong while creating your booking.");
-        return;
+      if (!booking?.bookingId && !booking?.id) {
+        // Handle case where ID might be returned differently
+        throw new Error("Invalid booking ID returned");
       }
 
-      // ✅ Redirect to chat after successful booking
-      navigate(`/chat/${booking.bookingId}/user`);
+      const newBookingId = booking.bookingId || booking.id;
+      navigate(`/chat/${newBookingId}/user`);
+      
     } catch (err) {
       console.error("❌ Error creating booking:", err);
+
+      // Backend block handling (409 Conflict)
+      if (err.response?.status === 409) {
+        alert("⚠️ You already have a pending booking.");
+        // Assuming backend returns the existing ID in the error response
+        if(err.response.data?.existingBookingId) {
+             return navigate(`/chat/${err.response.data.existingBookingId}/user`);
+        }
+      }
       alert("Failed to create booking. Please try again later.");
     } finally {
       setLoading(false);
     }
   };
 
-  // 🟢 Step 1: Task Description
+  /* ------------------------------------------------------ */
+  /* UI RENDERING STEPS                                     */
+  /* ------------------------------------------------------ */
+
   const renderStep1 = () => (
-    <div>
-      <h3 className="text-lg font-semibold text-gray-800 mb-3">Describe your task</h3>
-      <p className="text-sm text-gray-600 mb-4">
-        Tell us what you need help with. Be specific so providers know what to expect.
-      </p>
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold text-gray-800">Task Description</h2>
+      <p className="text-gray-500 text-sm">Describe what you need help with in detail.</p>
       <textarea
         name="notes"
         value={form.notes}
         onChange={handleChange}
-        placeholder='e.g. "Assemble my new 3-seater couch and mount a small shelf."'
-        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-green-600 focus:outline-none resize-none"
-        rows={4}
+        disabled={hasPending}
+        placeholder="E.g., I need help moving 5 boxes from my garage to the second floor..."
+        className="w-full h-32 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none resize-none"
       />
     </div>
   );
 
-  // 🟢 Step 2: Schedule Date
-  const renderStep2 = () => {
-    const getCurrentDateTime = () => {
-      const now = new Date();
-      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-      return now.toISOString().slice(0, 16);
-    };
+  const renderStep2 = () => (
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold text-gray-800">Select Date & Time</h2>
+      <p className="text-gray-500 text-sm">When do you need this task done?</p>
+      <input
+        type="datetime-local"
+        name="scheduled_date"
+        value={form.scheduled_date}
+        onChange={handleChange}
+        disabled={hasPending}
+        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
+      />
+    </div>
+  );
 
-    const handleDateChange = (e) => {
-      const selectedDate = new Date(e.target.value);
-      const hours = selectedDate.getHours();
-
-      if (selectedDate < new Date()) {
-        alert("Please select a future date and time.");
-        return;
-      }
-      if (hours < 8 || hours >= 17) {
-        alert("Please select a time between 8:00 AM and 5:00 PM.");
-        return;
-      }
-
-      handleChange(e);
-    };
-
-    return (
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">
-          When would you like it done?
-        </h3>
-        <p className="text-sm text-gray-600 mb-4">
-          Choose your preferred date and time for this task.
-        </p>
-
-        <input
-          type="datetime-local"
-          name="scheduled_date"
-          value={form.scheduled_date}
-          onChange={handleDateChange}
-          min={getCurrentDateTime()}
-          className="w-full border border-gray-300 rounded-full px-4 py-3 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-green-600 focus:outline-none"
-        />
-
-        {/* Inline error display */}
-        {form.scheduled_date && (() => {
-          const d = new Date(form.scheduled_date);
-          const h = d.getHours();
-          if (d < new Date())
-            return <p className="text-red-500 text-sm mt-2">Please select a future date.</p>;
-          if (h < 8 || h >= 17)
-            return <p className="text-red-500 text-sm mt-2">Only between 8 AM and 5 PM allowed.</p>;
-          return null;
-        })()}
-      </div>
-    );
-  };
-
-  // 🟢 Step 3: Price
   const renderStep3 = () => (
-    <div>
-      <h3 className="text-lg font-semibold text-gray-800 mb-3">Set your price</h3>
-      <p className="text-sm text-gray-600 mb-4">
-        Suggest how much you’re willing to pay for this task.
-      </p>
-      <div className="flex items-center space-x-2">
-        <span className="text-gray-700 font-semibold">$</span>
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold text-gray-800">Propose a Price</h2>
+      <p className="text-gray-500 text-sm">Enter the amount (USD) you are willing to pay.</p>
+      <div className="relative">
+        <span className="absolute left-3 top-3 text-gray-500">$</span>
         <input
           type="number"
           name="price"
           value={form.price}
           onChange={handleChange}
-          placeholder="80.00"
-          min="0"
+          disabled={hasPending}
+          placeholder="0.00"
           step="0.01"
-          className="w-full border border-gray-300 rounded-full px-4 py-3 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-green-600 focus:outline-none"
+          className="w-full p-3 pl-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
         />
       </div>
     </div>
   );
 
-  // 🟢 Step 4: Summary
   const renderStep4 = () => (
-    <div>
-      <h3 className="text-lg font-semibold text-gray-800 mb-3">Review your details</h3>
-      <p className="text-sm text-gray-600 mb-4">Confirm before booking your provider.</p>
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-gray-700 space-y-2">
-        <p><strong>Task:</strong> {form.notes || "Not provided"}</p>
-        <p>
-          <strong>Scheduled Date:</strong>{" "}
-          {form.scheduled_date
-            ? new Date(form.scheduled_date).toLocaleString()
-            : "Not selected"}
-        </p>
-        <p><strong>Price:</strong> ${form.price || "Not set"}</p>
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold text-gray-800">Review Summary</h2>
+      <div className="bg-gray-50 p-4 rounded-lg space-y-3 text-sm">
+        <div className="flex justify-between border-b pb-2">
+          <span className="text-gray-600">Date:</span>
+          <span className="font-medium text-gray-800">
+            {form.scheduled_date ? new Date(form.scheduled_date).toLocaleString() : "-"}
+          </span>
+        </div>
+        <div className="flex justify-between border-b pb-2">
+          <span className="text-gray-600">Price:</span>
+          <span className="font-medium text-green-700 text-lg">
+            ${parseFloat(form.price || 0).toFixed(2)}
+          </span>
+        </div>
+        <div>
+          <span className="text-gray-600 block mb-1">Notes:</span>
+          <p className="text-gray-800 bg-white p-2 rounded border border-gray-200">
+            {form.notes}
+          </p>
+        </div>
       </div>
     </div>
   );
 
-  // 🧩 Main Return
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center pt-10 px-4">
+      {/* Pending Banner Component */}
+      <PendingBanner 
+        hasPending={hasPending} 
+        existingBookingId={existingBookingId} 
+        onNavigate={navigate} 
+      />
+
       {/* Progress Bar */}
-      <div className="w-full max-w-4xl flex items-center justify-between px-6 mt-8 mb-8">
+      <div className="w-full max-w-2xl flex items-center justify-between mb-8">
         {["Task", "Schedule", "Price", "Summary"].map((label, index) => (
-          <div key={index} className="flex-1 flex items-center">
-            <div
-              className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ${
-                step === index + 1
-                  ? "bg-green-700 text-white"
-                  : step > index + 1
-                  ? "bg-green-500 text-white"
-                  : "bg-gray-300 text-gray-600"
-              }`}
-            >
-              {index + 1}
-            </div>
-            {index < 3 && (
-              <div
-                className={`flex-1 h-0.5 mx-2 ${
-                  step > index + 1 ? "bg-green-500" : "bg-gray-300"
+          <div key={index} className="flex-1 flex flex-col items-center relative">
+            <div className="flex items-center w-full">
+               {/* Line Connector */}
+               <div className={`h-1 flex-1 ${index === 0 ? 'invisible' : ''} ${step > index ? "bg-green-600" : "bg-gray-300"}`}></div>
+               
+               {/* Circle */}
+               <div
+                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold z-10 transition-colors duration-300 ${
+                  step === index + 1
+                    ? "bg-green-700 text-white shadow-lg scale-110"
+                    : step > index + 1
+                    ? "bg-green-600 text-white"
+                    : "bg-gray-300 text-gray-600"
                 }`}
-              ></div>
-            )}
+              >
+                {step > index + 1 ? "✓" : index + 1}
+              </div>
+
+              {/* Line Connector */}
+              <div className={`h-1 flex-1 ${index === 3 ? 'invisible' : ''} ${step > index + 1 ? "bg-green-600" : "bg-gray-300"}`}></div>
+            </div>
+            <span className={`text-xs mt-2 font-medium ${step === index + 1 ? "text-green-700" : "text-gray-500"}`}>{label}</span>
           </div>
         ))}
       </div>
 
-      {/* Step Content */}
-      <div className="w-full max-w-2xl bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+      {/* Step Card */}
+      <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg border border-gray-100 p-8">
         {step === 1 && renderStep1()}
         {step === 2 && renderStep2()}
         {step === 3 && renderStep3()}
         {step === 4 && renderStep4()}
 
         {/* Navigation Buttons */}
-        <div className="flex justify-between mt-8">
-          {step > 1 ? (
-            <button
-              onClick={handleBack}
-              className="px-6 py-2 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100"
-            >
-              Back
-            </button>
-          ) : (
-            <div />
-          )}
+        <div className="flex justify-between mt-8 pt-4 border-t border-gray-100">
+          <button
+            onClick={handleBack}
+            disabled={step === 1}
+            className={`px-6 py-2 rounded-full border border-gray-300 text-gray-600 transition ${
+              step === 1 ? "opacity-0 cursor-default" : "hover:bg-gray-50"
+            }`}
+          >
+            Back
+          </button>
 
           {step < 4 ? (
             <button
               onClick={handleNext}
-              className="bg-green-700 hover:bg-green-800 text-white font-semibold rounded-full px-8 py-2 transition"
+              disabled={hasPending}
+              className={`font-semibold rounded-full px-8 py-2 transition shadow-md ${
+                  hasPending 
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
+                  : "bg-green-700 hover:bg-green-800 text-white"
+              }`}
             >
               Continue
             </button>
           ) : (
             <button
               onClick={handleBookNow}
-              disabled={loading}
+              disabled={loading || hasPending}
               className={`${
-                loading ? "bg-gray-400" : "bg-green-700 hover:bg-green-800"
-              } text-white font-semibold rounded-full px-8 py-2 transition`}
+                loading || hasPending
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-green-700 hover:bg-green-800 shadow-lg hover:shadow-xl"
+              } text-white font-semibold rounded-full px-8 py-2 transition flex items-center gap-2`}
             >
-              {loading ? "Booking..." : "Book Now"}
+              {loading && (
+                 <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                 </svg>
+              )}
+              {loading ? "Processing..." : hasPending ? "Pending Exists" : "Confirm Booking"}
             </button>
           )}
         </div>

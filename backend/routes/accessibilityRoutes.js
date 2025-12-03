@@ -12,12 +12,11 @@ const clampFont = (n) => {
   return Math.min(200, Math.max(80, Math.round(x)));
 };
 
-// GET /api/accessibility/me  (normal users only)
+// GET /api/accessibility/me
 router.get("/me", protect, async (req, res) => {
-  if (!req.user || req.user.role !== "user") {
-    return res
-      .status(403)
-      .json({ error: "Accessibility settings are only available for user accounts." });
+  // Accessibility should be available to ALL authenticated roles (admin, provider, user).
+  if (!req.user) { 
+    return res.status(403).json({ error: "Not authorized" });
   }
 
   // prevent caches from returning 304/no body
@@ -25,6 +24,7 @@ router.get("/me", protect, async (req, res) => {
 
   try {
     const { id: userId } = req.user;
+    
     const rows = await sql`
       SELECT font_size, readable_font, spacing
       FROM public.accessibility_settings
@@ -33,6 +33,7 @@ router.get("/me", protect, async (req, res) => {
     `;
 
     if (!rows.length) {
+      // Return defaults if no settings found
       return res.json({ fontSize: 100, readableFont: false, spacing: false });
     }
 
@@ -43,16 +44,16 @@ router.get("/me", protect, async (req, res) => {
       spacing: r.spacing,
     });
   } catch (e) {
+    console.error("Error fetching accessibility settings:", e);
     return res.status(500).json({ error: "Failed to load accessibility settings" });
   }
 });
 
-// PATCH /api/accessibility  (normal users only)
+// PATCH /api/accessibility
 router.patch("/", protect, async (req, res) => {
-  if (!req.user || req.user.role !== "user") {
-    return res
-      .status(403)
-      .json({ error: "Accessibility settings are only available for user accounts." });
+  // The 'protect' middleware already ensures req.user exists.
+  if (!req.user) {
+    return res.status(401).json({ error: "Not authorized" });
   }
 
   // prevent caches from reusing/storing this response
@@ -61,6 +62,7 @@ router.patch("/", protect, async (req, res) => {
   const { id: userId } = req.user;
   const { fontSize, readableFont, spacing } = req.body ?? {};
 
+  // ... (rest of the logic remains exactly the same)
   const fs = clampFont(fontSize ?? 100);
   const rf = !!readableFont;
   const sp = !!spacing;
@@ -77,6 +79,7 @@ router.patch("/", protect, async (req, res) => {
 
     return res.json({ fontSize: fs, readableFont: rf, spacing: sp });
   } catch (e) {
+    console.error(e); // Good to log the actual error for debugging
     return res.status(500).json({ error: "Failed to save accessibility settings" });
   }
 });

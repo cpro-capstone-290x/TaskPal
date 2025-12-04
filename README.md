@@ -1,4 +1,4 @@
-# 🌟 TaskPal
+# 🌟 TaskPal 
 
 **A Modern Platform Connecting Seniors and PWDs to Reliable, Local Task Providers**
 

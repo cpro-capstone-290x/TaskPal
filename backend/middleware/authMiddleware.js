@@ -16,40 +16,42 @@ export const protect = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, jwtSecret);
 
-    // --- Check Admins table ---
-    const [adminUser] = await sql`
-      SELECT id, first_name AS name, email, 'admin' AS role
-      FROM admins WHERE id = ${decoded.id}
-    `;
-    if (adminUser) {
-      req.adminUser = adminUser;
-      req.user = adminUser;
-      return next();
+    if (decoded.role === 'admin') {
+      const [adminUser] = await sql`
+        SELECT id, first_name AS name, email, 'admin' AS role
+        FROM admins WHERE id = ${decoded.id}
+      `;
+      if (adminUser) {
+        req.user = adminUser;
+        return next();
+      }
+    } 
+    
+    else if (decoded.role === 'provider') {
+      const [providerUser] = await sql`
+        SELECT id, name, email, status, 'provider' AS role
+        FROM providers WHERE id = ${decoded.id}
+      `;
+      if (providerUser) {
+        req.user = providerUser;
+        return next();
+      }
+    } 
+    
+    else if (decoded.role === 'user') {
+      const [normalUser] = await sql`
+        SELECT id, first_name AS name, email, 'user' AS role
+        FROM users WHERE id = ${decoded.id}
+      `;
+      if (normalUser) {
+        req.user = normalUser;
+        return next();
+      }
     }
 
-    // --- Check Providers table ---
-    const [providerUser] = await sql`
-      SELECT id, name, email, status, 'provider' AS role
-      FROM providers WHERE id = ${decoded.id}
-    `;
-    if (providerUser) {
-      req.providerUser = providerUser;
-      req.user = providerUser;
-      return next();
-    }
+    // If role didn't match or user not found in the expected table
+    return res.status(403).json({ error: "User not found or role mismatch" });
 
-    // --- Check Normal Users table ---
-    const [normalUser] = await sql`
-      SELECT id, first_name AS name, email, 'user' AS role
-      FROM users WHERE id = ${decoded.id}
-    `;
-    if (normalUser) {
-      req.normalUser = normalUser;
-      req.user = normalUser;
-      return next();
-    }
-
-    return res.status(403).json({ error: "User not found or not authorized" });
   } catch (err) {
     console.error("JWT verification error:", err.message);
     return res.status(401).json({ error: "Invalid token" });

@@ -290,6 +290,8 @@ const Header = () => {
   // Accessibility is hidden for admin + provider modes
   const showAccessibility = !pathname.startsWith("/admin") && !isProvider;
 
+  // About Us is shown everywhere except the admin area
+  const showAboutLink = !pathname.startsWith("/admin");
 
   /* ---------------------------------------------------------- */
   /* LOAD USER SESSION                                          */
@@ -534,15 +536,24 @@ const Header = () => {
                 </li>
               )}
 
-              {/* Profile in center ONLY for non-providers */}
+              {/* Center slot: Profile when logged in, About Us when not logged in (non-providers) */}
               {!isProvider && (
                 <li>
-                  <Link
-                    to={profilePath}
-                    className="inline-flex items-center h-12 px-3 text-lg lg:text-xl font-semibold text-gray-900 hover:text-sky-700"
-                  >
-                    Profile
-                  </Link>
+                  {isLoggedIn ? (
+                    <Link
+                      to={profilePath}
+                      className="inline-flex items-center h-12 px-3 text-lg lg:text-xl font-semibold text-gray-900 hover:text-sky-700"
+                    >
+                      Profile
+                    </Link>
+                  ) : (
+                    <Link
+                      to="/about"
+                      className="inline-flex items-center h-12 px-3 text-lg lg:text-xl font-semibold text-gray-900 hover:text-sky-700"
+                    >
+                      About Us
+                    </Link>
+                  )}
                 </li>
               )}
             </ul>
@@ -557,6 +568,16 @@ const Header = () => {
                 className="text-lg lg:text-xl font-semibold text-gray-900 hover:text-sky-700"
               >
                 Profile
+              </Link>
+            )}
+
+            {/* About Us link for users and providers (non-admin) when logged in */}
+            {isLoggedIn && showAboutLink && (
+              <Link
+                to="/about"
+                className="text-lg lg:text-xl font-semibold text-gray-900 hover:text-sky-700"
+              >
+                About Us
               </Link>
             )}
 
@@ -636,13 +657,27 @@ const Header = () => {
                   </div>
                 )}
 
-                <Link
-                  to={profilePath}
-                  onClick={() => setMobileOpen(false)}
-                  className="px-3 py-3 rounded-lg text-[15px] font-semibold text-slate-900 hover:bg-slate-50"
-                >
-                  Profile
-                </Link>
+                {/* Profile only when logged in on mobile */}
+                {isLoggedIn && (
+                  <Link
+                    to={profilePath}
+                    onClick={() => setMobileOpen(false)}
+                    className="px-3 py-3 rounded-lg text-[15px] font-semibold text-slate-900 hover:bg-slate-50"
+                  >
+                    Profile
+                  </Link>
+                )}
+
+                {/* About Us link at bottom of menu for mobile (still shown for guests) */}
+                {showAboutLink && (
+                  <Link
+                    to="/about"
+                    onClick={() => setMobileOpen(false)}
+                    className="px-3 py-3 rounded-lg text-[15px] font-semibold text-slate-900 hover:bg-slate-50"
+                  >
+                    About Us
+                  </Link>
+                )}
               </nav>
 
               <div className="my-2 h-px bg-slate-200" />

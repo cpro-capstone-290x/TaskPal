@@ -99,7 +99,7 @@ const AboutPage = () => {
               {
                 name: "John Carlo Sinoy",
                 role: "Lead Developer",
-                img: "/default-avatar.png",
+                img: "/assets/johncarlo.png",
               },
               {
                 name: "Sikandeer Kingdra",

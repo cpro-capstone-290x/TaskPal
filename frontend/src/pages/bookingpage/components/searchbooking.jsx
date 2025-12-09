@@ -12,10 +12,6 @@ const SearchBooking = () => {
 
   const [providers, setProviders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({
-    priceRange: [10, 150],
-    eliteOnly: false,
-  });
 
   const handleViewProfile = (providerId) => {
     navigate(`/providers/public/${providerId}`);
@@ -42,89 +38,81 @@ const SearchBooking = () => {
     fetchProviders();
   }, [selectedCategory]);
 
-  const filteredProviders = providers.filter((p) => {
-    if (p.status !== "Approved") return false;
-    if (filters.eliteOnly && !p.is_elite) return false;
-
-    if (p.price) {
-      if (p.price < filters.priceRange[0] || p.price > filters.priceRange[1]) {
-        return false;
-      }
-    }
-
-    return true;
-  });
-
-  const handlePriceChange = (e) => {
-    const value = parseInt(e.target.value, 10);
-    setFilters((prev) => ({
-      ...prev,
-      priceRange: [10, value],
-    }));
-  };
+  // Only show approved providers (no price/slider filtering anymore)
+  const filteredProviders = providers.filter((p) => p.status === "Approved");
 
   const handleSelectProvider = (providerId) => {
     navigate(`/booking/initiate/${providerId}`);
   };
 
+  const formatPrice = (value) =>
+    value != null ? Number(value).toFixed(2) : "0.00";
+
+  // Small helper: describe what providers usually offer per category
+  const getCategoryDescription = () => {
+    const cat = (selectedCategory || "").toLowerCase();
+
+    if (cat.includes("clean")) {
+      return [
+        "General home cleaning (kitchen, living room, bedrooms).",
+        "Bathroom and surface disinfection.",
+        "Move-in/move-out or deep cleaning jobs.",
+      ];
+    }
+
+    if (cat.includes("yard") || cat.includes("lawn")) {
+      return [
+        "Lawn mowing and basic yard maintenance.",
+        "Leaf raking and seasonal clean-ups.",
+        "Small outdoor tasks like watering plants or snow shoveling.",
+      ];
+    }
+
+    if (cat.includes("errand") || cat.includes("run")) {
+      return [
+        "Grocery or pharmacy runs.",
+        "Picking up deliveries or parcels.",
+        "Simple drop-off and pick-up errands around town.",
+      ];
+    }
+
+    // Default generic description
+    return [
+      "Help with day-to-day tasks related to this category.",
+      "Flexible, one-time or recurring jobs depending on your needs.",
+      "You can chat with your provider to customize what the job includes.",
+    ];
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6 md:p-10 flex flex-col md:flex-row gap-6">
-      {/* Sidebar Filters */}
-      <div className="w-full md:w-1/3 lg:w-1/4 bg-white rounded-2xl shadow-md p-6 border border-gray-100 space-y-6">
+      {/* Sidebar: What this provider can offer */}
+      <div className="w-full md:w-1/3 lg:w-1/4 bg-white rounded-2xl shadow-md p-6 border border-gray-100 space-y-4">
         <h2 className="text-lg font-semibold text-gray-800 mb-2">
-          Filters {selectedCategory && <span>for {selectedCategory}</span>}
+          What your provider can offer
+          {selectedCategory && (
+            <span className="block text-sm font-normal text-gray-600">
+              for {selectedCategory} jobs
+            </span>
+          )}
         </h2>
 
-        {/* Price Range */}
-        <div>
-          <h3 className="font-semibold text-gray-800 mb-2">Price</h3>
+        <p className="text-sm text-gray-700">
+          All prices shown on the right are <strong>per job</strong>. You’ll be
+          able to discuss details and adjust the final job scope in chat before
+          confirming.
+        </p>
 
-          <label htmlFor="priceRange" className="sr-only">
-            Price Range
-          </label>
-
-          <input
-            id="priceRange"
-            type="range"
-            min="10"
-            max="150"
-            value={filters.priceRange[1]}
-            onChange={handlePriceChange}
-            className="w-full accent-sky-700"
-          />
-
-          <div className="flex justify-between text-gray-700 text-sm">
-            <span>${filters.priceRange[0]}</span>
-            <span>${filters.priceRange[1]}+</span>
-          </div>
-
-          <p className="text-xs text-gray-600 mt-1">
-            The average hourly rate is <strong>$42.81/hr</strong>
-          </p>
-        </div>
-
-        {/* Elite Only */}
-        <div>
-          <label
-            htmlFor="eliteOnly"
-            className="flex items-center space-x-2 text-gray-800 font-medium"
-          >
-            <input
-              id="eliteOnly"
-              type="checkbox"
-              checked={filters.eliteOnly}
-              onChange={() =>
-                setFilters((prev) => ({ ...prev, eliteOnly: !prev.eliteOnly }))
-              }
-              className="accent-sky-700 w-4 h-4"
-            />
-            <span>Elite Tasker</span>
-          </label>
-        </div>
+        <ul className="list-disc list-inside text-sm text-gray-800 space-y-1">
+          {getCategoryDescription().map((item, idx) => (
+            <li key={idx}>{item}</li>
+          ))}
+        </ul>
 
         <div className="bg-sky-50 border border-sky-200 rounded-lg p-3 text-sm text-gray-800">
           <span className="font-semibold">✅ Peace of Mind:</span> All Taskers
-          undergo ID and background checks.
+          undergo ID and background checks. Book the provider that feels right,
+          then fine-tune the job together.
         </div>
       </div>
 
@@ -179,7 +167,7 @@ const SearchBooking = () => {
                     {p.name || `${p.first_name} ${p.last_name}`}
                   </h3>
                   <span className="text-lg font-bold text-gray-900">
-                    ${p.min_price || 0} - ${p.max_price || 0}/hr
+                    ${formatPrice(p.min_price)} – ${formatPrice(p.max_price)} per job
                   </span>
                 </div>
 
@@ -198,7 +186,7 @@ const SearchBooking = () => {
                   <strong>How I can help:</strong>
                   <p className="mt-1 line-clamp-3">
                     {p.note ||
-                      "I’m an experienced service provider ready to help with your project efficiently and professionally."}
+                      "I’m an experienced service provider ready to help with your job efficiently and professionally."}
                   </p>
                 </div>
               </div>
@@ -212,7 +200,7 @@ const SearchBooking = () => {
                   Select & Continue
                 </button>
                 <p className="text-xs text-gray-600 text-center mt-2">
-                  Chat and adjust details after booking.
+                  Chat and adjust job details after booking.
                 </p>
               </div>
             </div>

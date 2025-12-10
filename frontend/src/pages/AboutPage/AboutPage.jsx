@@ -111,7 +111,6 @@ const AboutPage = () => {
                 role: "Documentation/Tester",
                 img: "/default-avatar.png",
               },
-
             ].map((member) => (
               <div
                 key={member.name}
@@ -148,6 +147,13 @@ const AboutPage = () => {
               className="bg-white text-[#0077b6] px-6 py-3 rounded-lg font-semibold border-2 border-white hover:bg-[#005f8a] hover:text-white transition-all"
             >
               Find Help
+            </Link>
+            {/* ✅ New Demo navigation */}
+            <Link
+              to="/demo"
+              className="bg-transparent text-white px-6 py-3 rounded-lg font-semibold border-2 border-white/80 hover:bg-white/10 transition-all"
+            >
+              Take a Tour
             </Link>
           </div>
         </section>

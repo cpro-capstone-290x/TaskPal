@@ -25,6 +25,7 @@ import OTPUser from "./pages/RegisterPage/components/OTPUser";
 import OTPProvider from "./pages/RegisterPage/components/OTPProvider";
 import AccessibilityToggle from "./pages/components/AccessibilityToggle";
 import GlobalAnnouncementBanner from "./components/GlobalAnnouncementBanner";
+import DemoPage from "./pages/tutorialpage/demoPage";
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/chat/:bookingId/:role" element={<ChatRoom />} />
+        <Route path="/demo" element={<DemoPage />} />
         <Route
           path="/profile/:id"
           element={
